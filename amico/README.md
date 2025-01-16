@@ -42,3 +42,11 @@ cargo new --lib --vcs none amico-plugin-<name>
 ```
 
 Then, edit the `Cargo.toml` file and add `description"` field under `[package]`.
+
+## Supported Plugins
+
+### Official Plugins
+
+- Corepack `amico-plugin-corepack`
+- Solana `amico-plugin-solana`
+- Twitter `amico-plugin-twitter`
