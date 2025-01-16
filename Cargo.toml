@@ -1,0 +1,3 @@
+[workspace]
+members = ["amico-*", "plugins/amico-plugin-*"]
+resolver = "2"
