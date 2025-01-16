@@ -1,0 +1,9 @@
+[package]
+name = "amico-plugin-twitter"
+version = "0.1.0"
+edition = "2021"
+description = "A plugin for the Amico AI Agent Framework to interact with Twitter."
+repository = "https://github.com/AIMOverse/amico"
+license = "MIT"
+
+[dependencies]

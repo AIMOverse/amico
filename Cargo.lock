@@ -21,3 +21,11 @@ version = "0.1.0"
 [[package]]
 name = "amico-plugin-interface"
 version = "0.1.0"
+
+[[package]]
+name = "amico-plugin-solana"
+version = "0.1.0"
+
+[[package]]
+name = "amico-plugin-twitter"
+version = "0.1.0"
