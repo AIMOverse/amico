@@ -150,9 +150,7 @@ where
                             TaskInterval::Constant(duration) => duration,
                             TaskInterval::Random(min_duration, max_duration) => {
                                 use rand::Rng;
-                                let duration =
-                                    rand::thread_rng().gen_range(min_duration..max_duration);
-                                duration
+                                rand::thread_rng().gen_range(min_duration..max_duration)
                             }
                         };
 

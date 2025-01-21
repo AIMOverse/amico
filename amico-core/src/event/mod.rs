@@ -1,2 +1,3 @@
-mod event;
-pub use event::*;
+mod event_trait;
+
+pub use event_trait::*;

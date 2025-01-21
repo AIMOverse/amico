@@ -44,7 +44,7 @@
 //! }
 //!
 //! impl Prompt for FileChangeEvent {
-//!     fn into_prompt(&self) -> String {
+//!     fn to_prompt(&self) -> String {
 //!         format!("File {} was {}", self.path, self.operation)
 //!     }
 //! }
@@ -132,7 +132,7 @@ use tokio::sync::broadcast;
 /// }
 ///
 /// impl Prompt for TemperatureEvent {
-///     fn into_prompt(&self) -> String {
+///     fn to_prompt(&self) -> String {
 ///         format!("Temperature at {} is {}°C", self.location, self.temperature)
 ///     }
 /// }
@@ -248,7 +248,7 @@ impl EventRegistry {
     /// struct LogHandler;
     /// impl EventHandler for LogHandler {
     ///     fn handle(&self, event: Box<dyn Event>) {
-    ///         println!("Event occurred: {}", event.into_prompt());
+    ///         println!("Event occurred: {}", event.to_prompt());
     ///     }
     /// }
     ///
@@ -257,10 +257,7 @@ impl EventRegistry {
     /// ```
     pub fn register_handler(&self, event_type: &'static str, handler: Arc<dyn EventHandler>) {
         let mut handlers = self.handlers.write().unwrap();
-        handlers
-            .entry(event_type)
-            .or_insert_with(Vec::new)
-            .push(handler);
+        handlers.entry(event_type).or_default().push(handler);
     }
 
     /// Triggers an event and notifies all registered handlers.
@@ -288,7 +285,7 @@ impl EventRegistry {
     ///     fn clone_box(&self) -> Box<dyn Event> { Box::new(Self { message: self.message.clone() }) }
     /// }
     /// impl Prompt for MyEvent {
-    ///     fn into_prompt(&self) -> String { self.message.clone() }
+    ///     fn to_prompt(&self) -> String { self.message.clone() }
     /// }
     /// let registry = EventRegistry::new();
     /// let event = MyEvent { message: "Something happened".to_string() };
@@ -366,7 +363,7 @@ mod tests {
     }
 
     impl Prompt for TimeEvent {
-        fn into_prompt(&self) -> String {
+        fn to_prompt(&self) -> String {
             format!(
                 "Time event triggered at {:?} with context: {}",
                 self.trigger_time, self.context
@@ -385,7 +382,7 @@ mod tests {
         assert!(!future_event.should_trigger());
 
         // Test prompt formatting
-        assert!(immediate_event.into_prompt().contains("immediate"));
+        assert!(immediate_event.to_prompt().contains("immediate"));
     }
 
     #[test]
