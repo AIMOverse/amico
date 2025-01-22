@@ -2,6 +2,13 @@
 
 Amico is an AI Agent Framework designed for DePin devices.
 
+## Core focus
+
+- **Configurable**
+- **Extensible**
+- **Modular**
+- **Scalable**
+
 ## Quick Start
 
 ### Install & Run Amico Immediately
