@@ -1,9 +1,0 @@
-[package]
-name = "amico-plugin-interface"
-version = "0.1.0"
-edition = "2021"
-description = "The interface for Amico plugins"
-repository = "https://github.com/AIMOverse/amico"
-license = "MIT"
-
-[dependencies]

@@ -1,9 +1,0 @@
-[package]
-name = "amico-plugin-corepack"
-version = "0.1.0"
-edition = "2021"
-description = "The corepack plugin for Amico"
-repository = "https://github.com/AIMOverse/amico"
-license = "MIT"
-
-[dependencies]
