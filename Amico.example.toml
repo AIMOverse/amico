@@ -2,8 +2,8 @@
 
 version = 0
 
-# Common runtime using `tokio::main`
-runtime = "common"
+# Standalone runtime using `tokio::main`
+runtime = "standalone"
 
 # Plugins enabled
 plugins = ["twitter"]

@@ -1,17 +1,10 @@
-use std::collections::HashMap;
-
 use schemars::JsonSchema;
 
-#[derive(JsonSchema, serde::Serialize, serde::Deserialize)]
-pub struct EventConfigSchema {
-    name: String,
-    source: String,
-    params: Option<HashMap<String, EventParamType>>,
-}
+use super::params::Params;
 
 #[derive(JsonSchema, serde::Serialize, serde::Deserialize)]
-pub enum EventParamType {
-    String,
-    Number,
-    Boolean,
+pub struct EventConfig {
+    name: String,
+    source: String,
+    params: Option<Params>,
 }
