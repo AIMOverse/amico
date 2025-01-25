@@ -6,5 +6,12 @@ description = "The core of the Amico AI Agent Framework"
 repository = "https://github.com/AIMOverse/amico"
 license = "MIT"
 
+[lib]
+name = "amico"
+path = "src/lib.rs"
+
 [dependencies]
 rig-core = "0.6.1"
+schemars = "0.8.21"
+serde = { version ="1.0.217", features = ["derive"] }
+thiserror = "2.0.11"
