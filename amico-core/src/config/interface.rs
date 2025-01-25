@@ -1,6 +1,6 @@
-use std::io::Read;
 use schemars::JsonSchema;
 use serde::{de::DeserializeOwned, Serialize};
+use std::io::Read;
 
 use super::error::ConfigError;
 

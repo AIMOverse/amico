@@ -4,7 +4,7 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
 use super::{
-    agent::AgentConfig, config_trait::Config, error::ConfigError, event::EventConfig,
+    agent::AgentConfig, error::ConfigError, event::EventConfig, interface::Config,
     provider::ProvidersConfig, runtime::RuntimeConfig,
 };
 
