@@ -23,8 +23,4 @@ impl Config for BuiltinConfig {
     fn load<R: Read>(reader: R) -> Result<Self, ConfigError> {
         serde_json::from_reader(reader).map_err(ConfigError::FailedToLoad)
     }
-
-    fn validate(&self) -> Result<(), ConfigError> {
-        todo!()
-    }
 }
