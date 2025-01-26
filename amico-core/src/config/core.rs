@@ -1,5 +1,3 @@
-use std::io::Read;
-
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -10,17 +8,17 @@ use super::{
 
 #[derive(JsonSchema, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub struct BuiltinConfig {
+pub struct CoreConfig {
     runtime: RuntimeConfig,
     agents: Vec<AgentConfig>,
     providers: ProvidersConfig,
     events: Vec<EventConfig>,
 }
 
-impl Config for BuiltinConfig {
+impl Config for CoreConfig {
     const VERSION: u32 = 1;
 
-    fn load<R: Read>(reader: R) -> Result<Self, ConfigError> {
-        serde_json::from_reader(reader).map_err(ConfigError::FailedToLoad)
+    fn from_toml_str(s: &str) -> Result<Self, ConfigError> {
+        toml::from_str(s).map_err(ConfigError::FailedToLoadToml)
     }
 }
