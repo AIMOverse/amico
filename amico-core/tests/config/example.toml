@@ -1,0 +1,72 @@
+# The example configuration file of a single-agent runtime
+
+version = 0
+
+# Standalone runtime using `tokio::main`
+runtime = "standalone"
+
+# Plugins enabled
+plugins = ["twitter"]
+
+# Agent configuration
+[[agents]]
+name = "AmIco"
+system_prompt = "You are AmIco, an AI that helps people."
+provider = "openai"
+model = "gpt-4o-mini"
+temperature = 0.7
+max_tokens = 1000
+
+# LLM API providers
+[providers.openai]
+api_key = "sk-..."
+base_url = "https://api.openai.com/v1"
+
+# Custom providers are supported
+# Use `[providers.custom.<provider_name>]` to specify a custom provider
+[[providers.custom]]
+# Your custom provider name
+name = "local"
+# API schema
+# Options: "openai"
+schema = "openai"
+# Base URL of your custom provider
+base_url = "http://localhost:8000"
+
+[[providers.custom]]
+name = "example"
+schema = "openai"
+base_url = "http://example.com"
+# API key of your custom provider [OPTIONAL]
+api_key = "sk-..."
+
+# Events enabled are defined here
+
+[[events]]
+# Specify a name of the event
+name = "interval_10min"
+# Specify the event source.
+# Must be a valid name provided by built-in sources or a plugin
+source = "interval"
+# Params are optional and depend on the event source
+params = { mins = 10 }
+
+# You can define multiple events provided by one source
+[[events]]
+name = "interval_1day"
+source = "interval"
+params = { days = 1 }
+
+# Tasks are defined here
+
+[[tasks]]
+# A unique name
+name = "tweet_post"
+# A human-readable description
+description = "Posting a tweet every day"
+# The events that trigger the task
+triggered_by = ["interval_1day"]
+# The agent that executes the task
+agent = "AmIco"
+# The task workflow provided by built-in library or a plugin
+workflow = "post_tweet"

@@ -1,5 +1,4 @@
-pub mod agent;
-pub mod error;
+pub mod config;
 pub mod event;
-pub mod prompt;
-pub mod task;
+pub mod plugin;
+pub mod runtime;
