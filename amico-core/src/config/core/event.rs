@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use super::params::{Params, WithParams};
+use crate::config::{Params, WithParams};
 
 #[derive(Serialize, Deserialize, WithParams)]
 #[serde(rename_all = "snake_case")]
