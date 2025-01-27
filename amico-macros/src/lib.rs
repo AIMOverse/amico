@@ -27,11 +27,7 @@ pub fn derive_with_params(input: TokenStream) -> TokenStream {
     let expanded = quote! {
         impl #name {
             pub fn param(&self, key: &str) -> Option<&toml::Value> {
-                let Some(params) = self.#params_field_name.as_ref() else {
-                    return None;
-                };
-
-                params.get(key)
+                self.#params_field_name.as_ref()?.get(key)
             }
         }
     };
