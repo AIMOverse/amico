@@ -1,15 +1,14 @@
-mod core_config;
 mod agent;
+mod core_config;
 mod event;
 mod provider;
 mod runtime;
 
-pub use core_config::*;
 pub use agent::*;
+pub use core_config::*;
 pub use event::*;
 pub use provider::*;
 pub use runtime::*;
-
 
 #[cfg(test)]
 mod tests {
@@ -83,7 +82,7 @@ mod tests {
     #[test]
     fn parse_minimal_config() {
         let config = load_config("minimal.toml");
-        
+
         // Test version and runtime
         assert_eq!(config.version, 0);
         assert_eq!(config.runtime, RuntimeConfig::Standalone);
@@ -92,12 +91,18 @@ mod tests {
         assert_eq!(config.agents.len(), 1);
         let agent = &config.agents[0];
         assert_eq!(agent.name, "AmIco");
-        assert_eq!(agent.system_prompt, "You are AmIco, an AI that helps people.");
+        assert_eq!(
+            agent.system_prompt,
+            "You are AmIco, an AI that helps people."
+        );
         assert_eq!(agent.model, "gpt-4o");
 
         // Test OpenAI provider
         assert_eq!(config.providers.openai.api_key, "sk-...");
-        assert_eq!(config.providers.openai.base_url, "https://api.openai.com/v1");
+        assert_eq!(
+            config.providers.openai.base_url,
+            "https://api.openai.com/v1"
+        );
 
         // Test single event
         assert_eq!(config.events.len(), 1);
@@ -116,4 +121,3 @@ mod tests {
         // assert_eq!(task.workflow, "post_tweet");
     }
 }
-

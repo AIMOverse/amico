@@ -2,7 +2,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::config::{Config, ConfigError};
 
-use super::{agent::AgentConfig, event::EventConfig, provider::ProvidersConfig, runtime::RuntimeConfig};
+use super::{
+    agent::AgentConfig, event::EventConfig, provider::ProvidersConfig, runtime::RuntimeConfig,
+};
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
