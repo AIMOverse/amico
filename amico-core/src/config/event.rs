@@ -1,10 +1,23 @@
-use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 
-use super::params::Params;
+use super::{params::Params, ConfigError, ParamValue};
 
-#[derive(JsonSchema, serde::Serialize, serde::Deserialize)]
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub struct EventConfig {
-    name: String,
-    source: String,
-    params: Option<Params>,
+    pub name: String,
+    pub source: String,
+    pub params: Option<Params>,
+}
+
+impl EventConfig {
+    pub fn param(&self, key: &str) -> Result<&ParamValue, ConfigError> {
+        let Some(params) = self.params.as_ref() else {
+            return Err(ConfigError::ParamNotFound(key.to_string()));
+        };
+
+        params
+            .get(key)
+            .ok_or(ConfigError::ParamNotFound(key.to_string()))
+    }
 }

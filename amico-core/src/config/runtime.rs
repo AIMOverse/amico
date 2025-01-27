@@ -1,6 +1,7 @@
-use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 
-#[derive(JsonSchema, serde::Serialize, serde::Deserialize)]
+#[derive(Serialize, Deserialize, Eq, PartialEq, Debug)]
+#[serde(rename_all = "snake_case")]
 pub enum RuntimeConfig {
     Standalone,
     // Farm,

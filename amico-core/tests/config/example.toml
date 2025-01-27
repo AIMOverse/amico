@@ -1,0 +1,43 @@
+version = 0
+runtime = "standalone"
+plugins = ["twitter"]
+
+[[agents]]
+name = "AmIco"
+system_prompt = "You are AmIco, an AI that helps people."
+provider = "openai"
+model = "gpt-4o-mini"
+temperature = 0.7
+max_tokens = 1000
+
+[providers.openai]
+api_key = "sk-..."
+base_url = "https://api.openai.com/v1"
+
+[[providers.custom]]
+name = "local"
+schema = "openai"
+base_url = "http://localhost:8000"
+
+[[providers.custom]]
+name = "example"
+schema = "openai"
+base_url = "http://example.com"
+api_key = "sk-..."
+
+[[events]]
+name = "interval_10min"
+source = "interval"
+params = { mins = 10 }
+
+[[events]]
+name = "interval_1day"
+source = "interval"
+params = { days = 1 }
+
+[[tasks]]
+name = "tweet_post"
+description = "Posting a tweet every day"
+triggered_by = ["interval_1day"]
+agent = "AmIco"
+workflow = "post_tweet"

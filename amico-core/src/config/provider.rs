@@ -1,29 +1,32 @@
-use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-#[derive(JsonSchema, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub struct ProvidersConfig {
-    openai: ProviderItem,
-    custom: Vec<CustomProviderItem>,
+    pub openai: ProviderItem,
+    pub custom: Vec<CustomProviderItem>,
 }
 
-#[derive(JsonSchema, Serialize, Deserialize)]
-struct ProviderItem {
-    api_key: Option<String>,
-    base_url: Option<String>,
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct ProviderItem {
+    pub api_key: String,
+    pub base_url: String,
 }
 
-#[derive(JsonSchema, Serialize, Deserialize)]
-struct CustomProviderItem {
-    name: String,
-    base_url: String,
-    api_key: Option<String>,
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct CustomProviderItem {
+    pub name: String,
     #[serde(default = "default_api_schema")]
-    schema: ApiSchema,
+    pub schema: ApiSchema,
+    pub base_url: String,
+    pub api_key: Option<String>,
 }
 
-#[derive(JsonSchema, Serialize, Deserialize)]
-enum ApiSchema {
+#[derive(Serialize, Deserialize, Eq, PartialEq, Debug)]
+#[serde(rename_all = "snake_case")]
+pub enum ApiSchema {
     Openai,
 }
 
