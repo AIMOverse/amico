@@ -12,6 +12,7 @@ path = "src/lib.rs"
 
 [dependencies]
 amico-macros = { path = "../amico-macros" }
+amico-std = { path = "../amico-std" }
 rig-core = "0.6.1"
 schemars = "0.8.21"
 serde = { version ="1.0.217", features = ["derive"] }
