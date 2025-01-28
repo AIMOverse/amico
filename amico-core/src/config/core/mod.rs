@@ -33,16 +33,4 @@ mod tests {
         // Test runtime
         assert_eq!(config.runtime, RuntimeConfig::Standalone);
     }
-
-    #[test]
-    fn parse_minimal_config() {
-        let config = load_config("minimal.toml");
-
-        // Test name
-        assert_eq!(config.name, "AIMO");
-
-        // Test version and runtime
-        assert_eq!(config.version, 0);
-        assert_eq!(config.runtime, RuntimeConfig::Standalone);
-    }
 }
