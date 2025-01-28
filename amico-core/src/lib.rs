@@ -1,6 +1,6 @@
 pub mod config;
-pub mod entities;
 pub mod controller;
+pub mod entities;
 
 #[cfg(feature = "std")]
 pub mod std;

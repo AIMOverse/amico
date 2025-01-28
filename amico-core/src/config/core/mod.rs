@@ -6,7 +6,7 @@ pub use runtime::*;
 
 #[cfg(test)]
 mod tests {
-    use crate::config::{Config};
+    use crate::config::Config;
 
     use super::*;
 

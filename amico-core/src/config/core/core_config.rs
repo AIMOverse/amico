@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::config::{Config, ConfigError};
 
-use super::{runtime::RuntimeConfig, };
+use super::runtime::RuntimeConfig;
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
