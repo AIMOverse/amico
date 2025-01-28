@@ -10,8 +10,13 @@ license = "MIT"
 name = "amico"
 path = "src/lib.rs"
 
+[features]
+default = ["std"]
+std = ["amico-std"]
+
 [dependencies]
 amico-macros = { path = "../amico-macros" }
+amico-std = { path = "../amico-std", optional = true }
 serde = { version ="1.0.217", features = ["derive"] }
 thiserror = "2.0.11"
 toml = "0.8.19"
