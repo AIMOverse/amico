@@ -38,7 +38,7 @@ impl Agent {
     }
 
     fn load_config(config_path: &str) -> CoreConfig {
-        let config_str = std::fs::read_to_string(&config_path).unwrap();
+        let config_str = std::fs::read_to_string(config_path).unwrap();
         CoreConfig::from_toml_str(&config_str).unwrap()
     }
 }
