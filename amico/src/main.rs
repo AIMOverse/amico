@@ -1,6 +1,4 @@
-use std::process::exit;
-
-use rig::{cli_chatbot::cli_chatbot, providers::openai};
+use amico::controller::Agent;
 
 fn print_demo_hint() {
     println!("THIS IS ONLY A DEMO VERSION OF AMICO");
@@ -15,27 +13,16 @@ fn print_demo_hint() {
 async fn main() -> anyhow::Result<()> {
     print_demo_hint();
 
-    // Check whether the OPENAI_API_KEY environment variable is set
-    if std::env::var("OPENAI_API_KEY").is_err() {
-        println!("OPENAI_API_KEY environment variable not set");
-        println!("Run the following command to set it:");
-        println!("\nexport OPENAI_API_KEY=sk-...\n");
-        exit(1);
-    }
+    // Create an agent from the configuration file
+    let mut agent = Agent::new("src/config/config.toml");
 
-    // Initialize the OpenAI client using environment variables
-    let client = openai::Client::from_env();
+    // Start the agent
+    agent.start();
 
-    // Create an agent instance
-    let agent = client
-        .agent("gpt-4o-mini")
-        .preamble("You are a helpful assistant.")
-        .temperature(0.7)
-        .max_tokens(1000)
-        .build();
+    // Perform other tasks...
 
-    // Start the CLI chatbot
-    cli_chatbot(agent).await?;
+    // Stop the agent
+    agent.stop();
 
     Ok(())
 }

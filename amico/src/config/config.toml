@@ -1,0 +1,16 @@
+# The example configuration file of a single-agent runtime
+
+# The name of the agent
+name = "AIMO"
+
+# The version of the agent
+version = 0
+
+# Standalone runtime using `tokio::main`
+runtime = "standalone"
+
+# Plugins enabled
+plugins = ["twitter"]
+
+
+
