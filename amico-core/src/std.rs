@@ -1,5 +1,7 @@
+#[cfg(feature = "std")]
 pub use amico_std::*;
 
+#[cfg(feature = "std")]
 #[cfg(test)]
 mod tests {
     #[test]

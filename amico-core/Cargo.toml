@@ -10,9 +10,13 @@ license = "MIT"
 name = "amico"
 path = "src/lib.rs"
 
+[features]
+default = ["std"]
+std = ["amico-std"]
+
 [dependencies]
 amico-macros = { path = "../amico-macros" }
-amico-std = { path = "../amico-std" }
+amico-std = { path = "../amico-std", optional = true }
 rig-core = "0.6.1"
 schemars = "0.8.21"
 serde = { version ="1.0.217", features = ["derive"] }
