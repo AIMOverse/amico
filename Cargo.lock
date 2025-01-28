@@ -31,6 +31,7 @@ name = "amico-core"
 version = "0.1.0"
 dependencies = [
  "amico-macros",
+ "amico-std",
  "rig-core",
  "schemars",
  "serde",
@@ -55,6 +56,10 @@ dependencies = [
 
 [[package]]
 name = "amico-plugins"
+version = "0.1.0"
+
+[[package]]
+name = "amico-std"
 version = "0.1.0"
 
 [[package]]
