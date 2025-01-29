@@ -6,6 +6,15 @@ description = "The agent system executable for the Amico AI Agent Framework"
 repository = "https://github.com/AIMOverse/amico"
 license = "MIT"
 
+[lib]
+name = "amico"
+path = "src/lib.rs"
+
+# 定义二进制（bin）
+[[bin]]
+name = "amico_bin"
+path = "src/main.rs"
+
 [dependencies]
 anyhow = "1.0.95"
 tokio = { version = "1.43.0", features = ["rt-multi-thread", "macros"] }
