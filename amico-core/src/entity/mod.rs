@@ -1,8 +1,8 @@
 mod action;
-mod event;
-mod model;
 mod action_selector;
+mod event;
 mod event_generator;
+mod model;
 
 pub use action::*;
 pub use action_selector::*;

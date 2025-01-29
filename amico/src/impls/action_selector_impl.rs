@@ -13,7 +13,10 @@ impl ActionSelector for ActionSelectorImpl {
     fn select_action(&self, events: &mut Vec<Event>) -> Box<dyn Action> {
         if !events.is_empty() {
             let event = events.remove(0); // 移除并返回第一个事件
-            Box::new(PrintAction::new(format!("Processing event: {}", event.name)))
+            Box::new(PrintAction::new(format!(
+                "Processing event: {}",
+                event.name
+            )))
         } else {
             Box::new(PrintAction::new("No events available".to_string()))
         }

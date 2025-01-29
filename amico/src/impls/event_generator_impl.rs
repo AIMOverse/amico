@@ -1,6 +1,7 @@
 use amico_core::entity::{Event, EventGenerator};
 use std::any::Any;
 use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 
 /// Implementation of the EventGenerator trait.
 pub struct EventGeneratorImpl;
@@ -12,14 +13,17 @@ impl EventGeneratorImpl {
 }
 
 impl EventGenerator for EventGeneratorImpl {
-    fn generate_event(&self, params: HashMap<String, Box<dyn Any>>) -> Vec<Event> {
+    fn generate_event(
+        &self,
+        source: String,
+        params: HashMap<String, Arc<Mutex<dyn Any + Send + Sync>>>,
+    ) -> Vec<Event> {
         // Generate and return a list of example events
-        vec![
-            Event {
-                name: "example_event".to_string(),
-                source: "example_source".to_string(),
-                params,
-            }
-        ]
+        println!("Generating event with source: {}", source);
+        vec![Event {
+            name: "example_event".to_string(),
+            source,
+            params,
+        }]
     }
 }

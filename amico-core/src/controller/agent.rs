@@ -1,49 +1,113 @@
 use crate::config::{Config, CoreConfig};
-use crate::entity::{ActionSelector, EventGenerator};
+use crate::entity::{ActionSelector, Event, EventGenerator};
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
+use std::thread;
+use std::time::Duration;
 
 /// Struct representing an agent.
 pub struct Agent {
     name: String,
-    is_running: bool,
-    event_generator: Box<dyn EventGenerator>,
-    action_selector: Box<dyn ActionSelector>,
+    is_running: Arc<Mutex<bool>>,
+    event_generator: Arc<Mutex<Box<dyn EventGenerator + Send>>>,
+    action_selector: Arc<Mutex<Box<dyn ActionSelector + Send>>>,
+    events: Arc<Mutex<Vec<Event>>>,
 }
 
 impl Agent {
     /// Creates a new agent with the given name.
-    pub fn new(config_path: &str,
-               event_generator: Box<dyn EventGenerator>,
-               action_selector: Box<dyn ActionSelector>) -> Self {
+    ///
+    /// # Arguments
+    ///
+    /// * `config_path` - Path to the configuration file.
+    /// * `event_generator` - An instance of `EventGenerator`.
+    /// * `action_selector` - An instance of `ActionSelector`.
+    ///
+    /// # Returns
+    ///
+    /// * `Agent` - A new instance of `Agent`.
+    pub fn new(
+        config_path: &str,
+        event_generator: Box<dyn EventGenerator + Send>,
+        action_selector: Box<dyn ActionSelector + Send>,
+    ) -> Self {
         let config = Self::load_config(config_path);
         Self {
             name: config.name,
-            is_running: false,
-            event_generator,
-            action_selector,
+            is_running: Arc::new(Mutex::new(false)),
+            event_generator: Arc::new(Mutex::new(event_generator)),
+            action_selector: Arc::new(Mutex::new(action_selector)),
+            events: Arc::new(Mutex::new(Vec::new())),
         }
     }
 
     /// Function to be called before starting the agent.
     pub fn before_start(&self) {
         println!("Loading objects for agent: {}", self.name);
-        // Add any necessary pre-start logic here
     }
 
     /// Starts the agent.
     pub fn start(&mut self) {
         self.before_start();
-        self.is_running = true;
+        *self.is_running.lock().unwrap() = true;
         println!("Agent {} started.", self.name);
-        // Add any necessary start logic here
+
+        let is_running = Arc::clone(&self.is_running);
+        let event_generator = Arc::clone(&self.event_generator);
+        let events = Arc::clone(&self.events);
+
+        // Event generation thread
+        let generator_handle = thread::spawn(move || {
+            while *is_running.lock().unwrap() {
+                let new_events = event_generator
+                    .lock()
+                    .unwrap()
+                    .generate_event("example_source".to_string(), HashMap::new());
+                let mut events_lock = events.lock().unwrap();
+                events_lock.extend(new_events);
+                thread::sleep(Duration::from_millis(50)); // Event generation interval
+            }
+        });
+
+        let is_running_action = Arc::clone(&self.is_running);
+        let events_action = Arc::clone(&self.events);
+        let action_selector_action = Arc::clone(&self.action_selector);
+
+        // Event processing thread
+        let action_handle = thread::spawn(move || {
+            while *is_running_action.lock().unwrap() {
+                let mut events = events_action.lock().unwrap();
+                if !events.is_empty() {
+                    let action = action_selector_action
+                        .lock()
+                        .unwrap()
+                        .select_action(&mut events);
+                    action.execute();
+                }
+                thread::sleep(Duration::from_millis(50)); // Event processing interval
+            }
+        });
+
+        // Wait for threads to finish
+        generator_handle.join().unwrap();
+        action_handle.join().unwrap();
     }
 
     /// Stops the agent.
     pub fn stop(&mut self) {
-        self.is_running = false;
+        *self.is_running.lock().unwrap() = false;
         println!("Agent {} stopped.", self.name);
-        // Add any necessary stop logic here
     }
 
+    /// Loads the configuration from the given path.
+    ///
+    /// # Arguments
+    ///
+    /// * `config_path` - Path to the configuration file.
+    ///
+    /// # Returns
+    ///
+    /// * `CoreConfig` - The loaded configuration.
     fn load_config(config_path: &str) -> CoreConfig {
         let config_str = std::fs::read_to_string(config_path).unwrap();
         CoreConfig::from_toml_str(&config_str).unwrap()
