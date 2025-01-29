@@ -3,6 +3,6 @@ pub trait Model {
     /// Predicts the environment.
     fn predict_environment(&self);
 
-    /// Senses the environment.
-    fn sense_environment(&self);
+    /// Perceive the environment.
+    fn perceive_environment(&self);
 }

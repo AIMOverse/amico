@@ -1,18 +1,25 @@
 use crate::config::{Config, CoreConfig};
+use crate::entities::{ActionSelector, EventGenerator};
 
 /// Struct representing an agent.
 pub struct Agent {
     name: String,
     is_running: bool,
+    event_generator: Box<dyn EventGenerator>,
+    action_selector: Box<dyn ActionSelector>,
 }
 
 impl Agent {
     /// Creates a new agent with the given name.
-    pub fn new(config_path: &str) -> Self {
+    pub fn new(config_path: &str,
+               event_generator: Box<dyn EventGenerator>,
+               action_selector: Box<dyn ActionSelector>) -> Self {
         let config = Self::load_config(config_path);
         Self {
             name: config.name,
             is_running: false,
+            event_generator,
+            action_selector,
         }
     }
 
