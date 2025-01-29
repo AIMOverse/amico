@@ -19,7 +19,7 @@ async fn main() -> anyhow::Result<()> {
     let mut agent = Agent::new(
         "src/config/config.toml",
         Box::new(EventGeneratorImpl),
-        Box::new(ActionSelectorImpl::new()),
+        Box::new(ActionSelectorImpl),
     );
 
     // Start the agent

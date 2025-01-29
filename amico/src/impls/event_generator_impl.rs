@@ -4,13 +4,8 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
 /// Implementation of the EventGenerator trait.
+#[derive(Default)]
 pub struct EventGeneratorImpl;
-
-impl EventGeneratorImpl {
-    pub fn new() -> Self {
-        EventGeneratorImpl
-    }
-}
 
 impl EventGenerator for EventGeneratorImpl {
     fn generate_event(

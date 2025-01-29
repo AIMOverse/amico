@@ -1,13 +1,9 @@
 use crate::actions::PrintAction;
 use amico_core::entity::{Action, ActionSelector, Event};
 
+/// Implementation of the ActionSelector trait.
+#[derive(Default)]
 pub struct ActionSelectorImpl;
-
-impl ActionSelectorImpl {
-    pub fn new() -> Self {
-        ActionSelectorImpl
-    }
-}
 
 impl ActionSelector for ActionSelectorImpl {
     fn select_action(&self, events: &mut Vec<Event>) -> Box<dyn Action> {
