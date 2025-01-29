@@ -2,18 +2,15 @@ use serde::{Deserialize, Serialize};
 
 use crate::config::{Config, ConfigError};
 
-use super::{
-    agent::AgentConfig, event::EventConfig, provider::ProvidersConfig, runtime::RuntimeConfig,
-};
+use super::runtime::RuntimeConfig;
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub struct CoreConfig {
+    pub name: String,
     pub version: u32,
     pub runtime: RuntimeConfig,
-    pub agents: Vec<AgentConfig>,
-    pub providers: ProvidersConfig,
-    pub events: Vec<EventConfig>,
+    pub plugins: Vec<String>,
 }
 
 impl Config for CoreConfig {

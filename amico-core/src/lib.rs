@@ -1,7 +1,6 @@
 pub mod config;
-pub mod event;
-pub mod plugin;
-pub mod runtime;
+pub mod controller;
+pub mod entities;
 
 #[cfg(feature = "std")]
 pub mod std;
