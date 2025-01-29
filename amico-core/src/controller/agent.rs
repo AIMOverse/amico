@@ -1,5 +1,5 @@
 use crate::config::{Config, CoreConfig};
-use crate::entities::{ActionSelector, EventGenerator};
+use crate::entity::{ActionSelector, EventGenerator};
 
 /// Struct representing an agent.
 pub struct Agent {

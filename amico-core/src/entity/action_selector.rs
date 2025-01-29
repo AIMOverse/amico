@@ -1,4 +1,4 @@
-use crate::entities::{Action, Event};
+use crate::entity::{Action, Event};
 
 /// Trait for selecting an action based on an event.
 pub trait ActionSelector {

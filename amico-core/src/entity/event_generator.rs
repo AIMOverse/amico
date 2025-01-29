@@ -1,4 +1,4 @@
-use crate::entities::Event;
+use crate::entity::Event;
 use std::any::Any;
 use std::collections::HashMap;
 

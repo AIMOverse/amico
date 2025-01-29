@@ -1,4 +1,8 @@
-use amico::controller::Agent;
+use amico::impls::ActionSelectorImpl;
+use amico::impls::EventGeneratorImpl;
+// Code for the main function of the amico agent
+use amico_core::controller::Agent;
+
 
 fn print_demo_hint() {
     println!("THIS IS ONLY A DEMO VERSION OF AMICO");
@@ -14,7 +18,7 @@ async fn main() -> anyhow::Result<()> {
     print_demo_hint();
 
     // Create an agent from the configuration file
-    let mut agent = Agent::new("src/config/config.toml");
+    let mut agent = Agent::new("src/config/config.toml", Box::new(EventGeneratorImpl), Box::new(ActionSelectorImpl::new()));
 
     // Start the agent
     agent.start();
