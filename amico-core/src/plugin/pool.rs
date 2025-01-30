@@ -1,21 +1,57 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{any::Any, collections::HashMap, error::Error, sync::Arc};
 
-use super::{ActuatorPlugin, EventPlugin, SensorPlugin, TaskPlugin};
+use super::{ActionSelector, Actuator, EventSource, InputSource};
 
 pub struct PluginPool {
-    pub events: HashMap<String, Arc<Box<dyn EventPlugin>>>,
-    pub tasks: HashMap<String, Arc<Box<dyn TaskPlugin>>>,
-    pub sensors: HashMap<String, Arc<Box<dyn SensorPlugin>>>,
-    pub actuators: HashMap<String, Arc<Box<dyn ActuatorPlugin>>>,
+    pub event_sources: HashMap<String, Arc<dyn EventSource<dyn Any>>>,
+    pub inputs: HashMap<String, Arc<dyn InputSource<dyn Any, dyn Any>>>,
+    pub action_selectors: HashMap<String, Arc<dyn ActionSelector<dyn Any>>>,
+    pub actuators: HashMap<String, Arc<dyn Actuator<dyn Any, dyn Any, dyn Any, dyn Error>>>,
 }
 
 impl PluginPool {
-    pub fn new(plugin_names: Vec<&str>) -> Self {
+    pub fn new() -> Self {
         Self {
-            events: HashMap::new(),
-            tasks: HashMap::new(),
-            sensors: HashMap::new(),
+            event_sources: HashMap::new(),
+            inputs: HashMap::new(),
+            action_selectors: HashMap::new(),
             actuators: HashMap::new(),
         }
+    }
+
+    pub fn add_event_source(
+        mut self,
+        name: String,
+        source: Arc<dyn EventSource<dyn Any>>,
+    ) -> Self {
+        self.event_sources.insert(name, source);
+        self
+    }
+
+    pub fn add_input(
+        mut self,
+        name: String,
+        source: Arc<dyn InputSource<dyn Any, dyn Any>>,
+    ) -> Self {
+        self.inputs.insert(name, source);
+        self
+    }
+
+    pub fn add_action_selector(
+        mut self,
+        name: String,
+        source: Arc<dyn ActionSelector<dyn Any>>,
+    ) -> Self {
+        self.action_selectors.insert(name, source);
+        self
+    }
+
+    pub fn add_actuator(
+        mut self,
+        name: String,
+        source: Arc<dyn Actuator<dyn Any, dyn Any, dyn Any, dyn Error>>,
+    ) -> Self {
+        self.actuators.insert(name, source);
+        self
     }
 }

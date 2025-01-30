@@ -13,6 +13,10 @@
 
 mod interface;
 mod pool;
+mod builder;
+
+#[cfg(test)]
+mod tests;
 
 pub use interface::*;
 pub use pool::*;

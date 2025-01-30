@@ -1,30 +1,37 @@
-use std::sync::Arc;
+use crate::entity::{Action, Event};
 
 /// The base trait of a plugin.
-pub trait Plugin: Send + Sync {
+pub trait Plugin<C>: Send + Sync {
     /// The unique identifier of the plugin.
-    fn name(&self) -> &'static str;
+    fn name(&self) -> String;
 
     /// Set up the plugin with the given context.
-    fn setup() -> Self where Self: Sized;
+    fn setup(config: C) -> Self
+    where
+        Self: Sized;
 }
 
-// Plugins providing events
-pub trait EventPlugin: Plugin {}
+/// Plugins providing event sources
+pub trait EventSource<C>: Plugin<C> {
+    fn generate_event(&mut self) -> Event;
+}
 
-// Plugins providing task context & workflows
-pub trait TaskPlugin: Plugin {}
+/// Plugins providing sensor to world environment
+pub trait InputSource<C, D>: Plugin<C> {
+    fn get_data(&self) -> D
+    where
+        D: Sized;
+}
 
-// Plugins providing sensor to world environment
-pub trait SensorPlugin: Plugin {}
+/// Plugins providing actuator control
+pub trait Actuator<C, D, R, E>: Plugin<C> {
+    fn execute(&mut self, data: D) -> Result<R, E>;
+}
 
-// Plugins providing actuator control
-pub trait ActuatorPlugin: Plugin {}
+// TODO: Wait for Event Pool implementation
+pub struct EventPool;
 
-// The interface a plugin module exposes
-pub enum PluginInterface {
-    Event(Arc<dyn EventPlugin>),
-    Task(Arc<dyn TaskPlugin>),
-    Sensor(Arc<dyn SensorPlugin>),
-    Actuator(Arc<dyn ActuatorPlugin>),
+/// Plugins selecting actions based on the current state and event pool
+pub trait ActionSelector<C>: Plugin<C> {
+    fn select_action(&self, pool: &EventPool) -> Box<dyn Action>;
 }
