@@ -1,4 +1,5 @@
-use amico_core::entity::{Event, EventGenerator};
+use amico_core::entities::Event;
+use amico_core::traits::EventGenerator;
 use std::any::Any;
 use std::collections::HashMap;
 use std::sync::Arc;

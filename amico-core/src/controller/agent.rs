@@ -1,16 +1,20 @@
 use crate::config::{Config, CoreConfig};
-use crate::entity::{ActionSelector, Event, EventGenerator};
+use crate::entities::Event;
+use crate::traits::{ActionSelector, EventGenerator};
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc, Mutex,
+};
 use std::thread;
 use std::time::Duration;
 
 /// Struct representing an agent.
 pub struct Agent {
     name: String,
-    is_running: Arc<Mutex<bool>>,
-    event_generator: Arc<Mutex<Box<dyn EventGenerator + Send>>>,
-    action_selector: Arc<Mutex<Box<dyn ActionSelector + Send>>>,
+    is_running: Arc<AtomicBool>,
+    event_generator: Arc<Box<dyn EventGenerator>>,
+    action_selector: Arc<Box<dyn ActionSelector>>,
     events: Arc<Mutex<Vec<Event>>>,
 }
 
@@ -34,9 +38,9 @@ impl Agent {
         let config = Self::load_config(config_path);
         Self {
             name: config.name,
-            is_running: Arc::new(Mutex::new(false)),
-            event_generator: Arc::new(Mutex::new(event_generator)),
-            action_selector: Arc::new(Mutex::new(action_selector)),
+            is_running: Arc::new(AtomicBool::new(false)),
+            event_generator: Arc::new(event_generator),
+            action_selector: Arc::new(action_selector),
             events: Arc::new(Mutex::new(Vec::new())),
         }
     }
@@ -47,9 +51,9 @@ impl Agent {
     }
 
     /// Starts the agent.
-    pub fn start(&mut self) {
+    pub fn start(&self) {
         self.before_start();
-        *self.is_running.lock().unwrap() = true;
+        self.is_running.store(true, Ordering::SeqCst);
         println!("Agent {} started.", self.name);
 
         let is_running = Arc::clone(&self.is_running);
@@ -58,11 +62,9 @@ impl Agent {
 
         // Event generation thread
         let generator_handle = thread::spawn(move || {
-            while *is_running.lock().unwrap() {
-                let new_events = event_generator
-                    .lock()
-                    .unwrap()
-                    .generate_event("example_source".to_string(), HashMap::new());
+            while is_running.load(Ordering::SeqCst) {
+                let new_events =
+                    event_generator.generate_event("example_source".to_string(), HashMap::new());
                 let mut events_lock = events.lock().unwrap();
                 events_lock.extend(new_events);
                 thread::sleep(Duration::from_millis(50)); // Event generation interval
@@ -75,15 +77,10 @@ impl Agent {
 
         // Event processing thread
         let action_handle = thread::spawn(move || {
-            while *is_running_action.lock().unwrap() {
+            while is_running_action.load(Ordering::SeqCst) {
                 let mut events = events_action.lock().unwrap();
-                if !events.is_empty() {
-                    let action = action_selector_action
-                        .lock()
-                        .unwrap()
-                        .select_action(&mut events);
-                    action.execute();
-                }
+                let action = action_selector_action.select_action(&mut events);
+                action.execute();
                 thread::sleep(Duration::from_millis(50)); // Event processing interval
             }
         });
@@ -94,8 +91,8 @@ impl Agent {
     }
 
     /// Stops the agent.
-    pub fn stop(&mut self) {
-        *self.is_running.lock().unwrap() = false;
+    pub fn stop(&self) {
+        self.is_running.store(false, Ordering::SeqCst);
         println!("Agent {} stopped.", self.name);
     }
 

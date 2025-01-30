@@ -1,4 +1,4 @@
-use amico_core::entity::Action;
+use amico_core::traits::Action;
 use std::any::Any;
 
 pub struct PrintAction {
