@@ -3,6 +3,8 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 /// Struct representing an event in the system.
+
+#[derive(Debug)]
 pub struct Event {
     /// The name of the event.
     pub name: String,
