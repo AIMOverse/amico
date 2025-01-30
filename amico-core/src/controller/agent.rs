@@ -45,6 +45,7 @@ impl Agent {
         let events = Arc::clone(&self.events);
 
         let generator_handle = thread::spawn(move || {
+            let mut counter = 0;
             // The factory is called to create an event generator
             let event_generator = (self.event_generator_factory)();
             while is_running.load(Ordering::SeqCst) {
@@ -54,6 +55,8 @@ impl Agent {
                 // The new events are added to the events list
                 let mut events_lock = events.lock().unwrap();
                 events_lock.extend(new_events);
+                counter += 1;
+                println!("Generated {} events", counter);
             }
         });
 
@@ -63,11 +66,14 @@ impl Agent {
         let action_handle = thread::spawn(move || {
             // The factory is called to create an action selector
             let action_selector = (self.action_selector_factory)();
+            let mut counter = 0;
             while is_running_action.load(Ordering::SeqCst) {
                 // The action selector is used to select an action
                 let mut events = events_action.lock().unwrap();
                 if !events.is_empty() {
                     let action = action_selector.select_action(&mut events);
+                    counter += 1;
+                    println!("Processed {} events", counter);
                     action.execute();
                 }
             }
