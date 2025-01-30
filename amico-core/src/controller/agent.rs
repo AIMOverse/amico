@@ -7,7 +7,6 @@ use std::sync::{
     Arc, Mutex,
 };
 use std::thread;
-use std::time::Duration;
 
 pub struct Agent {
     name: String,
@@ -55,8 +54,6 @@ impl Agent {
                 // The new events are added to the events list
                 let mut events_lock = events.lock().unwrap();
                 events_lock.extend(new_events);
-                // The thread sleeps for 50 milliseconds
-                thread::sleep(Duration::from_millis(50));
             }
         });
 
@@ -73,7 +70,6 @@ impl Agent {
                     let action = action_selector.select_action(&mut events);
                     action.execute();
                 }
-                thread::sleep(Duration::from_millis(50));
             }
         });
 
