@@ -1,7 +1,7 @@
 use crate::entity::Event;
 use std::any::Any;
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 /// Trait for generating events.
 pub trait EventGenerator {
@@ -17,6 +17,6 @@ pub trait EventGenerator {
     fn generate_event(
         &self,
         source: String,
-        params: HashMap<String, Arc<Mutex<dyn Any + Send + Sync>>>,
+        params: HashMap<String, Arc<dyn Any + Send + Sync>>,
     ) -> Vec<Event>;
 }
