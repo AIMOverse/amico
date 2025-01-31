@@ -51,18 +51,23 @@ impl Agent {
         let event_generator_factory = Arc::clone(&self.event_generator_factory);
 
         let generator_handle = thread::spawn(move || {
-            let mut counter = 0;
             // The factory is called to create an event generator
             let event_generator = event_generator_factory();
+            let mut counter = 0;
+
             while is_running.load(Ordering::SeqCst) {
                 // The event generator is used to generate events
                 let new_events =
                     event_generator.generate_event("example_source".to_string(), HashMap::new());
                 // The new events are added to the events list
-                let mut events_lock = events.lock().unwrap();
-                events_lock.extend(new_events);
+                {
+                    // The events list is locked
+                    let mut events_lock = events.lock().unwrap();
+                    events_lock.extend(new_events);
+                    // The events list is unlocked
+                }
                 counter += 1;
-                info!("Generated {} events", counter);
+                info!("Generated {} Times Events", counter);
             }
         });
 
@@ -74,15 +79,19 @@ impl Agent {
             // The factory is called to create an action selector
             let action_selector = action_selector_factory();
             let mut counter = 0;
+
             while is_running_action.load(Ordering::SeqCst) {
                 // The action selector is used to select an action
-                let mut events = events_action.lock().unwrap();
-                if !events.is_empty() {
-                    let action = action_selector.select_action(&mut events);
-                    counter += 1;
-                    info!("Processed {} events", counter);
-                    action.execute();
+                let action;
+                {
+                    // The events list is locked and checked for events
+                    let mut events = events_action.lock().unwrap();
+                    action = action_selector.select_action(&mut events);
+                    // The events list is unlocked
                 }
+                counter += 1;
+                info!("Executing {} Times Actions", counter);
+                action.execute();
             }
         });
 
