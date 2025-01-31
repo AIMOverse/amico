@@ -8,5 +8,6 @@ mod pool;
 #[cfg(test)]
 mod tests;
 
+pub use error::*;
 pub use interface::*;
 pub use pool::*;
