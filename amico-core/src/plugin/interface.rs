@@ -8,6 +8,9 @@ use super::error::PluginError;
 /// The base trait of a plugin.
 pub trait Plugin {
     /// The unique identifier of the plugin.
+    /// 
+    /// Not to be confused with plugin instance names
+    /// in `PluginPool`s.
     fn name(&self) -> String;
 
     /// Set up the plugin with the given context.
