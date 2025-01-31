@@ -1,5 +1,6 @@
-use amico_core::entity::Action;
+use amico_core::traits::Action;
 use std::any::Any;
+use std::thread;
 
 pub struct PrintAction {
     message: String,
@@ -14,6 +15,8 @@ impl PrintAction {
 impl Action for PrintAction {
     fn execute(&self) -> Box<dyn Any> {
         println!("{}", self.message);
+        // Simulate some acting time
+        thread::sleep(std::time::Duration::from_millis(100));
         Box::new(self.message.clone())
     }
 }
