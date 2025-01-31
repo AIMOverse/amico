@@ -1,113 +1,119 @@
 use crate::config::{Config, CoreConfig};
-use crate::entity::{ActionSelector, Event, EventGenerator};
+use crate::entities::Event;
+use crate::factory::{ActionSelectorFactory, EventGeneratorFactory};
+use log::info;
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc, Mutex,
+};
 use std::thread;
-use std::time::Duration;
+use std::thread::JoinHandle;
 
-/// Struct representing an agent.
 pub struct Agent {
     name: String,
-    is_running: Arc<Mutex<bool>>,
-    event_generator: Arc<Mutex<Box<dyn EventGenerator + Send>>>,
-    action_selector: Arc<Mutex<Box<dyn ActionSelector + Send>>>,
+    is_running: Arc<AtomicBool>,
     events: Arc<Mutex<Vec<Event>>>,
+    event_generator_factory: Arc<EventGeneratorFactory>,
+    action_selector_factory: Arc<ActionSelectorFactory>,
+    thread_handles: Mutex<Vec<JoinHandle<()>>>,
 }
 
 impl Agent {
-    /// Creates a new agent with the given name.
-    ///
-    /// # Arguments
-    ///
-    /// * `config_path` - Path to the configuration file.
-    /// * `event_generator` - An instance of `EventGenerator`.
-    /// * `action_selector` - An instance of `ActionSelector`.
-    ///
-    /// # Returns
-    ///
-    /// * `Agent` - A new instance of `Agent`.
     pub fn new(
         config_path: &str,
-        event_generator: Box<dyn EventGenerator + Send>,
-        action_selector: Box<dyn ActionSelector + Send>,
+        event_generator_factory: EventGeneratorFactory,
+        action_selector_factory: ActionSelectorFactory,
     ) -> Self {
         let config = Self::load_config(config_path);
         Self {
             name: config.name,
-            is_running: Arc::new(Mutex::new(false)),
-            event_generator: Arc::new(Mutex::new(event_generator)),
-            action_selector: Arc::new(Mutex::new(action_selector)),
+            is_running: Arc::new(AtomicBool::new(false)),
             events: Arc::new(Mutex::new(Vec::new())),
+            event_generator_factory: Arc::new(event_generator_factory),
+            action_selector_factory: Arc::new(action_selector_factory),
+            thread_handles: Mutex::new(Vec::new()),
         }
     }
 
-    /// Function to be called before starting the agent.
     pub fn before_start(&self) {
-        println!("Loading objects for agent: {}", self.name);
+        env_logger::init();
+        info!("Loading objects for agent: {}", self.name);
     }
 
-    /// Starts the agent.
-    pub fn start(&mut self) {
+    pub fn start(&self) {
         self.before_start();
-        *self.is_running.lock().unwrap() = true;
-        println!("Agent {} started.", self.name);
+        self.is_running.store(true, Ordering::SeqCst);
+        info!("Agent {} started.", self.name);
 
         let is_running = Arc::clone(&self.is_running);
-        let event_generator = Arc::clone(&self.event_generator);
         let events = Arc::clone(&self.events);
+        let event_generator_factory = Arc::clone(&self.event_generator_factory);
 
-        // Event generation thread
         let generator_handle = thread::spawn(move || {
-            while *is_running.lock().unwrap() {
-                let new_events = event_generator
-                    .lock()
-                    .unwrap()
-                    .generate_event("example_source".to_string(), HashMap::new());
-                let mut events_lock = events.lock().unwrap();
-                events_lock.extend(new_events);
-                thread::sleep(Duration::from_millis(50)); // Event generation interval
+            // The factory is called to create an event generator
+            let event_generator = event_generator_factory();
+            let mut counter = 0;
+
+            while is_running.load(Ordering::SeqCst) {
+                // The event generator is used to generate events
+                let new_events =
+                    event_generator.generate_event("example_source".to_string(), HashMap::new());
+                // The new events are added to the events list
+                {
+                    // The events list is locked
+                    let mut events_lock = events.lock().unwrap();
+                    events_lock.extend(new_events);
+                    // The events list is unlocked
+                }
+                counter += 1;
+                info!("Generated {} Times Events", counter);
             }
         });
 
         let is_running_action = Arc::clone(&self.is_running);
         let events_action = Arc::clone(&self.events);
-        let action_selector_action = Arc::clone(&self.action_selector);
+        let action_selector_factory = Arc::clone(&self.action_selector_factory);
 
-        // Event processing thread
         let action_handle = thread::spawn(move || {
-            while *is_running_action.lock().unwrap() {
-                let mut events = events_action.lock().unwrap();
-                if !events.is_empty() {
-                    let action = action_selector_action
-                        .lock()
-                        .unwrap()
-                        .select_action(&mut events);
-                    action.execute();
+            // The factory is called to create an action selector
+            let action_selector = action_selector_factory();
+            let mut counter = 0;
+
+            while is_running_action.load(Ordering::SeqCst) {
+                // The action selector is used to select an action
+                let action;
+                {
+                    // The events list is locked and checked for events
+                    let mut events = events_action.lock().unwrap();
+                    action = action_selector.select_action(&mut events);
+                    // The events list is unlocked
                 }
-                thread::sleep(Duration::from_millis(50)); // Event processing interval
+                counter += 1;
+                info!("Executing {} Times Actions", counter);
+                action.execute();
             }
         });
 
-        // Wait for threads to finish
-        generator_handle.join().unwrap();
-        action_handle.join().unwrap();
+        // Store the thread handles for later use
+        let mut handles = self.thread_handles.lock().unwrap();
+        handles.push(generator_handle);
+        handles.push(action_handle);
     }
 
-    /// Stops the agent.
-    pub fn stop(&mut self) {
-        *self.is_running.lock().unwrap() = false;
-        println!("Agent {} stopped.", self.name);
+    pub fn stop(&self) {
+        info!("Agent {} stopping.", self.name);
+        self.is_running.store(false, Ordering::SeqCst);
     }
 
-    /// Loads the configuration from the given path.
-    ///
-    /// # Arguments
-    ///
-    /// * `config_path` - Path to the configuration file.
-    ///
-    /// # Returns
-    ///
-    /// * `CoreConfig` - The loaded configuration.
+    pub fn join(&self) {
+        let mut handles = self.thread_handles.lock().unwrap();
+        for handle in handles.drain(..) {
+            let _ = handle.join();
+        }
+        info!("All threads have finished.");
+    }
+
     fn load_config(config_path: &str) -> CoreConfig {
         let config_str = std::fs::read_to_string(config_path).unwrap();
         CoreConfig::from_toml_str(&config_str).unwrap()

@@ -1,6 +1,7 @@
 use std::any::Any;
 
-use crate::entity::{Action, Event};
+use crate::entities::Event;
+use crate::traits::Action;
 
 use super::error::PluginError;
 

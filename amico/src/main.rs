@@ -1,6 +1,7 @@
 use amico::impls::ActionSelectorImpl;
 use amico::impls::EventGeneratorImpl;
 use amico_core::controller::Agent;
+use amico_core::traits::{ActionSelector, EventGenerator};
 
 fn print_demo_hint() {
     println!("THIS IS ONLY A DEMO VERSION OF AMICO");
@@ -15,15 +16,15 @@ fn print_demo_hint() {
 async fn main() -> anyhow::Result<()> {
     print_demo_hint();
 
+    let eg_factory = Box::new(|| Box::new(EventGeneratorImpl) as Box<dyn EventGenerator + Send>);
+    let as_factory = Box::new(|| Box::new(ActionSelectorImpl) as Box<dyn ActionSelector + Send>);
+
     // Create an agent from the configuration file
-    let mut agent = Agent::new(
-        "src/config/config.toml",
-        Box::new(EventGeneratorImpl),
-        Box::new(ActionSelectorImpl),
-    );
+    let agent = Agent::new("src/config/config.toml", eg_factory, as_factory);
 
     // Start the agent
     agent.start();
+    agent.join();
 
     // Stop the agent
     // agent.stop();

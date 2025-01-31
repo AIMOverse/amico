@@ -2,7 +2,7 @@ use std::{any::Any, collections::HashMap, sync::Arc};
 
 use serde::{Deserialize, Serialize};
 
-use crate::entity::Event;
+use crate::entities::Event;
 
 use super::{error::PluginError, *};
 
@@ -43,7 +43,7 @@ impl Plugin for TestEventSource {
 }
 
 impl EventSource for TestEventSource {
-    fn generate_event(&mut self) -> crate::entity::Event {
+    fn generate_event(&mut self) -> crate::entities::Event {
         self.state += 1;
 
         Event {
