@@ -31,23 +31,23 @@ impl PluginPool {
         }
     }
 
-    pub fn add_event_source(&mut self, source: EventSourceObject) -> &mut Self {
-        self.event_sources.insert(source.name(), source);
+    pub fn add_event_source(&mut self, name: String, source: EventSourceObject) -> &mut Self {
+        self.event_sources.insert(name, source);
         self
     }
 
-    pub fn add_input(&mut self, source: InputSourceObject) -> &mut Self {
-        self.inputs.insert(source.name(), source);
+    pub fn add_input(&mut self, name: String, source: InputSourceObject) -> &mut Self {
+        self.inputs.insert(name, source);
         self
     }
 
-    pub fn add_action_selector(&mut self, source: ActionSelectorObject) -> &mut Self {
-        self.action_selectors.insert(source.name(), source);
+    pub fn add_action_selector(&mut self, name: String, source: ActionSelectorObject) -> &mut Self {
+        self.action_selectors.insert(name, source);
         self
     }
 
-    pub fn add_actuator(&mut self, source: ActuatorObject) -> &mut Self {
-        self.actuators.insert(source.name(), source);
+    pub fn add_actuator(&mut self, name: String, source: ActuatorObject) -> &mut Self {
+        self.actuators.insert(name, source);
         self
     }
 }
