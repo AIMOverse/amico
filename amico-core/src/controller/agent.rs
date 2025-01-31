@@ -7,13 +7,15 @@ use std::sync::{
     Arc, Mutex,
 };
 use std::thread;
+use std::thread::JoinHandle;
 
 pub struct Agent {
     name: String,
     is_running: Arc<AtomicBool>,
     events: Arc<Mutex<Vec<Event>>>,
-    event_generator_factory: EventGeneratorFactory,
-    action_selector_factory: ActionSelectorFactory,
+    event_generator_factory: Arc<EventGeneratorFactory>,
+    action_selector_factory: Arc<ActionSelectorFactory>,
+    thread_handles: Mutex<Vec<JoinHandle<()>>>,
 }
 
 impl Agent {
@@ -27,8 +29,9 @@ impl Agent {
             name: config.name,
             is_running: Arc::new(AtomicBool::new(false)),
             events: Arc::new(Mutex::new(Vec::new())),
-            event_generator_factory,
-            action_selector_factory,
+            event_generator_factory: Arc::new(event_generator_factory),
+            action_selector_factory: Arc::new(action_selector_factory),
+            thread_handles: Mutex::new(Vec::new()),
         }
     }
 
@@ -36,18 +39,19 @@ impl Agent {
         println!("Loading objects for agent: {}", self.name);
     }
 
-    pub fn start(self) {
+    pub fn start(&self) {
         self.before_start();
         self.is_running.store(true, Ordering::SeqCst);
         println!("Agent {} started.", self.name);
 
         let is_running = Arc::clone(&self.is_running);
         let events = Arc::clone(&self.events);
+        let event_generator_factory = Arc::clone(&self.event_generator_factory);
 
         let generator_handle = thread::spawn(move || {
             let mut counter = 0;
             // The factory is called to create an event generator
-            let event_generator = (self.event_generator_factory)();
+            let event_generator = event_generator_factory();
             while is_running.load(Ordering::SeqCst) {
                 // The event generator is used to generate events
                 let new_events =
@@ -62,10 +66,11 @@ impl Agent {
 
         let is_running_action = Arc::clone(&self.is_running);
         let events_action = Arc::clone(&self.events);
+        let action_selector_factory = Arc::clone(&self.action_selector_factory);
 
         let action_handle = thread::spawn(move || {
             // The factory is called to create an action selector
-            let action_selector = (self.action_selector_factory)();
+            let action_selector = action_selector_factory();
             let mut counter = 0;
             while is_running_action.load(Ordering::SeqCst) {
                 // The action selector is used to select an action
@@ -79,13 +84,23 @@ impl Agent {
             }
         });
 
-        generator_handle.join().unwrap();
-        action_handle.join().unwrap();
+        // Store the thread handles for later use
+        let mut handles = self.thread_handles.lock().unwrap();
+        handles.push(generator_handle);
+        handles.push(action_handle);
     }
 
     pub fn stop(&self) {
+        println!("Agent {} stopping.", self.name);
         self.is_running.store(false, Ordering::SeqCst);
-        println!("Agent {} stopped.", self.name);
+    }
+
+    pub fn join(&self) {
+        let mut handles = self.thread_handles.lock().unwrap();
+        for handle in handles.drain(..) {
+            let _ = handle.join();
+        }
+        println!("All threads have finished.");
     }
 
     fn load_config(config_path: &str) -> CoreConfig {

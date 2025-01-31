@@ -24,6 +24,7 @@ async fn main() -> anyhow::Result<()> {
 
     // Start the agent
     agent.start();
+    agent.join();
 
     // Stop the agent
     // agent.stop();
