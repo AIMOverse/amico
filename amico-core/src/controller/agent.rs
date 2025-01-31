@@ -1,6 +1,7 @@
 use crate::config::{Config, CoreConfig};
 use crate::entities::Event;
 use crate::factory::{ActionSelectorFactory, EventGeneratorFactory};
+use log::info;
 use std::collections::HashMap;
 use std::sync::{
     atomic::{AtomicBool, Ordering},
@@ -36,13 +37,14 @@ impl Agent {
     }
 
     pub fn before_start(&self) {
-        println!("Loading objects for agent: {}", self.name);
+        env_logger::init();
+        info!("Loading objects for agent: {}", self.name);
     }
 
     pub fn start(&self) {
         self.before_start();
         self.is_running.store(true, Ordering::SeqCst);
-        println!("Agent {} started.", self.name);
+        info!("Agent {} started.", self.name);
 
         let is_running = Arc::clone(&self.is_running);
         let events = Arc::clone(&self.events);
@@ -60,7 +62,7 @@ impl Agent {
                 let mut events_lock = events.lock().unwrap();
                 events_lock.extend(new_events);
                 counter += 1;
-                println!("Generated {} events", counter);
+                info!("Generated {} events", counter);
             }
         });
 
@@ -78,7 +80,7 @@ impl Agent {
                 if !events.is_empty() {
                     let action = action_selector.select_action(&mut events);
                     counter += 1;
-                    println!("Processed {} events", counter);
+                    info!("Processed {} events", counter);
                     action.execute();
                 }
             }
@@ -91,7 +93,7 @@ impl Agent {
     }
 
     pub fn stop(&self) {
-        println!("Agent {} stopping.", self.name);
+        info!("Agent {} stopping.", self.name);
         self.is_running.store(false, Ordering::SeqCst);
     }
 
@@ -100,7 +102,7 @@ impl Agent {
         for handle in handles.drain(..) {
             let _ = handle.join();
         }
-        println!("All threads have finished.");
+        info!("All threads have finished.");
     }
 
     fn load_config(config_path: &str) -> CoreConfig {
