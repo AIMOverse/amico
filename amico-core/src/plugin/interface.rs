@@ -1,7 +1,5 @@
 use std::fmt::Debug;
 
-use serde::{de::DeserializeOwned, Serialize};
-
 use crate::entity::{Action, Event};
 
 use super::error::PluginError;
@@ -12,7 +10,7 @@ where
     C: PluginConfig,
 {
     /// The unique identifier of the plugin.
-    fn name(&self) -> String;
+    fn name(&self) -> &str;
 
     /// Set up the plugin with the given context.
     fn setup(config: C) -> Self
@@ -21,7 +19,11 @@ where
 }
 
 /// The config type used to setup a plugin.
-pub trait PluginConfig: DeserializeOwned + Serialize + Debug {}
+pub trait PluginConfig: Debug {
+    fn toml_loader(&self) -> Option<fn(String) -> Self>
+    where
+        Self: Sized;
+}
 
 /// Plugins providing event sources
 pub trait EventSource<C>: Plugin<C>

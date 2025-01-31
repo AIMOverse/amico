@@ -13,7 +13,14 @@ struct TestEventSourceConfig {
     initial_state: i32,
 }
 
-impl PluginConfig for TestEventSourceConfig {}
+impl PluginConfig for TestEventSourceConfig {
+    fn toml_loader(&self) -> Option<fn(String) -> Self>
+    where
+        Self: Sized,
+    {
+        None
+    }
+}
 
 struct TestEventSource {
     state: i32,
@@ -26,8 +33,8 @@ impl TestEventSource {
 }
 
 impl Plugin<TestEventSourceConfig> for TestEventSource {
-    fn name(&self) -> String {
-        "TestEventSource".to_string()
+    fn name(&self) -> &str {
+        "test_event_source"
     }
 
     fn setup(config: TestEventSourceConfig) -> Self
@@ -70,7 +77,14 @@ struct TestActuatorConfig {
     connect_string: String,
 }
 
-impl PluginConfig for TestActuatorConfig {}
+impl PluginConfig for TestActuatorConfig {
+    fn toml_loader(&self) -> Option<fn(String) -> Self>
+    where
+        Self: Sized,
+    {
+        None
+    }
+}
 
 struct TestActuator {
     connected: bool,
@@ -99,8 +113,8 @@ impl TestActuator {
 }
 
 impl Plugin<TestActuatorConfig> for TestActuator {
-    fn name(&self) -> String {
-        "TestActuator".to_string()
+    fn name(&self) -> &str {
+        "test_actuator"
     }
 
     fn setup(config: TestActuatorConfig) -> Self
@@ -145,3 +159,6 @@ fn test_actuator() {
 }
 
 // Plugin Pool
+
+#[test]
+fn test_plugin_pool() {}
