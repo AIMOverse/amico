@@ -13,15 +13,6 @@ struct TestEventSourceConfig {
     initial_state: i32,
 }
 
-impl PluginConfig for TestEventSourceConfig {
-    fn toml_loader() -> Option<fn(String) -> Self>
-    where
-        Self: Sized,
-    {
-        None
-    }
-}
-
 struct TestEventSource {
     state: i32,
 }
@@ -32,9 +23,11 @@ impl TestEventSource {
     }
 }
 
-impl Plugin<TestEventSourceConfig> for TestEventSource {
-    fn name(&self) -> &str {
-        "test_event_source"
+impl Plugin for TestEventSource {
+    type Config = TestEventSourceConfig;
+
+    fn name(&self) -> String {
+        "test_event_source".to_string()
     }
 
     fn setup(config: TestEventSourceConfig) -> Self
@@ -47,7 +40,7 @@ impl Plugin<TestEventSourceConfig> for TestEventSource {
     }
 }
 
-impl EventSource<TestEventSourceConfig> for TestEventSource {
+impl EventSource for TestEventSource {
     fn generate_event(&mut self) -> crate::entity::Event {
         self.state += 1;
 
@@ -77,15 +70,6 @@ struct TestActuatorConfig {
     connect_string: String,
 }
 
-impl PluginConfig for TestActuatorConfig {
-    fn toml_loader() -> Option<fn(String) -> Self>
-    where
-        Self: Sized,
-    {
-        None
-    }
-}
-
 struct TestActuator {
     connected: bool,
 }
@@ -112,9 +96,11 @@ impl TestActuator {
     }
 }
 
-impl Plugin<TestActuatorConfig> for TestActuator {
-    fn name(&self) -> &str {
-        "test_actuator"
+impl Plugin for TestActuator {
+    type Config = TestActuatorConfig;
+
+    fn name(&self) -> String {
+        "test_actuator".to_string()
     }
 
     fn setup(config: TestActuatorConfig) -> Self
@@ -127,13 +113,17 @@ impl Plugin<TestActuatorConfig> for TestActuator {
     }
 }
 
-impl Actuator<TestActuatorConfig, &str, (), TestActuatorError> for TestActuator {
-    fn execute(&mut self, data: &str) -> Result<(), TestActuatorError> {
+impl Actuator for TestActuator {
+    type Data = String;
+    type Result = ();
+    type Error = TestActuatorError;
+
+    fn execute(&mut self, data: String) -> Result<(), TestActuatorError> {
         if !self.connected {
             return Err(TestActuatorError("Not connected".to_string()));
         }
 
-        println!("{}", data);
+        println!("Execution parameters: {}", data);
 
         Ok(())
     }
@@ -146,7 +136,7 @@ fn test_actuator() {
     };
     let mut actuator = TestActuator::setup(disconnect_config);
     assert!(!actuator.connected);
-    let result = actuator.execute("test_data");
+    let result = actuator.execute("test_data".to_string());
     assert!(result.is_err());
 
     let connect_config = TestActuatorConfig {
@@ -154,7 +144,7 @@ fn test_actuator() {
     };
     let mut actuator = TestActuator::setup(connect_config);
     assert!(actuator.connected);
-    let result = actuator.execute("test_data");
+    let result = actuator.execute("test_data".to_string());
     assert!(result.is_ok());
 }
 

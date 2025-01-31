@@ -1,11 +1,19 @@
 use std::{any::Any, collections::HashMap, sync::Arc};
 
-use super::{error::PluginError, ActionSelector, Actuator, EventSource, InputSource, PluginConfig};
+use super::{error::PluginError, ActionSelector, Actuator, EventSource, InputSource};
 
-pub type EventSourceObject = Arc<dyn EventSource<dyn PluginConfig>>;
-pub type InputSourceObject = Arc<dyn InputSource<dyn PluginConfig, dyn Any>>;
-pub type ActionSelectorObject = Arc<dyn ActionSelector<dyn PluginConfig>>;
-pub type ActuatorObject = Arc<dyn Actuator<dyn PluginConfig, dyn Any, dyn Any, dyn PluginError>>;
+pub type AnyObject = Box<dyn Any>;
+pub type EventSourceObject = Arc<dyn EventSource<Config = AnyObject>>;
+pub type InputSourceObject = Arc<dyn InputSource<Config = AnyObject, Data = AnyObject>>;
+pub type ActionSelectorObject = Arc<dyn ActionSelector<Config = AnyObject>>;
+pub type ActuatorObject = Arc<
+    dyn Actuator<
+        Config = AnyObject,
+        Data = AnyObject,
+        Result = AnyObject,
+        Error = Box<dyn PluginError>,
+    >,
+>;
 
 pub struct PluginPool {
     event_sources: HashMap<String, EventSourceObject>,
@@ -30,23 +38,23 @@ impl PluginPool {
         }
     }
 
-    pub fn add_event_source(mut self, name: String, source: EventSourceObject) -> Self {
-        self.event_sources.insert(name, source);
+    pub fn add_event_source(mut self, source: EventSourceObject) -> Self {
+        self.event_sources.insert(source.name(), source);
         self
     }
 
-    pub fn add_input(mut self, name: String, source: InputSourceObject) -> Self {
-        self.inputs.insert(name, source);
+    pub fn add_input(mut self, source: InputSourceObject) -> Self {
+        self.inputs.insert(source.name(), source);
         self
     }
 
-    pub fn add_action_selector(mut self, name: String, source: ActionSelectorObject) -> Self {
-        self.action_selectors.insert(name, source);
+    pub fn add_action_selector(mut self, source: ActionSelectorObject) -> Self {
+        self.action_selectors.insert(source.name(), source);
         self
     }
 
-    pub fn add_actuator(mut self, name: String, source: ActuatorObject) -> Self {
-        self.actuators.insert(name, source);
+    pub fn add_actuator(mut self, source: ActuatorObject) -> Self {
+        self.actuators.insert(source.name(), source);
         self
     }
 }
