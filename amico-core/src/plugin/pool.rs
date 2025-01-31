@@ -1,25 +1,18 @@
 use std::{any::Any, collections::HashMap, sync::Arc};
 
-use super::{error::PluginError, ActionSelector, Actuator, EventSource, InputSource};
+use super::{ActionSelector, Actuator, EventSource, InputSource};
 
 pub type AnyObject = Box<dyn Any>;
-pub type EventSourceObject = Arc<dyn EventSource<Config = AnyObject>>;
-pub type InputSourceObject = Arc<dyn InputSource<Config = AnyObject, Data = AnyObject>>;
-pub type ActionSelectorObject = Arc<dyn ActionSelector<Config = AnyObject>>;
-pub type ActuatorObject = Arc<
-    dyn Actuator<
-        Config = AnyObject,
-        Data = AnyObject,
-        Result = AnyObject,
-        Error = Box<dyn PluginError>,
-    >,
->;
+pub type EventSourceObject = Arc<dyn EventSource>;
+pub type InputSourceObject = Arc<dyn InputSource>;
+pub type ActionSelectorObject = Arc<dyn ActionSelector>;
+pub type ActuatorObject = Arc<dyn Actuator>;
 
 pub struct PluginPool {
-    event_sources: HashMap<String, EventSourceObject>,
-    inputs: HashMap<String, InputSourceObject>,
-    action_selectors: HashMap<String, ActionSelectorObject>,
-    actuators: HashMap<String, ActuatorObject>,
+    pub(crate) event_sources: HashMap<String, EventSourceObject>,
+    pub(crate) inputs: HashMap<String, InputSourceObject>,
+    pub(crate) action_selectors: HashMap<String, ActionSelectorObject>,
+    pub(crate) actuators: HashMap<String, ActuatorObject>,
 }
 
 impl Default for PluginPool {
@@ -38,22 +31,22 @@ impl PluginPool {
         }
     }
 
-    pub fn add_event_source(mut self, source: EventSourceObject) -> Self {
+    pub fn add_event_source(&mut self, source: EventSourceObject) -> &mut Self {
         self.event_sources.insert(source.name(), source);
         self
     }
 
-    pub fn add_input(mut self, source: InputSourceObject) -> Self {
+    pub fn add_input(&mut self, source: InputSourceObject) -> &mut Self {
         self.inputs.insert(source.name(), source);
         self
     }
 
-    pub fn add_action_selector(mut self, source: ActionSelectorObject) -> Self {
+    pub fn add_action_selector(&mut self, source: ActionSelectorObject) -> &mut Self {
         self.action_selectors.insert(source.name(), source);
         self
     }
 
-    pub fn add_actuator(mut self, source: ActuatorObject) -> Self {
+    pub fn add_actuator(&mut self, source: ActuatorObject) -> &mut Self {
         self.actuators.insert(source.name(), source);
         self
     }

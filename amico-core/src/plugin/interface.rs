@@ -1,16 +1,16 @@
+use std::any::Any;
+
 use crate::entity::{Action, Event};
 
 use super::error::PluginError;
 
 /// The base trait of a plugin.
 pub trait Plugin {
-    type Config: Sized;
-
     /// The unique identifier of the plugin.
     fn name(&self) -> String;
 
     /// Set up the plugin with the given context.
-    fn setup(config: Self::Config) -> Self
+    fn setup(config: &dyn Any) -> Result<Self, PluginError>
     where
         Self: Sized;
 }
@@ -22,16 +22,12 @@ pub trait EventSource: Plugin {
 
 /// Plugins providing sensor to world environment
 pub trait InputSource: Plugin {
-    type Data: Sized;
-    fn get_data(&self) -> Self::Data;
+    fn get_data(&self) -> Box<dyn Any>;
 }
 
 /// Plugins providing actuator control
 pub trait Actuator: Plugin {
-    type Data: Sized;
-    type Result: Sized;
-    type Error: PluginError;
-    fn execute(&mut self, data: Self::Data) -> Result<Self::Result, Self::Error>;
+    fn execute(&mut self, data: &dyn Any) -> Result<Box<dyn Any>, PluginError>;
 }
 
 // TODO: Wait for Event Pool implementation

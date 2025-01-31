@@ -1,6 +1,13 @@
 use std::fmt::Debug;
 
-pub trait PluginError: Debug {
-    fn plugin_name(&self) -> &str;
-    fn message(&self) -> &str;
+#[derive(thiserror::Error, Debug)]
+pub enum PluginError {
+    #[error("Invalid config format")]
+    InvalidConfigFormat,
+
+    #[error("Invalid data format")]
+    InvalidDataFormat,
+
+    #[error("Execution error: {0}")]
+    ExecutionError(String),
 }
