@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::entity::Event;
 
-use super::*;
+use super::{error::PluginError, *};
 
 // Event Source
 
@@ -76,6 +76,19 @@ struct TestActuator {
     connected: bool,
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+struct TestActuatorError(String);
+
+impl PluginError for TestActuatorError {
+    fn message(&self) -> &str {
+        self.0.as_str()
+    }
+
+    fn plugin_name(&self) -> &str {
+        "TestActuator"
+    }
+}
+
 impl TestActuator {
     fn new() -> Self {
         TestActuator { connected: false }
@@ -100,10 +113,10 @@ impl Plugin<TestActuatorConfig> for TestActuator {
     }
 }
 
-impl Actuator<TestActuatorConfig, &str, (), ()> for TestActuator {
-    fn execute(&mut self, data: &str) -> Result<(), ()> {
+impl Actuator<TestActuatorConfig, &str, (), TestActuatorError> for TestActuator {
+    fn execute(&mut self, data: &str) -> Result<(), TestActuatorError> {
         if !self.connected {
-            return Err(());
+            return Err(TestActuatorError("Not connected".to_string()));
         }
 
         println!("{}", data);
@@ -114,13 +127,17 @@ impl Actuator<TestActuatorConfig, &str, (), ()> for TestActuator {
 
 #[test]
 fn test_actuator() {
-    let disconnect_config = TestActuatorConfig { connect_string: "disconnected".to_string() };
+    let disconnect_config = TestActuatorConfig {
+        connect_string: "disconnected".to_string(),
+    };
     let mut actuator = TestActuator::setup(disconnect_config);
     assert!(!actuator.connected);
     let result = actuator.execute("test_data");
     assert!(result.is_err());
 
-    let connect_config = TestActuatorConfig { connect_string: "connected".to_string() };
+    let connect_config = TestActuatorConfig {
+        connect_string: "connected".to_string(),
+    };
     let mut actuator = TestActuator::setup(connect_config);
     assert!(actuator.connected);
     let result = actuator.execute("test_data");

@@ -1,5 +1,6 @@
-#[derive(thiserror::Error, Debug)]
-pub enum PluginError {
-    #[error("Failed to load plugin")]
-    FailedToLoad(#[from] std::io::Error),
+use serde::{de::DeserializeOwned, Serialize};
+
+pub trait PluginError: Serialize + DeserializeOwned {
+    fn plugin_name(&self) -> &str;
+    fn message(&self) -> &str;
 }

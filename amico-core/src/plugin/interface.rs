@@ -4,6 +4,8 @@ use serde::{de::DeserializeOwned, Serialize};
 
 use crate::entity::{Action, Event};
 
+use super::error::PluginError;
+
 /// The base trait of a plugin.
 pub trait Plugin<C>: Send + Sync
 where
@@ -43,6 +45,7 @@ where
 pub trait Actuator<C, D, R, E>: Plugin<C>
 where
     C: PluginConfig,
+    E: PluginError,
 {
     fn execute(&mut self, data: D) -> Result<R, E>;
 }
