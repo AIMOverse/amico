@@ -20,7 +20,7 @@ where
 
 /// The config type used to setup a plugin.
 pub trait PluginConfig: Debug {
-    fn toml_loader(&self) -> Option<fn(String) -> Self>
+    fn toml_loader() -> Option<fn(String) -> Self>
     where
         Self: Sized;
 }

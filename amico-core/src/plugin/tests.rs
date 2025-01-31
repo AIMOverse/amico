@@ -14,7 +14,7 @@ struct TestEventSourceConfig {
 }
 
 impl PluginConfig for TestEventSourceConfig {
-    fn toml_loader(&self) -> Option<fn(String) -> Self>
+    fn toml_loader() -> Option<fn(String) -> Self>
     where
         Self: Sized,
     {
@@ -78,7 +78,7 @@ struct TestActuatorConfig {
 }
 
 impl PluginConfig for TestActuatorConfig {
-    fn toml_loader(&self) -> Option<fn(String) -> Self>
+    fn toml_loader() -> Option<fn(String) -> Self>
     where
         Self: Sized,
     {
