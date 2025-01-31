@@ -11,9 +11,10 @@
 //! different steps of the agent workflow.
 //!
 
+mod builder;
+mod error;
 mod interface;
 mod pool;
-mod builder;
 
 #[cfg(test)]
 mod tests;

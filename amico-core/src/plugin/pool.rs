@@ -19,11 +19,7 @@ impl PluginPool {
         }
     }
 
-    pub fn add_event_source(
-        mut self,
-        name: String,
-        source: Arc<dyn EventSource<dyn Any>>,
-    ) -> Self {
+    pub fn add_event_source(mut self, name: String, source: Arc<dyn EventSource<dyn Any>>) -> Self {
         self.event_sources.insert(name, source);
         self
     }

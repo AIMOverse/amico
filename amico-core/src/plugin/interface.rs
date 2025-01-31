@@ -1,7 +1,14 @@
+use std::fmt::Debug;
+
+use serde::{de::DeserializeOwned, Serialize};
+
 use crate::entity::{Action, Event};
 
 /// The base trait of a plugin.
-pub trait Plugin<C>: Send + Sync {
+pub trait Plugin<C>: Send + Sync
+where
+    C: PluginConfig,
+{
     /// The unique identifier of the plugin.
     fn name(&self) -> String;
 
@@ -11,20 +18,32 @@ pub trait Plugin<C>: Send + Sync {
         Self: Sized;
 }
 
+/// The config type used to setup a plugin.
+pub trait PluginConfig: DeserializeOwned + Serialize + Debug {}
+
 /// Plugins providing event sources
-pub trait EventSource<C>: Plugin<C> {
+pub trait EventSource<C>: Plugin<C>
+where
+    C: PluginConfig,
+{
     fn generate_event(&mut self) -> Event;
 }
 
 /// Plugins providing sensor to world environment
-pub trait InputSource<C, D>: Plugin<C> {
+pub trait InputSource<C, D>: Plugin<C>
+where
+    C: PluginConfig,
+{
     fn get_data(&self) -> D
     where
         D: Sized;
 }
 
 /// Plugins providing actuator control
-pub trait Actuator<C, D, R, E>: Plugin<C> {
+pub trait Actuator<C, D, R, E>: Plugin<C>
+where
+    C: PluginConfig,
+{
     fn execute(&mut self, data: D) -> Result<R, E>;
 }
 
@@ -32,6 +51,9 @@ pub trait Actuator<C, D, R, E>: Plugin<C> {
 pub struct EventPool;
 
 /// Plugins selecting actions based on the current state and event pool
-pub trait ActionSelector<C>: Plugin<C> {
+pub trait ActionSelector<C>: Plugin<C>
+where
+    C: PluginConfig,
+{
     fn select_action(&self, pool: &EventPool) -> Box<dyn Action>;
 }

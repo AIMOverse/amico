@@ -1,10 +1,19 @@
 use std::collections::HashMap;
 
+use serde::{Deserialize, Serialize};
+
 use crate::entity::Event;
 
 use super::*;
 
 // Event Source
+
+#[derive(Debug, Deserialize, Serialize)]
+struct TestEventSourceConfig {
+    initial_state: i32,
+}
+
+impl PluginConfig for TestEventSourceConfig {}
 
 struct TestEventSource {
     state: i32,
@@ -16,20 +25,22 @@ impl TestEventSource {
     }
 }
 
-impl Plugin<i32> for TestEventSource {
+impl Plugin<TestEventSourceConfig> for TestEventSource {
     fn name(&self) -> String {
         "TestEventSource".to_string()
     }
 
-    fn setup(config: i32) -> Self
+    fn setup(config: TestEventSourceConfig) -> Self
     where
         Self: Sized,
     {
-        TestEventSource { state: config }
+        TestEventSource {
+            state: config.initial_state,
+        }
     }
 }
 
-impl EventSource<i32> for TestEventSource {
+impl EventSource<TestEventSourceConfig> for TestEventSource {
     fn generate_event(&mut self) -> crate::entity::Event {
         self.state += 1;
 
@@ -43,7 +54,8 @@ impl EventSource<i32> for TestEventSource {
 
 #[test]
 fn test_event_source() {
-    let mut source = TestEventSource::setup(0);
+    let config = TestEventSourceConfig { initial_state: 0 };
+    let mut source = TestEventSource::setup(config);
     let event = source.generate_event();
     assert_eq!(event.name, "test_event");
     assert_eq!(event.source, "test_source");
@@ -52,6 +64,13 @@ fn test_event_source() {
 }
 
 // Actuator
+
+#[derive(Debug, Deserialize, Serialize)]
+struct TestActuatorConfig {
+    connect_string: String,
+}
+
+impl PluginConfig for TestActuatorConfig {}
 
 struct TestActuator {
     connected: bool,
@@ -66,22 +85,22 @@ impl TestActuator {
     }
 }
 
-impl Plugin<&str> for TestActuator {
+impl Plugin<TestActuatorConfig> for TestActuator {
     fn name(&self) -> String {
         "TestActuator".to_string()
     }
 
-    fn setup(config: &str) -> Self
+    fn setup(config: TestActuatorConfig) -> Self
     where
         Self: Sized,
     {
         let mut a = TestActuator::new();
-        a.connect(config);
+        a.connect(config.connect_string.as_str());
         a
     }
 }
 
-impl Actuator<&str, &str, (), ()> for TestActuator {
+impl Actuator<TestActuatorConfig, &str, (), ()> for TestActuator {
     fn execute(&mut self, data: &str) -> Result<(), ()> {
         if !self.connected {
             return Err(());
@@ -95,12 +114,14 @@ impl Actuator<&str, &str, (), ()> for TestActuator {
 
 #[test]
 fn test_actuator() {
-    let mut actuator = TestActuator::setup("disconnected");
+    let disconnect_config = TestActuatorConfig { connect_string: "disconnected".to_string() };
+    let mut actuator = TestActuator::setup(disconnect_config);
     assert!(!actuator.connected);
     let result = actuator.execute("test_data");
     assert!(result.is_err());
 
-    let mut actuator = TestActuator::setup("connected");
+    let connect_config = TestActuatorConfig { connect_string: "connected".to_string() };
+    let mut actuator = TestActuator::setup(connect_config);
     assert!(actuator.connected);
     let result = actuator.execute("test_data");
     assert!(result.is_ok());
