@@ -1,5 +1,5 @@
 use crate::config::{Config, CoreConfig};
-use crate::entities::{Event, EventPool};
+use crate::entities::EventPool;
 use crate::factory::{ActionSelectorFactory, EventGeneratorFactory};
 use log::info;
 use std::collections::HashMap;
