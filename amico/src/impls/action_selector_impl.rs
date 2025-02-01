@@ -10,17 +10,13 @@ pub struct ActionSelectorImpl;
 
 impl ActionSelector for ActionSelectorImpl {
     fn select_action(&self, events: Vec<Event>) -> (Box<dyn Action>, Vec<u32>) {
+        println!("events: {:?}", events);
         if !events.is_empty() {
-            let event = &events[0];
-            println!("Processing event: {}", event.name);
             // Simulate some processing time
             thread::sleep(Duration::from_millis(200));
             (
-                Box::new(PrintAction::new(format!(
-                    "Executing action for event: {}",
-                    event.name
-                ))),
-                vec![event.id],
+                Box::new(PrintAction::new("Executing actions".to_string())),
+                events.iter().map(|event| event.id).collect(),
             )
         } else {
             (
