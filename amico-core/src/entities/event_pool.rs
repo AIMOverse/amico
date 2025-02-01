@@ -80,3 +80,9 @@ impl EventPool {
         Ok(id)
     }
 }
+
+impl Default for EventPool {
+    fn default() -> Self {
+        Self::new()
+    }
+}
