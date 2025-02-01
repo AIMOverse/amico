@@ -9,18 +9,24 @@ use std::time::Duration;
 pub struct ActionSelectorImpl;
 
 impl ActionSelector for ActionSelectorImpl {
-    fn select_action(&self, events: &mut Vec<Event>) -> Box<dyn Action> {
+    fn select_action(&self, events: Vec<Event>) -> (Box<dyn Action>, Vec<u32>) {
         if !events.is_empty() {
-            let event = events.remove(0); // Remove the first event from the list
+            let event = &events[0];
             println!("Processing event: {}", event.name);
             // Simulate some processing time
             thread::sleep(Duration::from_millis(200));
-            Box::new(PrintAction::new(format!(
-                "Executing action for event: {}",
-                event.name
-            )))
+            (
+                Box::new(PrintAction::new(format!(
+                    "Executing action for event: {}",
+                    event.name
+                ))),
+                vec![event.id],
+            )
         } else {
-            Box::new(PrintAction::new("No events available".to_string()))
+            (
+                Box::new(PrintAction::new("No events available".to_string())),
+                vec![],
+            )
         }
     }
 }
