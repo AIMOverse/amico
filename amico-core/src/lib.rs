@@ -7,5 +7,7 @@ pub mod entities;
 
 pub mod factory;
 
+pub mod errors;
+
 #[cfg(feature = "std")]
 pub mod std;
