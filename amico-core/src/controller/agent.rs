@@ -1,6 +1,5 @@
 use crate::config::{Config, CoreConfig};
-use crate::entities::Event;
-use crate::entities::EventPool;
+use crate::entities::{Event, EventPool};
 use crate::factory::{ActionSelectorFactory, EventGeneratorFactory};
 use log::info;
 use std::collections::HashMap;
@@ -88,7 +87,7 @@ impl Agent {
                 let events;
                 {
                     // The event pool is locked and checked for events
-                    let mut event_pool_for_as = event_pool_for_as.lock().unwrap();
+                    let event_pool_for_as = event_pool_for_as.lock().unwrap();
                     events = event_pool_for_as.get_events();
                     // The event pool list is unlocked
                 }
