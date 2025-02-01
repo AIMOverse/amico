@@ -34,9 +34,10 @@ impl EventPool {
     /// Inserts multiple new events.
     /// Each new Event will be assigned a unique ID from this pool.
     pub fn extend_events(&mut self, events: Vec<Event>) -> Result<(), EventPoolError> {
-        for event in events {
+        for mut event in events {
             // Propagate the possible error from get_new_event_id using the `?` operator.
             let id = self.get_new_event_id()?;
+            event.id = id;
             self.events_map.insert(id, event);
         }
 
