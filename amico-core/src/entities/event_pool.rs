@@ -46,14 +46,17 @@ impl EventPool {
 
     /// Removes events corresponding to the given list of event IDs.
     /// Freed IDs are pushed back into `free_list`.
-    pub fn remove_events(&mut self, event_ids: Vec<u32>) {
+    pub fn remove_events(&mut self, event_ids: Vec<u32>) -> Result<(), EventPoolError> {
         for id in event_ids {
             if self.events_map.remove(&id).is_some() {
                 // Only push back if the ID actually existed in the map
                 // so we don't pollute `free_list` with unused IDs.
                 self.free_list.push(id);
+            } else {
+                return Err(EventPoolError::EventIdNotFound(id));
             }
         }
+        Ok(())
     }
 
     /// Generates a new unique event ID in O(1) time, reusing old IDs if available.

@@ -53,7 +53,6 @@ impl Agent {
         let generator_handle = thread::spawn(move || {
             // The factory is called to create an event generator
             let event_generator = event_generator_factory();
-            let mut counter = 0;
 
             while is_running.load(Ordering::SeqCst) {
                 // The event generator is used to generate events
@@ -61,6 +60,7 @@ impl Agent {
                     event_generator.generate_event("example_source".to_string(), HashMap::new());
                 // The new events are added to the events list
                 {
+                    info!("Extending {} events", new_events.len());
                     // The events pool is locked
                     let mut unlocked_event_pool = event_pool_for_eg.lock().unwrap();
                     if let Err(e) = unlocked_event_pool.extend_events(new_events) {
@@ -68,8 +68,6 @@ impl Agent {
                     }
                     // The events pool is unlocked
                 }
-                counter += 1;
-                info!("Generated {} Times Events", counter);
             }
         });
 
@@ -80,7 +78,6 @@ impl Agent {
         let action_handle = thread::spawn(move || {
             // The factory is called to create an action selector
             let action_selector = action_selector_factory();
-            let mut counter = 0;
 
             while is_running_action.load(Ordering::SeqCst) {
                 // The action selector is used to select an action
@@ -93,14 +90,15 @@ impl Agent {
                 }
                 let (action, event_ids) = action_selector.select_action(events);
                 {
+                    info!("Removing {} events", event_ids.len());
                     // The events pool is locked
                     let mut event_pool_for_as = event_pool_for_as.lock().unwrap();
-                    event_pool_for_as.remove_events(event_ids);
+                    if let Err(e) = event_pool_for_as.remove_events(event_ids) {
+                        error!("Failed to remove events: {}", e);
+                    }
                     // The events pool is unlocked
                 }
                 // The action is executed
-                counter += 1;
-                info!("Executing {} Times Actions", counter);
                 action.execute();
             }
         });
