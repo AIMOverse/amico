@@ -9,11 +9,13 @@ pub trait EventGenerator {
     ///
     /// # Arguments
     ///
-    /// * `params` - A HashMap that holds the parameters for the events.
+    /// * `source` - The source of the event.
+    ///
+    /// * `params` - A HashMap that holds the parameters from inputs.
     ///
     /// # Returns
     ///
-    /// * `Vec<Event>` - A vector of Event instances.
+    /// * `Vec<Event>` - A vector of Event instances that is going to be added into event pool.
     fn generate_event(
         &self,
         source: String,
