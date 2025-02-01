@@ -1,7 +1,7 @@
 use crate::config::{Config, CoreConfig};
 use crate::entities::EventPool;
 use crate::factory::{ActionSelectorFactory, EventGeneratorFactory};
-use log::info;
+use log::{error, info};
 use std::collections::HashMap;
 use std::sync::{
     atomic::{AtomicBool, Ordering},
@@ -63,9 +63,9 @@ impl Agent {
                 {
                     // The events pool is locked
                     let mut unlocked_event_pool = event_pool_for_eg.lock().unwrap();
-                    unlocked_event_pool
-                        .extend_events(new_events)
-                        .expect("TODO: panic message");
+                    if let Err(e) = unlocked_event_pool.extend_events(new_events) {
+                        error!("Failed to extend events: {}", e);
+                    }
                     // The events pool is unlocked
                 }
                 counter += 1;
