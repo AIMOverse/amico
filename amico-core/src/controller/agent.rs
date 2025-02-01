@@ -1,6 +1,6 @@
 use crate::config::{Config, CoreConfig};
 use crate::entities::EventPool;
-use crate::factory::{ActionSelectorFactory, EventGeneratorFactory};
+use crate::traits::{ActionSelector, EventGenerator};
 use log::{error, info};
 use std::collections::HashMap;
 use std::sync::{
@@ -14,16 +14,16 @@ pub struct Agent {
     name: String,
     is_running: Arc<AtomicBool>,
     event_pool: Arc<Mutex<EventPool>>,
-    event_generator_factory: Arc<EventGeneratorFactory>,
-    action_selector_factory: Arc<ActionSelectorFactory>,
+    event_generator_factory: Arc<Box<dyn Fn() -> Box<dyn EventGenerator + Send> + Send + Sync>>,
+    action_selector_factory: Arc<Box<dyn Fn() -> Box<dyn ActionSelector + Send> + Send + Sync>>,
     thread_handles: Mutex<Vec<JoinHandle<()>>>,
 }
 
 impl Agent {
     pub fn new(
         config_path: &str,
-        event_generator_factory: EventGeneratorFactory,
-        action_selector_factory: ActionSelectorFactory,
+        event_generator_factory: Box<dyn Fn() -> Box<dyn EventGenerator + Send> + Send + Sync>,
+        action_selector_factory: Box<dyn Fn() -> Box<dyn ActionSelector + Send> + Send + Sync>,
     ) -> Self {
         let config = Self::load_config(config_path);
         Self {
