@@ -84,7 +84,7 @@ impl Agent {
                 let events;
                 {
                     // The event pool is locked and checked for events
-                    let event_pool_for_as = event_pool_for_as.lock().unwrap();
+                    let mut event_pool_for_as = event_pool_for_as.lock().unwrap();
                     events = event_pool_for_as.get_events();
                     // The event pool list is unlocked
                 }

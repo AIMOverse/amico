@@ -30,9 +30,14 @@ impl EventPool {
         }
     }
 
-    /// Retrieves all events as a cloned vector.
+    /// Updates the events map and retrieves all events that hasn't expired as a cloned vector and .
     /// (Depending on requirements, returning references or an iterator might be preferable.)
-    pub fn get_events(&self) -> Vec<Event> {
+    pub fn get_events(&mut self) -> Vec<Event> {
+        // update the events_map
+        let now = Utc::now();
+        self.events_map
+            .retain(|_, event| event.expiry_time.unwrap() > now);
+        // return the events
         self.events_map.values().cloned().collect()
     }
 
