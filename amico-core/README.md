@@ -44,3 +44,22 @@ cargo add amico
 3. **amico-std**: Built-in standard plugins.
 4. **amico-firmware**: Hardware control.
 5. **amico-macros**: Procedural macros.
+
+## Future Improvements
+
+- **Event expiration mechanism**: Implement adaptive expiration strategies (e.g., priority queues, sliding window
+  expiration) to optimize performance.
+- **Enhanced decision logic**: Investigate support for reinforcement learning-based decision-making within
+  `ActionSelector`.
+- **Plugin security**: Strengthen security for dynamically loaded plugins using WebAssembly (WASM) or sandboxing
+  techniques.
+
+## License
+
+AMICO is released under the [MIT License](https://raw.githubusercontent.com/AIMOverse/amico/main/LICENSE).
+
+## Contributing
+
+Contributions are welcome! Please read
+our [contributing guidelines](https://raw.githubusercontent.com/AIMOverse/amico/main/CONTRIBUTING.md) before submitting
+a pull request.
