@@ -56,6 +56,7 @@ Thank you for your interest in contributing to AMICO! We welcome contributions f
 ## Code of Conduct
 
 We expect all contributors to:
+
 - Be respectful and inclusive
 - Accept constructive criticism
 - Focus on what is best for the community
@@ -64,6 +65,7 @@ We expect all contributors to:
 ## Questions?
 
 If you have questions, feel free to:
+
 - Open an issue for discussion
 - Ask in the project's discussions section
 
