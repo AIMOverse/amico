@@ -70,6 +70,6 @@ AMICO is released under the [MIT License](https://raw.githubusercontent.com/AIMO
 ## Contributing
 
 Contributions are welcome! Please read
-our [contributing guidelines](https://raw.githubusercontent.com/AIMOverse/amico/main/CONTRIBUTING.md) before submitting
+our [contributing guidelines](https://github.com/AIMOverse/amico/blob/main/CONTRIBUTING.md) before submitting
 a pull request.
 
