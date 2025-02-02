@@ -14,7 +14,7 @@ plugins = ["twitter"]
 
 # Event Settings
 [event_config]
-expiry_time = 60 # Event default expiry time (in seconds)
+expiry_time = 10 # Event default expiry time (in seconds)
 
 
 

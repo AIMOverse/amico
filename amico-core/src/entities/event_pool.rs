@@ -35,9 +35,22 @@ impl EventPool {
     pub fn get_events(&mut self) -> Vec<Event> {
         // update the events_map
         let now = Utc::now();
-        self.events_map
-            .retain(|_, event| event.expiry_time.unwrap() > now);
-        // return the events
+        // Get all event IDs that have expired
+        let expired_events_ids: Vec<u32> = self
+            .events_map
+            .iter()
+            .filter_map(|(id, event)| {
+                if let Some(expiry_time) = event.expiry_time {
+                    if expiry_time < now {
+                        return Some(*id);
+                    }
+                }
+                None
+            })
+            .collect();
+        // Remove the expired events
+        self.remove_events(expired_events_ids).unwrap();
+        // return the remaining events
         self.events_map.values().cloned().collect()
     }
 
