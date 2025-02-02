@@ -50,6 +50,7 @@ impl EventSource for TestEventSource {
             "test_event".to_string(),
             "test_source".to_string(),
             HashMap::new(),
+            None,
         )
     }
 }

@@ -12,5 +12,9 @@ runtime = "standalone"
 # Plugins enabled
 plugins = ["twitter"]
 
+# Event Settings
+[event_config]
+expiry_time = 60 # Event default expiry time (in seconds)
+
 
 
