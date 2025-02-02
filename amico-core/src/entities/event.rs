@@ -37,10 +37,7 @@ impl Event {
         params: HashMap<String, Arc<dyn Any + Send + Sync>>,
         lifetime: Option<Duration>,
     ) -> Self {
-        let expiry_time = match lifetime {
-            Some(lifetime) => Some(Utc::now() + lifetime),
-            None => None,
-        };
+        let expiry_time = lifetime.map(|lifetime| Utc::now() + lifetime);
         Self {
             id: 0,       // Placeholder value, will be set by the EventPool
             name,        // The name of the event

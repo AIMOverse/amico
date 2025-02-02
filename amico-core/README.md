@@ -47,8 +47,6 @@ cargo add amico
 
 ## Future Improvements
 
-- **Event expiration mechanism**: Implement adaptive expiration strategies (e.g., priority queues, sliding window
-  expiration) to optimize performance.
 - **Enhanced decision logic**: Investigate support for reinforcement learning-based decision-making within
   `ActionSelector`.
 - **Plugin security**: Strengthen security for dynamically loaded plugins using WebAssembly (WASM) or sandboxing
