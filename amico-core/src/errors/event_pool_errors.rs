@@ -9,4 +9,8 @@ pub enum EventPoolError {
     /// Error when No such event ID.
     #[error("Event ID not found: {0}")]
     EventIdNotFound(u32),
+
+    /// Error when the event IDs are not found.
+    #[error("Event IDs not found: {0:?}")]
+    SomeEventIdsNotFound(Vec<u32>),
 }

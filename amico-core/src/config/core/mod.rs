@@ -1,7 +1,9 @@
 mod core_config;
+mod event_config;
 mod runtime;
 
 pub use core_config::*;
+pub use event_config::*;
 pub use runtime::*;
 
 #[cfg(test)]
@@ -32,5 +34,10 @@ mod tests {
 
         // Test runtime
         assert_eq!(config.runtime, RuntimeConfig::Standalone);
+
+        // Test plugins
+
+        // Test event_config
+        assert_eq!(config.event_config.expiry_time, 60);
     }
 }

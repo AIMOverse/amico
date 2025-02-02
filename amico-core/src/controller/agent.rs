@@ -29,7 +29,7 @@ impl Agent {
         Self {
             name: config.name,
             is_running: Arc::new(AtomicBool::new(false)),
-            event_pool: Arc::new(Mutex::new(EventPool::new())),
+            event_pool: Arc::new(Mutex::new(EventPool::new(config.event_config.expiry_time))),
             event_generator_factory: Arc::new(event_generator_factory),
             action_selector_factory: Arc::new(action_selector_factory),
             thread_handles: Mutex::new(Vec::new()),
@@ -84,7 +84,7 @@ impl Agent {
                 let events;
                 {
                     // The event pool is locked and checked for events
-                    let event_pool_for_as = event_pool_for_as.lock().unwrap();
+                    let mut event_pool_for_as = event_pool_for_as.lock().unwrap();
                     events = event_pool_for_as.get_events();
                     // The event pool list is unlocked
                 }
