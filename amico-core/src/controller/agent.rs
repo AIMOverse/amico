@@ -1,7 +1,7 @@
 use crate::config::{Config, CoreConfig};
-use crate::entities::Event;
-use crate::factory::{ActionSelectorFactory, EventGeneratorFactory};
-use log::info;
+use crate::entities::EventPool;
+use crate::traits::{ActionSelector, EventGenerator};
+use log::{error, info};
 use std::collections::HashMap;
 use std::sync::{
     atomic::{AtomicBool, Ordering},
@@ -13,23 +13,23 @@ use std::thread::JoinHandle;
 pub struct Agent {
     name: String,
     is_running: Arc<AtomicBool>,
-    events: Arc<Mutex<Vec<Event>>>,
-    event_generator_factory: Arc<EventGeneratorFactory>,
-    action_selector_factory: Arc<ActionSelectorFactory>,
+    event_pool: Arc<Mutex<EventPool>>,
+    event_generator_factory: Arc<Box<dyn Fn() -> Box<dyn EventGenerator + Send> + Send + Sync>>,
+    action_selector_factory: Arc<Box<dyn Fn() -> Box<dyn ActionSelector + Send> + Send + Sync>>,
     thread_handles: Mutex<Vec<JoinHandle<()>>>,
 }
 
 impl Agent {
     pub fn new(
         config_path: &str,
-        event_generator_factory: EventGeneratorFactory,
-        action_selector_factory: ActionSelectorFactory,
+        event_generator_factory: Box<dyn Fn() -> Box<dyn EventGenerator + Send> + Send + Sync>,
+        action_selector_factory: Box<dyn Fn() -> Box<dyn ActionSelector + Send> + Send + Sync>,
     ) -> Self {
         let config = Self::load_config(config_path);
         Self {
             name: config.name,
             is_running: Arc::new(AtomicBool::new(false)),
-            events: Arc::new(Mutex::new(Vec::new())),
+            event_pool: Arc::new(Mutex::new(EventPool::new())),
             event_generator_factory: Arc::new(event_generator_factory),
             action_selector_factory: Arc::new(action_selector_factory),
             thread_handles: Mutex::new(Vec::new()),
@@ -47,13 +47,12 @@ impl Agent {
         info!("Agent {} started.", self.name);
 
         let is_running = Arc::clone(&self.is_running);
-        let events = Arc::clone(&self.events);
+        let event_pool_for_eg = Arc::clone(&self.event_pool);
         let event_generator_factory = Arc::clone(&self.event_generator_factory);
 
         let generator_handle = thread::spawn(move || {
             // The factory is called to create an event generator
             let event_generator = event_generator_factory();
-            let mut counter = 0;
 
             while is_running.load(Ordering::SeqCst) {
                 // The event generator is used to generate events
@@ -61,36 +60,45 @@ impl Agent {
                     event_generator.generate_event("example_source".to_string(), HashMap::new());
                 // The new events are added to the events list
                 {
-                    // The events list is locked
-                    let mut events_lock = events.lock().unwrap();
-                    events_lock.extend(new_events);
-                    // The events list is unlocked
+                    info!("Extending {} events", new_events.len());
+                    // The events pool is locked
+                    let mut unlocked_event_pool = event_pool_for_eg.lock().unwrap();
+                    if let Err(e) = unlocked_event_pool.extend_events(new_events) {
+                        error!("Failed to extend events: {}", e);
+                    }
+                    // The events pool is unlocked
                 }
-                counter += 1;
-                info!("Generated {} Times Events", counter);
             }
         });
 
         let is_running_action = Arc::clone(&self.is_running);
-        let events_action = Arc::clone(&self.events);
+        let event_pool_for_as = Arc::clone(&self.event_pool);
         let action_selector_factory = Arc::clone(&self.action_selector_factory);
 
         let action_handle = thread::spawn(move || {
             // The factory is called to create an action selector
             let action_selector = action_selector_factory();
-            let mut counter = 0;
 
             while is_running_action.load(Ordering::SeqCst) {
                 // The action selector is used to select an action
-                let action;
+                let events;
                 {
-                    // The events list is locked and checked for events
-                    let mut events = events_action.lock().unwrap();
-                    action = action_selector.select_action(&mut events);
-                    // The events list is unlocked
+                    // The event pool is locked and checked for events
+                    let event_pool_for_as = event_pool_for_as.lock().unwrap();
+                    events = event_pool_for_as.get_events();
+                    // The event pool list is unlocked
                 }
-                counter += 1;
-                info!("Executing {} Times Actions", counter);
+                let (action, event_ids) = action_selector.select_action(events);
+                {
+                    info!("Removing {} events", event_ids.len());
+                    // The events pool is locked
+                    let mut event_pool_for_as = event_pool_for_as.lock().unwrap();
+                    if let Err(e) = event_pool_for_as.remove_events(event_ids) {
+                        error!("Failed to remove events: {}", e);
+                    }
+                    // The events pool is unlocked
+                }
+                // The action is executed
                 action.execute();
             }
         });

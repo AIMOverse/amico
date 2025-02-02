@@ -20,10 +20,6 @@ impl EventGenerator for EventGeneratorImpl {
         println!("Generating event with source: {}", source);
         // Simulate some processing time
         thread::sleep(Duration::from_millis(100));
-        vec![Event {
-            name: "example_event".to_string(),
-            source,
-            params,
-        }]
+        vec![Event::new("ExampleEvent".to_string(), source, params)]
     }
 }

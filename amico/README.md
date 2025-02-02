@@ -4,7 +4,7 @@ Amico is the next generation Autonomous AI Agent tailored for embedded AI device
 
 ## Quick Start
 
-### Install & Run Amico Immediately
+### Install & Run AMICO Immediately
 
 ```bash
 cargo install amico

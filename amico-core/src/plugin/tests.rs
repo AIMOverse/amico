@@ -46,11 +46,11 @@ impl EventSource for TestEventSource {
     fn generate_event(&mut self) -> crate::entities::Event {
         self.state += 1;
 
-        Event {
-            name: "test_event".to_string(),
-            source: "test_source".to_string(),
-            params: HashMap::new(),
-        }
+        Event::new(
+            "test_event".to_string(),
+            "test_source".to_string(),
+            HashMap::new(),
+        )
     }
 }
 
