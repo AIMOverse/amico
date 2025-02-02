@@ -1,1 +1,1 @@
-amico/README.md
+amico-core/README.md
