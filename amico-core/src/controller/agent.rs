@@ -29,7 +29,7 @@ impl Agent {
         Self {
             name: config.name,
             is_running: Arc::new(AtomicBool::new(false)),
-            event_pool: Arc::new(Mutex::new(EventPool::new())),
+            event_pool: Arc::new(Mutex::new(EventPool::new(config.event_config.expiry_time))),
             event_generator_factory: Arc::new(event_generator_factory),
             action_selector_factory: Arc::new(action_selector_factory),
             thread_handles: Mutex::new(Vec::new()),

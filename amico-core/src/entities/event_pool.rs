@@ -1,5 +1,6 @@
 use crate::entities::Event;
 use crate::errors::EventPoolError;
+use chrono::{Duration, Utc};
 use std::collections::HashMap;
 
 /// Struct representing an event pool in the system.
@@ -13,15 +14,19 @@ pub struct EventPool {
 
     /// A list (stack) of IDs that were removed and can be reused.
     free_list: Vec<u32>,
+
+    /// The default expiry time for events in seconds
+    default_expiry_time: i64,
 }
 
 impl EventPool {
     /// Creates a new EventPool.
-    pub fn new() -> Self {
+    pub fn new(default_expiry_time: i64) -> Self {
         Self {
             events_map: HashMap::new(),
             next_id: 0,
             free_list: Vec::new(),
+            default_expiry_time,
         }
     }
 
@@ -38,6 +43,9 @@ impl EventPool {
             // Propagate the possible error from get_new_event_id using the `?` operator.
             let id = self.get_new_event_id()?;
             event.id = id;
+            if event.expiry_time.is_none() {
+                event.expiry_time = Some(Utc::now() + Duration::seconds(self.default_expiry_time));
+            }
             self.events_map.insert(id, event);
         }
 
@@ -82,11 +90,5 @@ impl EventPool {
         self.next_id = self.next_id.wrapping_add(1);
 
         Ok(id)
-    }
-}
-
-impl Default for EventPool {
-    fn default() -> Self {
-        Self::new()
     }
 }

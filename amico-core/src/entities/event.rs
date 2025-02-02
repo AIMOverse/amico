@@ -16,7 +16,7 @@ pub struct Event {
     /// The parameters of the event, stored as a HashMap.
     pub params: HashMap<String, Arc<dyn Any + Send + Sync>>,
     /// The Expiry time of the event.
-    pub expiry_time: DateTime<Utc>,
+    pub expiry_time: Option<DateTime<Utc>>,
 }
 
 impl Event {
@@ -38,8 +38,8 @@ impl Event {
         lifetime: Option<Duration>,
     ) -> Self {
         let expiry_time = match lifetime {
-            Some(lifetime) => Utc::now() + lifetime,
-            None => Utc::now() + Duration::days(1),
+            Some(lifetime) => Some(Utc::now() + lifetime),
+            None => None,
         };
         Self {
             id: 0,       // Placeholder value, will be set by the EventPool
