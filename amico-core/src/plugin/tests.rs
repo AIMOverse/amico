@@ -2,7 +2,10 @@ use std::{any::Any, collections::HashMap, sync::Arc};
 
 use serde::{Deserialize, Serialize};
 
-use crate::{entities::Event, traits::{Action, EventGenerator}};
+use crate::{
+    entities::Event,
+    traits::{Action, EventGenerator},
+};
 
 use super::*;
 

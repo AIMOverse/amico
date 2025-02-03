@@ -1,6 +1,6 @@
 use std::{collections::HashMap, sync::Arc};
 
-use super::{ActionSelectorPlugin, ActionPlugin, EventGeneratorPlugin, InputSource};
+use super::{ActionPlugin, ActionSelectorPlugin, EventGeneratorPlugin, InputSource};
 
 // Type alias for any object implementing the `Any` trait.
 pub type EventSourceObject = Arc<dyn EventGeneratorPlugin>;
