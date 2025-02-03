@@ -151,15 +151,15 @@ fn test_plugin_pool() {
     };
 
     let mut pool = PluginPool::new();
-    pool.add_event_source(
+    pool.add_event_generator(
         "event_source_0".to_string(),
         Arc::new(TestEventSource::setup(&event_source_config).unwrap()),
     );
-    pool.add_actuator(
+    pool.add_action(
         "actuator_0".to_string(),
         Arc::new(TestActuator::setup(&actuator_config).unwrap()),
     );
-    pool.add_event_source(
+    pool.add_event_generator(
         "event_source_1".to_string(),
         Arc::new(TestEventSource::setup(&event_source_config_1).unwrap()),
     );
