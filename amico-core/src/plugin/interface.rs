@@ -1,7 +1,6 @@
 use std::any::Any;
 
-use crate::entities::Event;
-use crate::traits::Action;
+use crate::traits::{Action, ActionSelector, EventGenerator};
 
 use super::error::PluginError;
 
@@ -20,9 +19,7 @@ pub trait Plugin {
 }
 
 /// Plugins providing event sources
-pub trait EventSource: Plugin {
-    fn generate_event(&mut self) -> Event;
-}
+pub trait EventGeneratorPlugin: Plugin + EventGenerator {}
 
 /// Plugins providing sensor to world environment
 pub trait InputSource: Plugin {
@@ -30,14 +27,7 @@ pub trait InputSource: Plugin {
 }
 
 /// Plugins providing actuator control
-pub trait Actuator: Plugin {
-    fn execute(&mut self, data: &dyn Any) -> Result<Box<dyn Any>, PluginError>;
-}
-
-// TODO: Wait for Event Pool implementation
-pub struct EventPool;
+pub trait ActionPlugin: Plugin + Action {}
 
 /// Plugins selecting actions based on the current state and event pool
-pub trait ActionSelector: Plugin {
-    fn select_action(&self, pool: &EventPool) -> Box<dyn Action>;
-}
+pub trait ActionSelectorPlugin: Plugin + ActionSelector {}

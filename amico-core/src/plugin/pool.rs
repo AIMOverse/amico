@@ -1,13 +1,13 @@
 use std::{any::Any, collections::HashMap, sync::Arc};
 
-use super::{ActionSelector, Actuator, EventSource, InputSource};
+use super::{ActionSelectorPlugin, ActionPlugin, EventGeneratorPlugin, InputSource};
 
 // Type alias for any object implementing the `Any` trait.
 pub type AnyObject = Box<dyn Any>;
-pub type EventSourceObject = Arc<dyn EventSource>;
+pub type EventSourceObject = Arc<dyn EventGeneratorPlugin>;
 pub type InputSourceObject = Arc<dyn InputSource>;
-pub type ActionSelectorObject = Arc<dyn ActionSelector>;
-pub type ActuatorObject = Arc<dyn Actuator>;
+pub type ActionSelectorObject = Arc<dyn ActionSelectorPlugin>;
+pub type ActuatorObject = Arc<dyn ActionPlugin>;
 
 /// A struct representing a pool of plugins.
 pub struct PluginPool {
