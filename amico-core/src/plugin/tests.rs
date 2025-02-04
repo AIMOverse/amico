@@ -167,8 +167,8 @@ fn test_plugin_pool() {
         Arc::new(TestEventSource::setup(&event_source_config_1).unwrap()),
     );
 
-    assert!(pool.event_sources.len() == 2);
-    assert!(pool.actuators.len() == 1);
-    assert!(pool.inputs.len() == 0);
+    assert!(pool.event_generators.len() == 2);
+    assert!(pool.actions.len() == 1);
+    assert!(pool.input_sources.len() == 0);
     assert!(pool.action_selectors.len() == 0);
 }
