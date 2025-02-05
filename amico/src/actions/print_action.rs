@@ -1,5 +1,5 @@
+use amico_core::errors::ActionError;
 use amico_core::traits::Action;
-use std::any::Any;
 use std::thread;
 
 pub struct PrintAction {
@@ -13,10 +13,12 @@ impl PrintAction {
 }
 
 impl Action for PrintAction {
-    fn execute(&self) -> Box<dyn Any> {
+    fn execute(&self) -> Result<(), ActionError> {
         println!("{}", self.message);
         // Simulate some acting time
         thread::sleep(std::time::Duration::from_millis(100));
-        Box::new(self.message.clone())
+        Err(ActionError::ExecutingActionError(
+            "Print action failed".to_string(),
+        ))
     }
 }
