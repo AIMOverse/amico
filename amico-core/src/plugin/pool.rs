@@ -1,20 +1,19 @@
-use std::{any::Any, collections::HashMap, sync::Arc};
+use std::{collections::HashMap, sync::Arc};
 
-use super::{ActionSelector, Actuator, EventSource, InputSource};
+use super::{ActionPlugin, ActionSelectorPlugin, EventGeneratorPlugin, InputSource};
 
 // Type alias for any object implementing the `Any` trait.
-pub type AnyObject = Box<dyn Any>;
-pub type EventSourceObject = Arc<dyn EventSource>;
+pub type EventGeneratorObject = Arc<dyn EventGeneratorPlugin>;
 pub type InputSourceObject = Arc<dyn InputSource>;
-pub type ActionSelectorObject = Arc<dyn ActionSelector>;
-pub type ActuatorObject = Arc<dyn Actuator>;
+pub type ActionSelectorObject = Arc<dyn ActionSelectorPlugin>;
+pub type ActionObject = Arc<dyn ActionPlugin>;
 
 /// A struct representing a pool of plugins.
 pub struct PluginPool {
-    pub(crate) event_sources: HashMap<String, EventSourceObject>,
-    pub(crate) inputs: HashMap<String, InputSourceObject>,
+    pub(crate) event_generators: HashMap<String, EventGeneratorObject>,
+    pub(crate) input_sources: HashMap<String, InputSourceObject>,
     pub(crate) action_selectors: HashMap<String, ActionSelectorObject>,
-    pub(crate) actuators: HashMap<String, ActuatorObject>,
+    pub(crate) actions: HashMap<String, ActionObject>,
 }
 
 /// A default implementation of the `PluginPool` struct.
@@ -28,34 +27,34 @@ impl PluginPool {
     /// Creates a new empty `PluginPool`.
     pub fn new() -> Self {
         Self {
-            event_sources: HashMap::new(),
-            inputs: HashMap::new(),
+            event_generators: HashMap::new(),
+            input_sources: HashMap::new(),
             action_selectors: HashMap::new(),
-            actuators: HashMap::new(),
+            actions: HashMap::new(),
         }
     }
 
-    /// Adds an event source to the pool.
-    pub fn add_event_source(&mut self, name: String, source: EventSourceObject) -> &mut Self {
-        self.event_sources.insert(name, source);
+    /// Adds an event generator plugin to the pool.
+    pub fn add_event_generator(&mut self, name: String, source: EventGeneratorObject) -> &mut Self {
+        self.event_generators.insert(name, source);
         self
     }
 
-    /// Adds an input source to the pool.
-    pub fn add_input(&mut self, name: String, source: InputSourceObject) -> &mut Self {
-        self.inputs.insert(name, source);
+    /// Adds an input source plugin to the pool.
+    pub fn add_input_source(&mut self, name: String, source: InputSourceObject) -> &mut Self {
+        self.input_sources.insert(name, source);
         self
     }
 
-    /// Adds an action selector to the pool.
+    /// Adds an action selector plugin to the pool.
     pub fn add_action_selector(&mut self, name: String, source: ActionSelectorObject) -> &mut Self {
         self.action_selectors.insert(name, source);
         self
     }
 
-    /// Adds an actuator to the pool.
-    pub fn add_actuator(&mut self, name: String, source: ActuatorObject) -> &mut Self {
-        self.actuators.insert(name, source);
+    /// Adds an action plugin to the pool.
+    pub fn add_action(&mut self, name: String, source: ActionObject) -> &mut Self {
+        self.actions.insert(name, source);
         self
     }
 }
