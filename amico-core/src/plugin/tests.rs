@@ -3,7 +3,9 @@ use std::{any::Any, collections::HashMap, sync::Arc};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    entities::Event, errors::ActionError, traits::{Action, EventGenerator}
+    entities::Event,
+    errors::ActionError,
+    traits::{Action, EventGenerator},
 };
 
 use super::*;
@@ -114,7 +116,9 @@ impl Plugin for TestActuator {
 impl Action for TestActuator {
     fn execute(&self) -> Result<(), ActionError> {
         if !self.connected {
-            return Err(ActionError::ExecutingActionError("Not connected".to_string()));
+            return Err(ActionError::ExecutingActionError(
+                "Not connected".to_string(),
+            ));
         }
         Ok(())
     }
