@@ -1,5 +1,5 @@
-use amico::impls::ActionSelectorImpl;
-use amico::impls::EventGeneratorImpl;
+use amico_lib::impls::ActionSelectorImpl;
+use amico_lib::impls::EventGeneratorImpl;
 use amico_core::controller::Agent;
 use amico_core::traits::{ActionSelector, EventGenerator};
 

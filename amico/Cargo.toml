@@ -1,16 +1,15 @@
 [package]
-name = "amico"
-version = "0.1.2"
+name = "amico-cli"
+version = "0.0.1"
 edition = "2021"
 description = "The agent system executable for the Amico AI Agent Framework"
 repository = "https://github.com/AIMOverse/amico"
 license = "MIT"
 
 [lib]
-name = "amico"
+name = "amico_lib"
 path = "src/lib.rs"
 
-# 定义二进制（bin）
 [[bin]]
 name = "amico_bin"
 path = "src/main.rs"
