@@ -124,22 +124,22 @@ impl ActionPlugin for TestActuator {}
 
 #[test]
 fn test_actuator() {
-    // let disconnect_config = TestActuatorConfig {
-    //     connect_string: "disconnected".to_string(),
-    // };
-    // let mut actuator = TestActuator::setup(&disconnect_config).unwrap();
-    // assert!(!actuator.connected);
-    // let result = actuator.execute(&"ping".to_string());
-    // assert!(result.is_err());
-    // let connect_config = TestActuatorConfig {
-    //     connect_string: "connected".to_string(),
-    // };
-    // let mut actuator = TestActuator::setup(&connect_config).unwrap();
-    // assert!(actuator.connected);
-    // let result = actuator.execute(&"ping".to_string());
-    // assert!(result.is_ok());
-    // let result = actuator.execute(&"ping");
-    // assert!(result.is_ok());
+    let disconnect_config = TestActuatorConfig {
+        connect_string: "disconnected".to_string(),
+    };
+    let actuator = TestActuator::setup(&disconnect_config).unwrap();
+    assert!(!actuator.connected);
+    let result = actuator.execute();
+    assert!(result.is_err());
+    let connect_config = TestActuatorConfig {
+        connect_string: "connected".to_string(),
+    };
+    let actuator = TestActuator::setup(&connect_config).unwrap();
+    assert!(actuator.connected);
+    let result = actuator.execute();
+    assert!(result.is_ok());
+    let result = actuator.execute();
+    assert!(result.is_ok());
 }
 
 // Plugin Pool
