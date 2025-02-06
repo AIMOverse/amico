@@ -1,7 +1,7 @@
-use amico_lib::impls::ActionSelectorImpl;
-use amico_lib::impls::EventGeneratorImpl;
 use amico_core::controller::Agent;
 use amico_core::traits::{ActionSelector, EventGenerator};
+use amico_lib::impls::ActionSelectorImpl;
+use amico_lib::impls::EventGeneratorImpl;
 
 fn print_demo_hint() {
     println!("THIS IS ONLY A DEMO VERSION OF AMICO");
