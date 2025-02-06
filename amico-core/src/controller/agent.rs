@@ -99,7 +99,9 @@ impl Agent {
                     // The events pool is unlocked
                 }
                 // The action is executed
-                action.execute();
+                if let Err(e) = action.execute() {
+                    error!("{}", e);
+                }
             }
         });
 
