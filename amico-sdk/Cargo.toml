@@ -11,3 +11,6 @@ name = "amico"
 path = "src/lib.rs"
 
 [dependencies]
+async-trait = "0.1.86"
+serde_json = "1.0.138"
+thiserror = "2.0.11"
