@@ -1,13 +1,17 @@
-use async_trait::async_trait;
-
 use self::errors::*;
-use super::chat::ChatHistory;
+use crate::ai::model::{ChatResponse, Message};
+use crate::ai::tool::ToolSet;
+use async_trait::async_trait;
 
 /// Trait for providers of AI models.
 #[async_trait]
-pub trait Provider {
+pub trait LLMProvider {
     /// Creates a new provider.
-    fn new(base_url: Option<&str>, api_key: Option<&str>) -> Result<Self, CreationError>
+    fn new(
+        base_url: &str,
+        api_key: Option<&str>,
+        toolset: Option<&ToolSet>,
+    ) -> Result<Self, CreationError>
     where
         Self: Sized;
 
@@ -15,20 +19,9 @@ pub trait Provider {
     async fn completion(
         &self,
         model: String,
-        prompt: String,
-        chat_history: &ChatHistory,
-    ) -> Result<ModelChoice, CompletionError>;
-
-    /// Checks if a model name is available.
-    async fn model_available(&self, model: &str) -> bool;
+        messages: Vec<Message>,
+    ) -> Result<ChatResponse, CompletionError>;
 }
-
-/// Result of a model choice.
-pub enum ModelChoice {
-    Message(String),
-    ToolCall(String, serde_json::Value),
-}
-
 /// Errors related to AI providers.
 pub mod errors {
     #[derive(Debug, thiserror::Error)]
@@ -39,7 +32,7 @@ pub mod errors {
 
     #[derive(Debug, thiserror::Error)]
     pub enum CompletionError {
-        #[error("API error")]
+        #[error("LLM API error")]
         ApiError,
     }
 }

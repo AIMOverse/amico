@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
 use self::errors::ExecutorError;
-use super::{provider::Provider, tool::ToolSet};
+use super::{provider::LLMProvider, tool::ToolSet};
 
 /// An executor executes a certain agentic task based on a command prompt
 /// using a series of model provider calls.
@@ -10,7 +10,7 @@ pub trait Executor {
     fn new(
         system_prompt: String,
         model: String,
-        provider: Box<dyn Provider>,
+        provider: Box<dyn LLMProvider>,
         tools: ToolSet,
     ) -> Self
     where
