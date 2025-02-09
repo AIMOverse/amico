@@ -22,6 +22,7 @@ pub struct Message {
 }
 
 // Tool Calls
+#[derive(Serialize, Deserialize)]
 pub struct ToolCall {
     pub id: String,
     pub name: String,
