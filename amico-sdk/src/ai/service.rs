@@ -1,22 +1,22 @@
 use async_trait::async_trait;
 
 use self::errors::ExecutorError;
-use super::{provider::LLMProvider, tool::ToolSet};
+use super::{provider::AIProvider, tool::ToolSet};
 
-/// An executor executes a certain agentic task based on a command prompt
+/// The trait for AI services.
 /// using a series of model provider calls.
 #[async_trait]
-pub trait Executor {
+pub trait AIService {
     fn new(
         system_prompt: String,
         model: String,
-        provider: Box<dyn LLMProvider>,
+        provider: Box<dyn AIProvider>,
         tools: ToolSet,
     ) -> Self
     where
         Self: Sized;
 
-    async fn execute(&mut self, prompt: String) -> Result<String, ExecutorError>;
+    async fn get_response(&mut self, prompt: String) -> Result<String, ExecutorError>;
 }
 
 pub mod errors {

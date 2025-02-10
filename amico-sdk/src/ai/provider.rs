@@ -4,8 +4,9 @@ use crate::ai::tool::ToolSet;
 use async_trait::async_trait;
 
 /// Trait for providers of AI models.
+/// This trait should be used in AI services.
 #[async_trait]
-pub trait LLMProvider {
+pub trait AIProvider {
     /// Creates a new provider.
     fn new(
         base_url: &str,
