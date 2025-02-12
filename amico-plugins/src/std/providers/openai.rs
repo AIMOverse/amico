@@ -86,7 +86,7 @@ impl Provider for OpenAI {
 
         // Build the rig completion request
         let request = CompletionRequest {
-            chat_history: chat_history.iter().map(|m| into_rig_message(m)).collect(),
+            chat_history: chat_history.iter().map(into_rig_message).collect(),
             prompt,
             preamble: None,
             temperature: None,

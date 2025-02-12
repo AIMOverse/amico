@@ -6,7 +6,7 @@ use super::provider::Provider;
 /// An executor executes a certain agentic task based on a command prompt
 /// using a series of model provider calls.
 #[async_trait]
-pub trait Service: Send + Sync {
+pub trait Generator: Send + Sync {
     async fn generate_text(
         &mut self,
         provider: &dyn Provider,
