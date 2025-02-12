@@ -12,6 +12,8 @@ use rig::{
     providers::openai,
 };
 
+use crate::interface::{Plugin, PluginCategory, PluginInfo};
+
 lazy_static! {
     /// List of available OpenAI models
     static ref OPENAI_MODELS: Vec<&'static str> = vec![
@@ -109,4 +111,11 @@ impl Provider for OpenAI {
         // Check if the model name is available
         OPENAI_MODELS.contains(&model)
     }
+}
+
+impl Plugin for OpenAI {
+    const INFO: &'static PluginInfo = &PluginInfo {
+        name: "OpenAI",
+        category: PluginCategory::Service,
+    };
 }
