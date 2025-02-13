@@ -24,7 +24,10 @@ impl ActionMap {
     pub fn describe(&self) -> String {
         let mut result = String::new();
         for (name, action) in &self.actions {
-            result.push_str(&format!("{}: {}\n", name, action.description));
+            result.push_str(&format!(
+                "{}: {} parameters: {}\n",
+                name, action.description, action.parameters_description
+            ));
         }
         result
     }

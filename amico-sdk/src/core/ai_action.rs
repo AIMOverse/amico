@@ -14,3 +14,21 @@ impl amico_core::traits::Action for AIAction {
         (self.action)(self.parameters.clone())
     }
 }
+
+impl AIAction {
+    pub fn new(
+        name: String,
+        description: String,
+        parameters: serde_json::Value,
+        parameters_description: serde_json::Value,
+        action: Box<dyn Fn(serde_json::Value) -> Result<(), ActionError>>,
+    ) -> Self {
+        Self {
+            name,
+            description,
+            parameters,
+            parameters_description,
+            action,
+        }
+    }
+}
