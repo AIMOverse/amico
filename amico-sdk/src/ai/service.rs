@@ -12,4 +12,6 @@ pub trait Service: Send + Sync {
         provider: &dyn Provider,
         prompt: String,
     ) -> Result<String, ServiceError>;
+
+    fn set_system_prompt(&mut self, prompt: String);
 }
