@@ -1,5 +1,5 @@
 use amico::ai::{
-    chat::ChatHistory,
+    chat::{ChatHistory, Message},
     provider::{
         errors::{CompletionError, CreationError},
         ModelChoice, Provider,
@@ -12,6 +12,8 @@ use rig::{
     providers::openai,
 };
 
+use crate::interface::{Plugin, PluginCategory, PluginInfo};
+
 lazy_static! {
     /// List of available OpenAI models
     static ref OPENAI_MODELS: Vec<&'static str> = vec![
@@ -21,6 +23,26 @@ lazy_static! {
         openai::GPT_4_TURBO,
         openai::GPT_35_TURBO,
     ];
+}
+
+// Implement type convertions
+
+/// Convert `sdk`'s `Message` into `rig`'s `Message`
+fn into_rig_message(message: &Message) -> rig::completion::Message {
+    rig::completion::Message {
+        role: message.role.clone(),
+        content: message.content.clone(),
+    }
+}
+
+/// Convert `rig`'s `ModelChoice` into `sdk`'s `ModelChoice`
+fn from_rig_choice(choice: rig::completion::ModelChoice) -> ModelChoice {
+    match choice {
+        rig::completion::ModelChoice::ToolCall(name, _, params) => {
+            ModelChoice::ToolCall(name, params)
+        }
+        rig::completion::ModelChoice::Message(msg) => ModelChoice::Message(msg),
+    }
 }
 
 /// OpenAI provider using `rig-core`
@@ -54,17 +76,17 @@ impl Provider for OpenAI {
         chat_history: &ChatHistory,
     ) -> Result<ModelChoice, CompletionError> {
         let Self(client) = self;
+
+        if !self.model_available(&model).await {
+            // TODO: wait for sdk to publish
+            // return Err(CompletionError::ModelUnavailable(model));
+        }
+
         let model = client.completion_model(model.as_str());
 
         // Build the rig completion request
         let request = CompletionRequest {
-            chat_history: chat_history
-                .iter()
-                .map(|msg| rig::completion::Message {
-                    role: msg.role.clone(),
-                    content: msg.content.clone(),
-                })
-                .collect(),
+            chat_history: chat_history.iter().map(into_rig_message).collect(),
             prompt,
             preamble: None,
             temperature: None,
@@ -74,16 +96,12 @@ impl Provider for OpenAI {
             documents: Vec::new(),
         };
 
+        // Perform request to the AI model API
         let response = model.completion(request).await;
 
         // Convert the rig completion response to a ModelChoice
         match response {
-            Ok(res) => match res.choice {
-                rig::completion::ModelChoice::ToolCall(name, _, params) => {
-                    Ok(ModelChoice::ToolCall(name, params))
-                }
-                rig::completion::ModelChoice::Message(msg) => Ok(ModelChoice::Message(msg)),
-            },
+            Ok(res) => Ok(from_rig_choice(res.choice)),
             Err(_) => Err(CompletionError::ApiError),
         }
     }
@@ -93,4 +111,11 @@ impl Provider for OpenAI {
         // Check if the model name is available
         OPENAI_MODELS.contains(&model)
     }
+}
+
+impl Plugin for OpenAI {
+    const INFO: &'static PluginInfo = &PluginInfo {
+        name: "OpenAI",
+        category: PluginCategory::Service,
+    };
 }
