@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
-use self::errors::*;
-use super::chat::ChatHistory;
+use crate::ai::chat::ChatHistory;
+use crate::ai::errors::{CompletionError, CreationError};
 
 /// Trait for providers of AI models.
 #[async_trait]
@@ -27,19 +27,4 @@ pub trait Provider {
 pub enum ModelChoice {
     Message(String),
     ToolCall(String, serde_json::Value),
-}
-
-/// Errors related to AI providers.
-pub mod errors {
-    #[derive(Debug, thiserror::Error)]
-    pub enum CreationError {
-        #[error("Invalid param")]
-        InvalidParam,
-    }
-
-    #[derive(Debug, thiserror::Error)]
-    pub enum CompletionError {
-        #[error("API error")]
-        ApiError,
-    }
 }
