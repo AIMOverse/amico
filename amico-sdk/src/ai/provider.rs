@@ -6,7 +6,7 @@ use async_trait::async_trait;
 /// Trait for providers of AI models.
 /// This trait should be used in AI services.
 #[async_trait]
-pub trait AIProvider {
+pub trait Provider {
     /// Creates a new provider.
     fn new(
         base_url: &str,
