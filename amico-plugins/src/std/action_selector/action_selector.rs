@@ -14,7 +14,8 @@ impl Plugin for ActionSelector {
 }
 
 impl amico_core::traits::ActionSelector for ActionSelector {
-    fn select_action(&self, events: Vec<Event>) -> (Box<dyn Action>, Vec<u32>) {
+    // Temporarily ignore the events
+    fn select_action(&self, _events: Vec<Event>) -> (Box<dyn Action>, Vec<u32>) {
         todo!()
     }
 }
