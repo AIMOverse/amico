@@ -1,24 +1,12 @@
 use std::collections::HashMap;
 
-use errors::ToolCallError;
+use crate::ai::errors::ToolCallError;
 
 pub struct Tool {
     pub name: String,
     pub description: String,
     pub parameters: serde_json::Value,
     pub tool_call: Box<dyn Fn(serde_json::Value) -> Result<serde_json::Value, ToolCallError>>,
-}
-
-pub mod errors {
-    #[derive(Debug, thiserror::Error)]
-    pub enum ToolCallError {
-        #[error("Invalid param {name}: {value} ({reason})")]
-        InvalidParam {
-            name: String,
-            value: serde_json::Value,
-            reason: String,
-        },
-    }
 }
 
 pub struct ToolSet {
