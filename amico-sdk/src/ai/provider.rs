@@ -1,4 +1,4 @@
-use self::errors::*;
+use crate::ai::errors::{CompletionError, CreationError};
 use crate::ai::model::{ChatResponse, Message};
 use crate::ai::tool::ToolSet;
 use async_trait::async_trait;
@@ -22,18 +22,4 @@ pub trait Provider {
         model: String,
         messages: Vec<Message>,
     ) -> Result<ChatResponse, CompletionError>;
-}
-/// Errors related to AI providers.
-pub mod errors {
-    #[derive(Debug, thiserror::Error)]
-    pub enum CreationError {
-        #[error("Invalid param")]
-        InvalidParam,
-    }
-
-    #[derive(Debug, thiserror::Error)]
-    pub enum CompletionError {
-        #[error("LLM API error")]
-        ApiError,
-    }
 }

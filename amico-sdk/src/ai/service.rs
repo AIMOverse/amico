@@ -1,27 +1,16 @@
+use crate::ai::errors::ServiceError;
+use crate::ai::model::{ChatResponse, Message};
+use crate::ai::provider::Provider;
 use async_trait::async_trait;
 
-use self::errors::GenerationError;
-use super::provider::Provider;
-
-/// An executor executes a certain agentic task based on a command prompt
+/// A Service provide a high-level interface to interact with AI models.
 /// using a series of model provider calls.
 #[async_trait]
-pub trait Generator: Send + Sync {
+pub trait Service: Send + Sync {
     async fn generate_text(
         &mut self,
         provider: &dyn Provider,
-        prompt: String,
-    ) -> Result<String, GenerationError>;
-}
-
-pub mod errors {
-    use crate::ai::{provider, tool};
-
-    #[derive(Debug, thiserror::Error)]
-    pub enum GenerationError {
-        #[error("Provider error")]
-        ProviderError(#[from] provider::errors::CompletionError),
-        #[error("Tool error")]
-        ToolError(#[from] tool::errors::ToolCallError),
-    }
+        model: String,
+        messages: Vec<Message>,
+    ) -> Result<ChatResponse, ServiceError>;
 }
