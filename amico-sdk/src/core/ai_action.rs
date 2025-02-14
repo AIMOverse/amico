@@ -1,5 +1,6 @@
 use amico_core::errors::ActionError;
 
+#[derive(Clone)]
 pub struct AIAction {
     pub name: String,                              // The name of the action
     pub description: String,                       // The description of the action

@@ -18,7 +18,7 @@ impl ActionMap {
     }
 
     pub fn get(&self, name: &str) -> Option<AIAction> {
-        *self.actions.get(name).clone()
+        self.actions.get(name).cloned()
     }
 
     pub fn describe(&self) -> String {
