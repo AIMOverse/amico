@@ -4,6 +4,7 @@ use amico::ai::service::Service;
 use amico::core::action_map::ActionMap;
 use amico_core::entities::Event;
 use amico_core::traits::Action;
+use futures::executor::block_on;
 
 /// Implementation of the ActionSelector Plugin.
 #[derive(Default)]
@@ -28,15 +29,19 @@ impl amico_core::traits::ActionSelector for ActionSelector {
         let prompt = "Example prompt".to_string();
 
         // Get Response
-        let response = self.service.generate_text(&self.provider, prompt);
+        let response = block_on(self.service.generate_text(&self.provider, prompt))
+            .expect("Failed to generate text");
         // Parse the response to JSON
-        let json_response = serde_json::from_str(&response).unwrap();
+        let json_response: serde_json::Value =
+            serde_json::from_str(&response).expect("Failed to parse JSON");
         let mut action = self
             .actions_map
             .get(&json_response["name"].as_str().unwrap())
             .unwrap()
             .clone();
-        action.set_parameters(json_response["parameters"].as_object().unwrap());
+        action.set_parameters(serde_json::Value::Object(
+            json_response["parameters"].as_object().unwrap().clone(),
+        ));
 
         // Return the action
         todo!()
