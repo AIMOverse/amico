@@ -7,7 +7,6 @@ use amico_core::traits::Action;
 use futures::executor::block_on;
 
 /// Implementation of the ActionSelector Plugin.
-#[derive(Default)]
 pub struct ActionSelector {
     // Actions
     pub actions_map: ActionMap,

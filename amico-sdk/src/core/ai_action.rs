@@ -1,12 +1,13 @@
 use amico_core::errors::ActionError;
+use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct AIAction {
-    pub name: String,                              // The name of the action
-    pub description: String,                       // The description of the action
-    pub parameters: serde_json::Value,             // The actual parameters
-    pub parameters_description: serde_json::Value, // The description of the parameters (The types and requirements of the parameters)
-    pub action: Box<dyn Fn(serde_json::Value) -> Result<(), ActionError>>, // The actual action
+    pub name: String,
+    pub description: String,
+    pub parameters: serde_json::Value,
+    pub parameters_description: serde_json::Value,
+    pub action: Arc<dyn Fn(serde_json::Value) -> Result<(), ActionError> + Send + Sync>,
 }
 
 impl amico_core::traits::Action for AIAction {
@@ -17,19 +18,22 @@ impl amico_core::traits::Action for AIAction {
 }
 
 impl AIAction {
-    pub fn new(
+    pub fn new<F>(
         name: String,
         description: String,
         parameters: serde_json::Value,
         parameters_description: serde_json::Value,
-        action: Box<dyn Fn(serde_json::Value) -> Result<(), ActionError>>,
-    ) -> Self {
+        action: F,
+    ) -> Self
+    where
+        F: Fn(serde_json::Value) -> Result<(), ActionError> + Send + Sync + 'static,
+    {
         Self {
             name,
             description,
             parameters,
             parameters_description,
-            action,
+            action: Arc::new(action), // Wrap the function in Arc
         }
     }
 
