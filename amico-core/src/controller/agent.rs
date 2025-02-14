@@ -77,7 +77,7 @@ impl Agent {
 
         let action_handle = thread::spawn(move || {
             // The factory is called to create an action selector
-            let action_selector = action_selector_factory();
+            let mut action_selector = action_selector_factory();
 
             while is_running_action.load(Ordering::SeqCst) {
                 // The action selector is used to select an action
