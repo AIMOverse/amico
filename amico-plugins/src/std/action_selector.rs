@@ -16,7 +16,7 @@ pub struct ActionSelector {
 // Implement the Plugin trait for the ActionSelector struct
 impl Plugin for ActionSelector {
     const INFO: &'static PluginInfo = &PluginInfo {
-        name: "ActionSelector",
+        name: "StandardActionSelector",
         category: PluginCategory::ActionSelector,
     };
 }
@@ -102,7 +102,9 @@ impl ActionSelector {
         }"#;
 
         let final_prompt = format!(
-            "{}\nHere is an example of the output:{}\nHere are the available actions:{}",
+            "{}\n\
+            Here is an example of the output:{}\n\
+            Here are the available actions:{}",
             prompt.trim(),
             example_output,
             self.actions_map.describe()
