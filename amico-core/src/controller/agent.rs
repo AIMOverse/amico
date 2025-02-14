@@ -88,19 +88,27 @@ impl Agent {
                     events = event_pool_for_as.get_events();
                     // The event pool list is unlocked
                 }
-                let (action, event_ids) = action_selector.select_action(events);
-                {
-                    info!("Removing {} events", event_ids.len());
-                    // The events pool is locked
-                    let mut event_pool_for_as = event_pool_for_as.lock().unwrap();
-                    if let Err(e) = event_pool_for_as.remove_events(event_ids) {
-                        error!("Failed to remove events: {}", e);
+                match action_selector.select_action(events) {
+                    Ok((action, event_ids)) => {
+                        info!("Removing {} events", event_ids.len());
+                        {
+                            // Lock the event pool
+                            let mut event_pool_for_as = event_pool_for_as.lock().unwrap();
+
+                            // Try to remove events from the pool
+                            if let Err(e) = event_pool_for_as.remove_events(event_ids) {
+                                error!("Failed to remove events: {}", e);
+                            }
+                        }
+                        // The event pool is unlocked here automatically when the lock goes out of scope
+                        // The action is executed
+                        if let Err(e) = action.execute() {
+                            error!("{}", e);
+                        }
                     }
-                    // The events pool is unlocked
-                }
-                // The action is executed
-                if let Err(e) = action.execute() {
-                    error!("{}", e);
+                    Err(e) => {
+                        error!("{}", e);
+                    }
                 }
             }
         });
