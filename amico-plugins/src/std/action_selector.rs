@@ -1,10 +1,14 @@
 use crate::interface::{Plugin, PluginCategory, PluginInfo};
+use amico::core::action_map::ActionMap;
 use amico_core::entities::Event;
 use amico_core::traits::Action;
 
 /// Implementation of the ActionSelector Plugin.
 #[derive(Default)]
-pub struct ActionSelector;
+pub struct ActionSelector {
+    // Actions
+    pub actions_map: ActionMap,
+}
 
 impl Plugin for ActionSelector {
     const INFO: &'static PluginInfo = &PluginInfo {

@@ -1,9 +1,7 @@
 use amico::ai::{
     chat::{ChatHistory, Message},
-    provider::{
-        errors::{CompletionError, CreationError},
-        ModelChoice, Provider,
-    },
+    errors::{CompletionError, CreationError},
+    provider::{ModelChoice, Provider},
 };
 use async_trait::async_trait;
 use lazy_static::lazy_static;
