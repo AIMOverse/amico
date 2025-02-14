@@ -60,24 +60,12 @@ impl amico_core::traits::ActionSelector for ActionSelector {
             json_response["parameters"].as_object(),
         ) {
             // Check if the action exists in the actions_map
-            if let Some(action) = self.actions_map.get(action_name) {
-                let mut cloned_action = action.clone();
-                cloned_action.set_parameters(serde_json::Value::Object(parameters.clone()));
-
-                // Build the Vec<u32> from the "ids" field in the parameters, if present
-                let vec_u32 = parameters
-                    .get("ids")
-                    .and_then(|ids| ids.as_array())
-                    .map(|array| {
-                        array
-                            .iter()
-                            .filter_map(|v| v.as_u64().map(|n| n as u32))
-                            .collect()
-                    })
-                    .unwrap_or_else(Vec::new);
+            if let Some(mut action) = self.actions_map.get(action_name) {
+                action.set_parameters(serde_json::Value::Object(parameters.clone()));
+                // TODO - Get the removing event IDs from the response
 
                 // Return the action and the Vec<u32>
-                return Ok((Box::new(cloned_action), vec_u32));
+                return Ok((Box::new(action), vec![]));
             }
         }
 

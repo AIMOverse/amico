@@ -17,8 +17,8 @@ impl ActionMap {
         self.actions.insert(action.name.clone(), action);
     }
 
-    pub fn get(&self, name: &str) -> Option<&AIAction> {
-        self.actions.get(name)
+    pub fn get(&self, name: &str) -> Option<AIAction> {
+        *self.actions.get(name).clone()
     }
 
     pub fn describe(&self) -> String {
