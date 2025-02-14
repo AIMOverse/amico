@@ -33,9 +33,8 @@ impl amico_core::traits::Action for AIAction {
     /// If validation passes, it executes the action with the provided parameters.
     fn execute(&self) -> Result<(), ActionError> {
         // Step 1: Validate the parameters
-        if let Err(e) = self.validate_parameters() {
-            return Err(e); // Return an error if parameter validation fails
-        }
+        // Return an error if parameter validation fails
+        self.validate_parameters()?;
 
         // Step 2: Execute the action and return the result
         (self.action)(self.parameters.clone())
@@ -98,7 +97,7 @@ impl AIAction {
         if let Some(requirements) = self.parameters_requirements.as_object() {
             for (param, requirement) in requirements {
                 // If the requirement is "required" and the parameter is missing, return an error
-                if requirement == "required" && !self.parameters.get(param).is_some() {
+                if requirement == "required" && self.parameters.get(param).is_none() {
                     return Err(ActionError::MissingRequiredParameters(param.clone()));
                 }
             }
