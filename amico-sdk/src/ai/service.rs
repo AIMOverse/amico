@@ -7,11 +7,9 @@ use crate::ai::errors::ServiceError;
 /// using a series of model provider calls.
 #[async_trait]
 pub trait Service: Send + Sync {
-    async fn generate_text(
-        &mut self,
-        provider: &dyn Provider,
-        prompt: String,
-    ) -> Result<String, ServiceError>;
+    async fn generate_text(&mut self, prompt: String) -> Result<String, ServiceError>;
 
     fn set_system_prompt(&mut self, prompt: String);
+
+    fn set_provider(&mut self, provider: Box<dyn Provider>);
 }

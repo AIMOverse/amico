@@ -1,5 +1,4 @@
 use crate::interface::{Plugin, PluginCategory, PluginInfo};
-use amico::ai::provider::Provider;
 use amico::ai::service::Service;
 use amico::core::action_map::ActionMap;
 use amico_core::entities::Event;
@@ -12,9 +11,9 @@ pub struct ActionSelector {
     // Actions
     pub actions_map: ActionMap,
     pub service: Box<dyn Service>,
-    pub provider: Box<dyn Provider>,
 }
 
+// Implement the Plugin trait for the ActionSelector struct
 impl Plugin for ActionSelector {
     const INFO: &'static PluginInfo = &PluginInfo {
         name: "ActionSelector",
@@ -22,6 +21,7 @@ impl Plugin for ActionSelector {
     };
 }
 
+// Implement the ActionSelector trait for the ActionSelector struct
 impl amico_core::traits::ActionSelector for ActionSelector {
     // Temporarily ignore the events
     fn select_action(&mut self, _events: Vec<Event>) -> (Box<dyn Action>, Vec<u32>) {
@@ -29,8 +29,8 @@ impl amico_core::traits::ActionSelector for ActionSelector {
         let prompt = "Example prompt".to_string();
 
         // Get Response
-        let response = block_on(self.service.generate_text(&self.provider, prompt))
-            .expect("Failed to generate text");
+        let response =
+            block_on(self.service.generate_text(prompt)).expect("Failed to generate text");
         // Parse the response to JSON
         let json_response: serde_json::Value =
             serde_json::from_str(&response).expect("Failed to parse JSON");
@@ -49,15 +49,10 @@ impl amico_core::traits::ActionSelector for ActionSelector {
 }
 
 impl ActionSelector {
-    pub fn new(
-        actions_map: ActionMap,
-        service: Box<dyn Service>,
-        provider: Box<dyn Provider>,
-    ) -> Self {
+    pub fn new(actions_map: ActionMap, service: Box<dyn Service>) -> Self {
         let mut instance = Self {
             actions_map,
             service,
-            provider,
         };
         // Update the system prompt
         instance.update_system_prompt();
