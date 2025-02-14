@@ -1,4 +1,6 @@
 use crate::interface::{Plugin, PluginCategory, PluginInfo};
+use amico::ai::provider::Provider;
+use amico::ai::service::Service;
 use amico::core::action_map::ActionMap;
 use amico_core::entities::Event;
 use amico_core::traits::Action;
@@ -8,6 +10,8 @@ use amico_core::traits::Action;
 pub struct ActionSelector {
     // Actions
     pub actions_map: ActionMap,
+    pub service: Box<dyn Service>,
+    pub provider: Box<dyn Provider>,
 }
 
 impl Plugin for ActionSelector {
@@ -19,21 +23,71 @@ impl Plugin for ActionSelector {
 
 impl amico_core::traits::ActionSelector for ActionSelector {
     // Temporarily ignore the events
-    fn select_action(&self, _events: Vec<Event>) -> (Box<dyn Action>, Vec<u32>) {
-        // Prompt
-        /*let prompt = "You are a Action Selector to select actions to execute in an agent.\
-             You will be provided with information of the environment and the state of \
-             the current agent and make the best decision. Don't output the reason of choosing the action.\
-              Just output the name and the parameters of the action you choose instead.\
-              Here is a example of the output:".to_string();
+    fn select_action(&mut self, _events: Vec<Event>) -> (Box<dyn Action>, Vec<u32>) {
+        // TODO: Update the prompt
+        let prompt = "Example prompt".to_string();
+
+        // Get Response
+        let response = self.service.generate_text(&self.provider, prompt);
+        // Parse the response to JSON
+        let json_response = serde_json::from_str(&response).unwrap();
+        let mut action = self
+            .actions_map
+            .get(&json_response["name"].as_str().unwrap())
+            .unwrap()
+            .clone();
+        action.set_parameters(json_response["parameters"].as_object().unwrap());
+
+        // Return the action
+        todo!()
+    }
+}
+
+impl ActionSelector {
+    pub fn new(
+        actions_map: ActionMap,
+        service: Box<dyn Service>,
+        provider: Box<dyn Provider>,
+    ) -> Self {
+        let mut instance = Self {
+            actions_map,
+            service,
+            provider,
+        };
+        // Update the system prompt
+        instance.update_system_prompt();
+        // Return the instance
+        instance
+    }
+
+    fn update_system_prompt(&mut self) {
+        // Set the system prompt
+        let prompt = r#"You are an Action Selector to select actions to execute in an agent.
+            You will be provided with information of the environment and the state of the current agent
+            and make the best decision. Don't output the reason of choosing the action. Just output the
+            name and the parameters of the action you choose instead."#;
+
         let example_output = r#"{
             "name": "clean",
             "parameters": {
                 "room": "kitchen"
             }
         }"#;
-        let prompt = format!("{}{}", prompt, example_output);*/
-        // Wait for AI Service to complete
-        todo!()
+
+        let final_prompt = format!(
+            "{}\nHere is an example of the output:{}\nHere are the available actions:{}",
+            prompt.trim(),
+            example_output,
+            self.actions_map.describe()
+        );
+
+        self.service.set_system_prompt(final_prompt);
+    }
+
+    pub fn set_service(&mut self, service: Box<dyn Service>) {
+        // Set the service
+        self.service = service;
+        // Update the system prompt
+        self.update_system_prompt();
     }
 }

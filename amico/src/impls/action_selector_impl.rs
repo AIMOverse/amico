@@ -9,7 +9,7 @@ use std::time::Duration;
 pub struct ActionSelectorImpl;
 
 impl ActionSelector for ActionSelectorImpl {
-    fn select_action(&self, events: Vec<Event>) -> (Box<dyn Action>, Vec<u32>) {
+    fn select_action(&mut self, events: Vec<Event>) -> (Box<dyn Action>, Vec<u32>) {
         println!("events: {:?}", events);
         if !events.is_empty() {
             // Simulate some processing time
