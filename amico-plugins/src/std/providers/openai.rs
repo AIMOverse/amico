@@ -112,8 +112,10 @@ impl Provider for OpenAI {
 }
 
 impl Plugin for OpenAI {
-    const INFO: &'static PluginInfo = &PluginInfo {
-        name: "OpenAI",
-        category: PluginCategory::Service,
-    };
+    fn info(&self) -> &'static PluginInfo {
+        &PluginInfo {
+            name: "OpenAI",
+            category: PluginCategory::Service,
+        }
+    }
 }

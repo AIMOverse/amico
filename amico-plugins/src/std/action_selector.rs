@@ -11,10 +11,12 @@ pub struct ActionSelector {
 }
 
 impl Plugin for ActionSelector {
-    const INFO: &'static PluginInfo = &PluginInfo {
-        name: "ActionSelector",
-        category: PluginCategory::ActionSelector,
-    };
+    fn info(&self) -> &'static PluginInfo {
+        &PluginInfo {
+            name: "ActionSelector",
+            category: PluginCategory::ActionSelector,
+        }
+    }
 }
 
 impl amico_core::traits::ActionSelector for ActionSelector {
