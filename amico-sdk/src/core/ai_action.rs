@@ -3,11 +3,11 @@ use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct AIAction {
-    pub name: String,
-    pub description: String,
-    pub parameters: serde_json::Value,
-    pub parameters_description: serde_json::Value,
-    pub action: Arc<dyn Fn(serde_json::Value) -> Result<(), ActionError> + Send + Sync>,
+    pub name: String,                              // Name of the action
+    pub description: String,                       // Description of the action
+    pub parameters: serde_json::Value,             // Parameters of the action
+    pub parameters_description: serde_json::Value, // Description of the parameters(types of the parameters)
+    pub action: Arc<dyn Fn(serde_json::Value) -> Result<(), ActionError> + Send + Sync>, // Function to execute the action
 }
 
 impl amico_core::traits::Action for AIAction {
