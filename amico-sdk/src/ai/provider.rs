@@ -3,6 +3,8 @@ use async_trait::async_trait;
 use crate::ai::chat::ChatHistory;
 use crate::ai::errors::{CompletionError, CreationError};
 
+use super::tool::ToolSet;
+
 /// Trait for providers of AI models.
 #[async_trait]
 pub trait Provider: Send + Sync {
@@ -17,6 +19,7 @@ pub trait Provider: Send + Sync {
         prompt: &str,
         config: &CompletionConfig,
         chat_history: &ChatHistory,
+        tools: &ToolSet,
     ) -> Result<ModelChoice, CompletionError>;
 
     /// Checks if a model name is available.

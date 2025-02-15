@@ -2,6 +2,7 @@ use amico::ai::{
     chat::{ChatHistory, Message},
     errors::{CompletionError, ServiceError, ToolCallError},
     provider::{CompletionConfig, ModelChoice, Provider},
+    tool::ToolSet,
 };
 use async_trait::async_trait;
 
@@ -16,14 +17,18 @@ pub struct InMemoryService {
 
     /// Chat history
     pub history: ChatHistory,
+
+    /// Tools to use
+    pub tools: ToolSet,
 }
 
 impl InMemoryService {
-    pub fn new(config: CompletionConfig, provider: Box<dyn Provider>) -> Self {
+    pub fn new(config: CompletionConfig, provider: Box<dyn Provider>, tools: ToolSet) -> Self {
         Self {
             config,
             provider,
             history: ChatHistory::new(),
+            tools,
         }
     }
 }
@@ -42,7 +47,7 @@ impl amico::ai::service::Service for InMemoryService {
     async fn generate_text(&mut self, prompt: String) -> Result<String, ServiceError> {
         let response = self
             .provider
-            .completion(&prompt, &self.config, &self.history)
+            .completion(&prompt, &self.config, &self.history, &self.tools)
             .await;
 
         match response {

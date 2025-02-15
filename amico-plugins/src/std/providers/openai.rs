@@ -1,7 +1,8 @@
 use amico::ai::{
     chat::{ChatHistory, Message},
     errors::{CompletionError, CreationError},
-    provider::{ModelChoice, Provider, CompletionConfig},
+    provider::{CompletionConfig, ModelChoice, Provider},
+    tool::{Tool, ToolSet},
 };
 use async_trait::async_trait;
 use lazy_static::lazy_static;
@@ -43,6 +44,15 @@ fn from_rig_choice(choice: rig::completion::ModelChoice) -> ModelChoice {
     }
 }
 
+/// Convert `sdk`'s `Tool` into `rig`'s `ToolDefinition`
+fn into_rig_tool_def(tool: &Tool) -> rig::completion::ToolDefinition {
+    rig::completion::ToolDefinition {
+        name: tool.name.clone(),
+        description: tool.description.clone(),
+        parameters: tool.parameters.clone(),
+    }
+}
+
 /// OpenAI provider using `rig-core`
 pub struct OpenAI(openai::Client);
 
@@ -72,6 +82,7 @@ impl Provider for OpenAI {
         prompt: &str,
         config: &CompletionConfig,
         chat_history: &ChatHistory,
+        tools: &ToolSet,
     ) -> Result<ModelChoice, CompletionError> {
         let Self(client) = self;
 
@@ -89,7 +100,7 @@ impl Provider for OpenAI {
             temperature: Some(config.temperature),
             max_tokens: Some(config.max_tokens),
             additional_params: None,
-            tools: Vec::new(),
+            tools: tools.iter().map(into_rig_tool_def).collect(),
             documents: Vec::new(),
         };
 
@@ -113,7 +124,7 @@ impl Provider for OpenAI {
 impl Plugin for OpenAI {
     fn info(&self) -> &'static PluginInfo {
         &PluginInfo {
-            name: "OpenAI",
+            name: "StdOpenAIProvider",
             category: PluginCategory::Service,
         }
     }

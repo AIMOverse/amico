@@ -1,5 +1,6 @@
 use amico::ai::provider::{CompletionConfig, Provider};
 use amico::ai::service::Service;
+use amico::ai::tool::ToolSet;
 use amico_plugins::interface::Plugin;
 use amico_plugins::std::{providers::openai::OpenAI, service};
 use std::io::{self, Write};
@@ -64,6 +65,7 @@ async fn main() {
             model: "gpt-4o".to_string(),
         },
         Box::new(provider),
+        ToolSet::new(),
     );
 
     println!("Using service plugin: {}", service.info().name);

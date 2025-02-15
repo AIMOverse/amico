@@ -21,10 +21,17 @@ pub enum ToolCallError {
     #[error("Tool {0} is unavailable")]
     ToolUnavailable(String),
 
-    #[error("Invalid param {name}: {value} ({reason})")]
+    #[error("Invalid param {name} with value {value} for reason {reason}")]
     InvalidParam {
         name: String,
         value: serde_json::Value,
+        reason: String,
+    },
+
+    #[error("Error executing {tool_name} with params {params} for reason {reason}")]
+    ExecutionError {
+        tool_name: String,
+        params: serde_json::Value,
         reason: String,
     },
 }
