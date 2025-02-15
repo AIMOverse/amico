@@ -12,6 +12,10 @@ fn print_demo_hint() {
     println!();
 }
 
+fn print_message_separator() {
+    println!("--------------------");
+}
+
 #[tokio::main]
 async fn main() {
     print_demo_hint();
@@ -65,7 +69,7 @@ async fn main() {
     // Print global prompt
     println!();
     println!("Hi! I'm Amico, your personal AI assistant. How can I assist you today?");
-    println!("--------------------");
+    print_message_separator();
 
     loop {
         println!("Enter your message");
@@ -81,7 +85,9 @@ async fn main() {
             break;
         }
 
-        // Mock response from AI service
+        print_message_separator();
+
+        // Get response from AI service
         let response = match service.generate_text(input.to_string()).await {
             Ok(response) => response,
             Err(err) => {
@@ -89,7 +95,7 @@ async fn main() {
                 continue;
             }
         };
-        println!("Amico: {}", response);
-        println!();
+        println!("[Amico]\n{}", response);
+        print_message_separator();
     }
 }
