@@ -25,8 +25,18 @@ impl ActionMap {
         let mut result = String::new();
         for (name, action) in &self.actions {
             result.push_str(&format!(
-                "{}: {} parameters: {}\n",
-                name, action.description, action.parameters_description
+                "name: {} \n\
+                description: {}\n\
+                parameters description: {}\n\
+                parameters types: {}\n\
+                Is parameters mandatory: {}\n\
+                \n\n
+                ",
+                name,
+                action.description,
+                action.parameters_description,
+                action.parameters_types,
+                action.parameters_requirements,
             ));
         }
         result
