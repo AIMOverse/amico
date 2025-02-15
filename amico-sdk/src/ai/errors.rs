@@ -15,6 +15,9 @@ pub enum CompletionError {
 /// Errors during tool call
 #[derive(Debug, thiserror::Error)]
 pub enum ToolCallError {
+    #[error("Tool {0} is unavailable")]
+    ToolUnavailable(String),
+
     #[error("Invalid param {name}: {value} ({reason})")]
     InvalidParam {
         name: String,

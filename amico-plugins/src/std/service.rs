@@ -44,12 +44,8 @@ impl amico::ai::service::Service for Service {
         match response {
             Ok(choice) => match choice {
                 ModelChoice::Message(msg) => Ok(msg),
-                ModelChoice::ToolCall(name, params) => {
-                    Err(ServiceError::ToolError(ToolCallError::InvalidParam {
-                        name: name.clone(),
-                        value: params.clone(),
-                        reason: "Tool call not supported in service".to_string(),
-                    }))
+                ModelChoice::ToolCall(name, _) => {
+                    Err(ServiceError::ToolError(ToolCallError::ToolUnavailable(name)))
                 }
             },
             Err(_) => Err(ServiceError::ProviderError(CompletionError::ApiError)),
