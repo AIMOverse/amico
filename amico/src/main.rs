@@ -16,6 +16,8 @@ fn print_message_separator() {
     println!("--------------------");
 }
 
+const AMICO_SYSTEM_PROMPT: &str = "You are Amico, a virtual assistant.";
+
 #[tokio::main]
 async fn main() {
     print_demo_hint();
@@ -56,7 +58,7 @@ async fn main() {
 
     let mut service = service::InMemoryService::new(
         CompletionConfig {
-            system_prompt: "You are a helpful assistant.".to_string(),
+            system_prompt: AMICO_SYSTEM_PROMPT.to_string(),
             temperature: 0.7,
             max_tokens: 1000,
             model: "gpt-4o".to_string(),
