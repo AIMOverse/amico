@@ -1,5 +1,5 @@
 [package]
-name = "amico-cli"
+name = "amico"
 version = "0.0.1"
 edition = "2021"
 description = "The agent system executable for the Amico AI Agent Framework"
