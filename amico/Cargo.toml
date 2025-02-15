@@ -18,3 +18,5 @@ path = "src/main.rs"
 anyhow = "1.0.95"
 tokio = { version = "1.43.0", features = ["rt-multi-thread", "macros"] }
 amico-core = { path = "../amico-core" }
+amico-sdk = { path = "../amico-sdk" }
+amico-plugins = { path = "../amico-plugins" }

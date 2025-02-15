@@ -5,10 +5,9 @@ use amico_lib::impls::EventGeneratorImpl;
 
 fn print_demo_hint() {
     println!("THIS IS ONLY A DEMO VERSION OF AMICO");
-    println!("CORE FEATURES ARE UNAVAILABLE IN THIS VERSION");
     println!();
     println!("CHECKOUT OUR DOCS FOR MORE INFORMATION:");
-    println!("https://aimoverse.github.io/amico-docs/whitepaper/");
+    println!("https://www.amico.dev");
     println!();
 }
 
