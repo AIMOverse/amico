@@ -5,7 +5,7 @@ use crate::ai::errors::{CompletionError, CreationError};
 
 /// Trait for providers of AI models.
 #[async_trait]
-pub trait Provider {
+pub trait Provider: Send + Sync {
     /// Creates a new provider.
     fn new(base_url: Option<&str>, api_key: Option<&str>) -> Result<Self, CreationError>
     where
