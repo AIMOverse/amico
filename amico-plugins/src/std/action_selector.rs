@@ -17,7 +17,7 @@ pub struct ActionSelector {
 impl Plugin for ActionSelector {
     fn info(&self) -> &'static PluginInfo {
         &PluginInfo {
-            name: "ActionSelector",
+            name: "StandardActionSelector",
             category: PluginCategory::ActionSelector,
         }
     }
@@ -104,7 +104,9 @@ impl ActionSelector {
         }"#;
 
         let final_prompt = format!(
-            "{}\nHere is an example of the output:{}\nHere are the available actions:{}",
+            "{}\n\
+            Here is an example of the output:{}\n\
+            Here are the available actions:{}",
             prompt.trim(),
             example_output,
             self.actions_map.describe()
