@@ -13,7 +13,7 @@ pub type ToolSet = Vec<Tool>;
 pub fn describe_tool_set(tool_set: &ToolSet) -> String {
     let mut result = String::new();
     for tool in tool_set {
-        result.push_str(&format!("{}: {}\n", tool.name, tool.description));
+        result.push_str(&format!("- {}: {}\n", tool.name, tool.description));
     }
     result
 }
