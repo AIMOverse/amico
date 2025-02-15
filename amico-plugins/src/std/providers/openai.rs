@@ -1,7 +1,7 @@
 use amico::ai::{
     chat::{ChatHistory, Message},
     errors::{CompletionError, CreationError},
-    provider::{ModelChoice, Provider},
+    provider::{ModelChoice, Provider, CompletionConfig},
 };
 use async_trait::async_trait;
 use lazy_static::lazy_static;
@@ -14,7 +14,7 @@ use crate::interface::{Plugin, PluginCategory, PluginInfo};
 
 lazy_static! {
     /// List of available OpenAI models
-    static ref OPENAI_MODELS: Vec<&'static str> = vec![
+    pub static ref OPENAI_MODELS: Vec<&'static str> = vec![
         openai::GPT_4,
         openai::GPT_4O,
         openai::GPT_4O_MINI,
@@ -69,26 +69,25 @@ impl Provider for OpenAI {
     #[doc = " Completes a prompt with the provider."]
     async fn completion(
         &self,
-        model: String,
-        prompt: String,
+        prompt: &str,
+        config: &CompletionConfig,
         chat_history: &ChatHistory,
     ) -> Result<ModelChoice, CompletionError> {
         let Self(client) = self;
 
-        if !self.model_available(&model).await {
-            // TODO: wait for sdk to publish
-            // return Err(CompletionError::ModelUnavailable(model));
+        if !self.model_available(&config.model).await {
+            return Err(CompletionError::ModelUnavailable(config.model.clone()));
         }
 
-        let model = client.completion_model(model.as_str());
+        let model = client.completion_model(&config.model);
 
         // Build the rig completion request
         let request = CompletionRequest {
             chat_history: chat_history.iter().map(into_rig_message).collect(),
-            prompt,
-            preamble: None,
-            temperature: None,
-            max_tokens: None,
+            prompt: prompt.to_string(),
+            preamble: Some(config.system_prompt.clone()),
+            temperature: Some(config.temperature),
+            max_tokens: Some(config.max_tokens),
             additional_params: None,
             tools: Vec::new(),
             documents: Vec::new(),

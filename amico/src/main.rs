@@ -1,4 +1,4 @@
-use amico::ai::provider::Provider;
+use amico::ai::provider::{CompletionConfig, Provider};
 use amico::ai::service::Service;
 use amico_plugins::interface::Plugin;
 use amico_plugins::std::{providers::openai::OpenAI, service};
@@ -18,12 +18,29 @@ async fn main() {
 
     // Read `OPENAI_API_KEY` from environment variable
     let openai_api_key = match std::env::var("OPENAI_API_KEY") {
-        Ok(key) => key,
+        Ok(key) => {
+            println!("Found $OPENAI_API_KEY");
+            key
+        }
         Err(_) => {
             eprintln!("Error: OPENAI_API_KEY is not set");
             process::exit(1);
         }
     };
+
+    match std::env::var("HTTP_PROXY") {
+        Ok(proxy) => {
+            println!("Using HTTP proxy: {proxy}");
+        }
+        Err(_) => (),
+    }
+
+    match std::env::var("HTTPS_PROXY") {
+        Ok(proxy) => {
+            println!("Using HTTPS proxy: {proxy}");
+        }
+        Err(_) => (),
+    }
 
     let provider = match OpenAI::new(None, Some(&openai_api_key)) {
         Ok(provider) => provider,
@@ -33,17 +50,26 @@ async fn main() {
         }
     };
 
-    let mut service = service::Service {
-        system_prompt: "You are a helpful assistant.".to_string(),
-        temperature: 0.7,
-        max_tokens: 1000,
-        provider: Box::new(provider),
-    };
+    let mut service = service::InMemoryService::new(
+        CompletionConfig {
+            system_prompt: "You are a helpful assistant.".to_string(),
+            temperature: 0.7,
+            max_tokens: 1000,
+            model: "gpt-4o".to_string(),
+        },
+        Box::new(provider),
+    );
 
     println!("Using service plugin: {}", service.info().name);
 
+    // Print global prompt
+    println!();
+    println!("Hi! I'm Amico, your personal AI assistant. How can I assist you today?");
+    println!("--------------------");
+
     loop {
-        print!("Enter your message: ");
+        println!("Enter your message");
+        print!("> ");
         io::stdout().flush().unwrap();
 
         let mut input = String::new();
@@ -63,6 +89,7 @@ async fn main() {
                 continue;
             }
         };
-        println!("AI: {}", response);
+        println!("Amico: {}", response);
+        println!();
     }
 }

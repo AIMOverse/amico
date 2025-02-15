@@ -10,6 +10,9 @@ pub enum CreationError {
 pub enum CompletionError {
     #[error("API error")]
     ApiError,
+
+    #[error("Model {0} is unavailable")]
+    ModelUnavailable(String),
 }
 
 /// Errors during tool call

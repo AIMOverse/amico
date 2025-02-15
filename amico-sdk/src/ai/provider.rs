@@ -14,8 +14,8 @@ pub trait Provider: Send + Sync {
     /// Completes a prompt with the provider.
     async fn completion(
         &self,
-        model: String,
-        prompt: String,
+        prompt: &str,
+        config: &CompletionConfig,
         chat_history: &ChatHistory,
     ) -> Result<ModelChoice, CompletionError>;
 
@@ -27,4 +27,13 @@ pub trait Provider: Send + Sync {
 pub enum ModelChoice {
     Message(String),
     ToolCall(String, serde_json::Value),
+}
+
+/// Configuration for the completion of a prompt.
+#[derive(Debug, Clone, PartialEq)]
+pub struct CompletionConfig {
+    pub system_prompt: String,
+    pub temperature: f64,
+    pub max_tokens: u64,
+    pub model: String,
 }

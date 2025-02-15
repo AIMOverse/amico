@@ -1,49 +1,66 @@
 use amico::ai::{
+    chat::{ChatHistory, Message},
     errors::{CompletionError, ServiceError, ToolCallError},
-    provider::{ModelChoice, Provider},
+    provider::{CompletionConfig, ModelChoice, Provider},
 };
 use async_trait::async_trait;
 
 use crate::interface::{Plugin, PluginCategory, PluginInfo};
 
-pub struct Service {
-    /// The system prompt for the service
-    pub system_prompt: String,
-
-    /// The temperature to use
-    pub temperature: f32,
-
-    /// The maximum number of tokens to generate
-    pub max_tokens: u32,
+pub struct InMemoryService {
+    /// The configuration for the service
+    pub config: CompletionConfig,
 
     /// The provider to use
     pub provider: Box<dyn Provider>,
+
+    /// Chat history
+    pub history: ChatHistory,
 }
 
-impl Plugin for Service {
+impl InMemoryService {
+    pub fn new(config: CompletionConfig, provider: Box<dyn Provider>) -> Self {
+        Self {
+            config,
+            provider,
+            history: ChatHistory::new(),
+        }
+    }
+}
+
+impl Plugin for InMemoryService {
     fn info(&self) -> &'static PluginInfo {
         &PluginInfo {
-            name: "StdService",
+            name: "StdInMemoryService",
             category: PluginCategory::Service,
         }
     }
 }
 
 #[async_trait]
-impl amico::ai::service::Service for Service {
+impl amico::ai::service::Service for InMemoryService {
     async fn generate_text(&mut self, prompt: String) -> Result<String, ServiceError> {
         let response = self
             .provider
-            .completion(
-                "gpt-4o".to_string(),
-                prompt,
-                &Vec::<amico::ai::chat::Message>::new(),
-            )
+            .completion(&prompt, &self.config, &self.history)
             .await;
 
         match response {
             Ok(choice) => match choice {
-                ModelChoice::Message(msg) => Ok(msg),
+                ModelChoice::Message(msg) => {
+                    // Add the new response to the history list
+                    self.history.push(Message {
+                        role: "user".to_string(),
+                        content: prompt.clone(),
+                    });
+                    self.history.push(Message {
+                        role: "assistant".to_string(),
+                        content: msg.clone(),
+                    });
+
+                    // Return the response message
+                    Ok(msg)
+                }
                 ModelChoice::ToolCall(name, _) => Err(ServiceError::ToolError(
                     ToolCallError::ToolUnavailable(name),
                 )),
@@ -53,7 +70,7 @@ impl amico::ai::service::Service for Service {
     }
 
     fn set_system_prompt(&mut self, prompt: String) {
-        self.system_prompt = prompt;
+        self.config.system_prompt = prompt;
     }
 
     fn set_provider(&mut self, provider: Box<dyn Provider>) {
