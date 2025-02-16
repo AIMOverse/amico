@@ -24,6 +24,12 @@ impl From<Vec<Tool>> for ToolSet {
     }
 }
 
+impl Default for ToolSet {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ToolSet {
     pub fn new() -> Self {
         Self {

@@ -12,6 +12,12 @@ pub struct PluginStorage {
     pub action_selectors: HashMap<String, Arc<Mutex<dyn ActionSelectorPlugin>>>,
 }
 
+impl Default for PluginStorage {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PluginStorage {
     pub fn new() -> Self {
         Self {

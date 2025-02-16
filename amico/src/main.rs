@@ -42,18 +42,12 @@ async fn main() {
         }
     };
 
-    match std::env::var("HTTP_PROXY") {
-        Ok(proxy) => {
-            println!("Using HTTP proxy: {proxy}");
-        }
-        Err(_) => (),
+    if let Ok(proxy) = std::env::var("HTTP_PROXY") {
+        println!("Using HTTP proxy: {proxy}");
     }
 
-    match std::env::var("HTTPS_PROXY") {
-        Ok(proxy) => {
-            println!("Using HTTPS proxy: {proxy}");
-        }
-        Err(_) => (),
+    if let Ok(proxy) = std::env::var("HTTPS_PROXY") {
+        println!("Using HTTPS proxy: {proxy}");
     }
 
     let provider = match OpenAI::new(None, Some(&openai_api_key)) {
