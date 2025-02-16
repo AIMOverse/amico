@@ -1,3 +1,6 @@
+use alloy::signers::local::{
+    coins_bip39::English as AlloyEnglish, MnemonicBuilder as AlloyMnemonicBuilder, PrivateKeySigner,
+};
 use bip39::{Language, Mnemonic, MnemonicType, Seed};
 use solana_sdk::{
     signature::Keypair,
@@ -61,9 +64,22 @@ impl AgentWallet {
             .map_err(|err| anyhow::anyhow!("Error generating keypair: {}", err))
     }
 
+    pub fn ethereum_wallet(&self) -> anyhow::Result<PrivateKeySigner> {
+        let phrase = self.phrase();
+        let wallet = AlloyMnemonicBuilder::<AlloyEnglish>::default()
+            .phrase(phrase)
+            .build()
+            .map_err(|err| anyhow::anyhow!("Error generating wallet: {}", err))?;
+        Ok(wallet)
+    }
+
     pub fn print_all_pubkeys(&self) -> anyhow::Result<()> {
         let keypair = self.solana_keypair()?;
         println!("- Solana: {}", keypair.pubkey());
+
+        let wallet = self.ethereum_wallet()?;
+        println!("- Ethereum: {}", wallet.address());
+
         Ok(())
     }
 }
