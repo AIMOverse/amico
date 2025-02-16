@@ -1,5 +1,5 @@
 use amico::ai::{
-    chat::{ChatHistory, Message, ToolCall},
+    chat::{ChatHistory, Message},
     errors::{CompletionError, ServiceError, ToolCallError},
     provider::{CompletionConfig, ModelChoice, Provider},
     tool::ToolSet,
@@ -42,6 +42,16 @@ impl Plugin for InMemoryService {
     }
 }
 
+// Tool call prompts
+
+fn assistant_tool_call_prompt(function_name: &str, arguments: &str) -> String {
+    format!("I will call the tool funcion `{}` with arguments `{}`. Please tell me the result and ask me again.", function_name, arguments)
+}
+
+fn user_tool_result_prompt(function_name: &str, result: &str) -> String {
+    format!("I just called the tool `{}` for you and the result was `{}`. With these information, please respond again.", function_name, result)
+}
+
 #[async_trait]
 impl amico::ai::service::Service for InMemoryService {
     async fn generate_text(&mut self, prompt: String) -> Result<String, ServiceError> {
@@ -67,20 +77,18 @@ impl amico::ai::service::Service for InMemoryService {
                     if let Some(tool) = self.tools.get(&name) {
                         match (tool.tool_call)(params.clone()) {
                             Ok(res) => {
-                                tracing::debug!("Tool {} returned {}", name, res);
                                 // Successfully called the tool
+                                // TODO: Use actual tool call format
                                 self.history.push(Message::user(prompt.clone()));
-                                self.history.push(Message::assistant_tool_call(vec![
-                                    ToolCall::function(
-                                        id.clone(),
-                                        name.clone(),
-                                        params.clone(),
-                                    ),
-                                ]));
                                 self.history
-                                    .push(Message::tool(name.clone(), res.to_string()));
-
-                                tracing::debug!("History: {:#?}", self.history);
+                                    .push(Message::assistant(assistant_tool_call_prompt(
+                                        name.as_str(),
+                                        params.to_string().as_str(),
+                                    )));
+                                self.history.push(Message::user(user_tool_result_prompt(
+                                    name.as_str(),
+                                    res.to_string().as_str(),
+                                )));
                                 // Re-generate the text with the prompt and the new information
                                 self.generate_text(prompt).await
                             }
