@@ -26,6 +26,10 @@ const AMICO_SYSTEM_PROMPT: &str = "You are Amico, a virtual assistant.";
 async fn main() {
     print_demo_hint();
 
+    // Initialize tracing
+    // `export RUST_LOG=debug`
+    tracing_subscriber::fmt::init();
+
     // Read `OPENAI_API_KEY` from environment variable
     let openai_api_key = match std::env::var("OPENAI_API_KEY") {
         Ok(key) => {

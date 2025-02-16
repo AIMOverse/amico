@@ -7,7 +7,7 @@ pub fn search_jokes_tool() -> Tool {
         description: "Search for jokes".to_string(),
         parameters: json!({}),
         tool_call: Box::new(|_| {
-            println!("Calling search_for_jokes tool");
+            tracing::debug!("Calling search_for_jokes tool");
             Ok(json!({
                 "jokes": [
                     "Why don't scientists trust atoms?\nBecause they make up everything!",

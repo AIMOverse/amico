@@ -106,12 +106,13 @@ impl Provider for OpenAI {
 
         // Perform request to the AI model API
         let response = model.completion(request).await;
+        tracing::debug!("OpenAI response: {:?}", response);
 
         // Convert the rig completion response to a ModelChoice
         match response {
             Ok(res) => Ok(from_rig_choice(res.choice)),
             Err(err) => {
-                println!("API error: {}", err);
+                tracing::error!("API error: {}", err);
                 Err(CompletionError::ApiError)
             }
         }

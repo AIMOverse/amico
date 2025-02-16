@@ -61,13 +61,13 @@ impl amico::ai::service::Service for InMemoryService {
                     Ok(msg)
                 }
                 ModelChoice::ToolCall(name, params) => {
-                    println!("Calling {} with params {}", name, params);
+                    tracing::debug!("Calling {} with params {}", name, params);
 
                     // Execute the tool
                     if let Some(tool) = self.tools.get(&name) {
                         match (tool.tool_call)(params.clone()) {
                             Ok(res) => {
-                                println!("Tool {} returned {}", name, res);
+                                tracing::debug!("Tool {} returned {}", name, res);
                                 // Successfully called the tool
                                 self.history.push(Message::user(prompt.clone()));
                                 self.history.push(Message::assistant_tool_call(vec![
@@ -80,7 +80,7 @@ impl amico::ai::service::Service for InMemoryService {
                                 self.history
                                     .push(Message::tool(name.clone(), res.to_string()));
 
-                                println!("History: {:#?}", self.history);
+                                tracing::debug!("History: {:#?}", self.history);
                                 // Re-generate the text with the prompt and the new information
                                 self.generate_text(prompt).await
                             }
@@ -94,7 +94,7 @@ impl amico::ai::service::Service for InMemoryService {
                 }
             },
             Err(err) => {
-                println!("Provider error: {}", err);
+                tracing::error!("Provider error: {}", err);
                 Err(ServiceError::ProviderError(CompletionError::ApiError))
             }
         }
