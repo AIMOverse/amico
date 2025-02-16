@@ -6,8 +6,11 @@ use amico_plugins::std::{providers::openai::OpenAI, service};
 use std::io::{self, Write};
 use std::process;
 use tools::search_jokes_tool;
+use wallets::AgentWallet;
 
 mod tools;
+mod utils;
+mod wallets;
 
 fn print_demo_hint() {
     println!("This is only a DEMO VERSION of Amico.");
@@ -48,6 +51,22 @@ async fn main() {
 
     if let Ok(proxy) = std::env::var("HTTPS_PROXY") {
         println!("Using HTTPS proxy: {proxy}");
+    }
+
+    // Load agent wallet
+    let wallet = match AgentWallet::load_or_save_new("agent_wallet.txt") {
+        Ok(wallet) => wallet,
+        Err(err) => {
+            eprintln!("Error loading agent wallet: {err}");
+            process::exit(1);
+        }
+    };
+
+    println!();
+    println!("Agent wallet addresses:");
+    if let Err(e) = wallet.print_all_pubkeys() {
+        eprintln!("Error printing public keys: {e}");
+        process::exit(1);
     }
 
     let provider = match OpenAI::new(None, Some(&openai_api_key)) {
