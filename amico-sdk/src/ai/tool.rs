@@ -6,30 +6,49 @@ pub struct Tool {
     pub name: String,
     pub description: String,
     pub parameters: serde_json::Value,
-    pub tool_call: Box<dyn Fn(serde_json::Value) -> Result<serde_json::Value, ToolCallError>>,
+    pub tool_call:
+        Box<dyn Fn(serde_json::Value) -> Result<serde_json::Value, ToolCallError> + Send + Sync>,
 }
 
 pub struct ToolSet {
-    tools: HashMap<String, Tool>,
+    pub tools: HashMap<String, Tool>,
+}
+
+impl From<Vec<Tool>> for ToolSet {
+    fn from(tools: Vec<Tool>) -> Self {
+        let mut tool_set = ToolSet::new();
+        for tool in tools {
+            tool_set.add_tool(tool);
+        }
+        tool_set
+    }
+}
+
+impl Default for ToolSet {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl ToolSet {
-    pub fn new(tools: Vec<Tool>) -> Self {
-        let mut map = HashMap::new();
-        for tool in tools {
-            map.insert(tool.name.clone(), tool);
+    pub fn new() -> Self {
+        Self {
+            tools: HashMap::new(),
         }
-        Self { tools: map }
     }
 
-    pub fn get(&self, name: &str) -> Option<&Tool> {
+    pub fn add_tool(&mut self, tool: Tool) {
+        self.tools.insert(tool.name.clone(), tool);
+    }
+
+    pub fn get<'a>(&'a self, name: &str) -> Option<&'a Tool> {
         self.tools.get(name)
     }
 
     pub fn describe(&self) -> String {
         let mut result = String::new();
-        for (name, tool) in &self.tools {
-            result.push_str(&format!("{}: {}\n", name, tool.description));
+        for tool in self.tools.values() {
+            result.push_str(&format!("- {}: {}\n", tool.name, tool.description));
         }
         result
     }

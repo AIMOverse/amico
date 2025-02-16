@@ -15,10 +15,12 @@ pub struct ActionSelector {
 
 // Implement the Plugin trait for the ActionSelector struct
 impl Plugin for ActionSelector {
-    const INFO: &'static PluginInfo = &PluginInfo {
-        name: "StandardActionSelector",
-        category: PluginCategory::ActionSelector,
-    };
+    fn info(&self) -> &'static PluginInfo {
+        &PluginInfo {
+            name: "StandardActionSelector",
+            category: PluginCategory::ActionSelector,
+        }
+    }
 }
 
 // Implement the ActionSelector trait for the ActionSelector struct

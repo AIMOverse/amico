@@ -1,7 +1,8 @@
 use amico::ai::{
     chat::{ChatHistory, Message},
     errors::{CompletionError, CreationError},
-    provider::{ModelChoice, Provider},
+    provider::{CompletionConfig, ModelChoice, Provider},
+    tool::{Tool, ToolSet},
 };
 use async_trait::async_trait;
 use lazy_static::lazy_static;
@@ -14,7 +15,7 @@ use crate::interface::{Plugin, PluginCategory, PluginInfo};
 
 lazy_static! {
     /// List of available OpenAI models
-    static ref OPENAI_MODELS: Vec<&'static str> = vec![
+    pub static ref OPENAI_MODELS: Vec<&'static str> = vec![
         openai::GPT_4,
         openai::GPT_4O,
         openai::GPT_4O_MINI,
@@ -29,17 +30,26 @@ lazy_static! {
 fn into_rig_message(message: &Message) -> rig::completion::Message {
     rig::completion::Message {
         role: message.role.clone(),
-        content: message.content.clone(),
+        content: message.content(),
     }
 }
 
 /// Convert `rig`'s `ModelChoice` into `sdk`'s `ModelChoice`
 fn from_rig_choice(choice: rig::completion::ModelChoice) -> ModelChoice {
     match choice {
-        rig::completion::ModelChoice::ToolCall(name, _, params) => {
-            ModelChoice::ToolCall(name, params)
+        rig::completion::ModelChoice::ToolCall(name, id, params) => {
+            ModelChoice::ToolCall(name, id, params)
         }
         rig::completion::ModelChoice::Message(msg) => ModelChoice::Message(msg),
+    }
+}
+
+/// Convert `sdk`'s `Tool` into `rig`'s `ToolDefinition`
+fn into_rig_tool_def(tool: &Tool) -> rig::completion::ToolDefinition {
+    rig::completion::ToolDefinition {
+        name: tool.name.clone(),
+        description: tool.description.clone(),
+        parameters: tool.parameters.clone(),
     }
 }
 
@@ -69,38 +79,42 @@ impl Provider for OpenAI {
     #[doc = " Completes a prompt with the provider."]
     async fn completion(
         &self,
-        model: String,
-        prompt: String,
+        prompt: &str,
+        config: &CompletionConfig,
         chat_history: &ChatHistory,
+        tools: &ToolSet,
     ) -> Result<ModelChoice, CompletionError> {
         let Self(client) = self;
 
-        if !self.model_available(&model).await {
-            // TODO: wait for sdk to publish
-            // return Err(CompletionError::ModelUnavailable(model));
+        if !self.model_available(&config.model).await {
+            return Err(CompletionError::ModelUnavailable(config.model.clone()));
         }
 
-        let model = client.completion_model(model.as_str());
+        let model = client.completion_model(&config.model);
 
         // Build the rig completion request
         let request = CompletionRequest {
             chat_history: chat_history.iter().map(into_rig_message).collect(),
-            prompt,
-            preamble: None,
-            temperature: None,
-            max_tokens: None,
+            prompt: prompt.to_string(),
+            preamble: Some(config.system_prompt.clone()),
+            temperature: Some(config.temperature),
+            max_tokens: Some(config.max_tokens),
             additional_params: None,
-            tools: Vec::new(),
+            tools: tools.tools.values().map(into_rig_tool_def).collect(),
             documents: Vec::new(),
         };
 
         // Perform request to the AI model API
         let response = model.completion(request).await;
+        tracing::debug!("OpenAI response: {:?}", response);
 
         // Convert the rig completion response to a ModelChoice
         match response {
             Ok(res) => Ok(from_rig_choice(res.choice)),
-            Err(_) => Err(CompletionError::ApiError),
+            Err(err) => {
+                tracing::error!("API error: {}", err);
+                Err(CompletionError::ApiError)
+            }
         }
     }
 
@@ -112,8 +126,10 @@ impl Provider for OpenAI {
 }
 
 impl Plugin for OpenAI {
-    const INFO: &'static PluginInfo = &PluginInfo {
-        name: "OpenAI",
-        category: PluginCategory::Service,
-    };
+    fn info(&self) -> &'static PluginInfo {
+        &PluginInfo {
+            name: "StdOpenAIProvider",
+            category: PluginCategory::Service,
+        }
+    }
 }

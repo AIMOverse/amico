@@ -2,11 +2,7 @@ use serde::{Deserialize, Serialize};
 
 /// Every plugin must implement the `Plugin` trait to get necessary information.
 pub trait Plugin {
-    const INFO: &'static PluginInfo;
-
-    fn info(&self) -> &'static PluginInfo {
-        Self::INFO
-    }
+    fn info(&self) -> &'static PluginInfo;
 }
 
 /// The information of a plugin
@@ -43,10 +39,12 @@ mod tests {
         struct TestPlugin;
 
         impl Plugin for TestPlugin {
-            const INFO: &'static PluginInfo = &PluginInfo {
-                name: "TestPlugin",
-                category: PluginCategory::Sensor,
-            };
+            fn info(&self) -> &'static PluginInfo {
+                &PluginInfo {
+                    name: "TestPlugin",
+                    category: PluginCategory::Sensor,
+                }
+            }
         }
 
         let plugin = TestPlugin;
