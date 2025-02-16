@@ -100,7 +100,7 @@ impl Provider for OpenAI {
             temperature: Some(config.temperature),
             max_tokens: Some(config.max_tokens),
             additional_params: None,
-            tools: tools.iter().map(into_rig_tool_def).collect(),
+            tools: tools.tools.values().map(into_rig_tool_def).collect(),
             documents: Vec::new(),
         };
 
@@ -110,7 +110,10 @@ impl Provider for OpenAI {
         // Convert the rig completion response to a ModelChoice
         match response {
             Ok(res) => Ok(from_rig_choice(res.choice)),
-            Err(_) => Err(CompletionError::ApiError),
+            Err(err) => {
+                println!("API error: {}", err);
+                Err(CompletionError::ApiError)
+            }
         }
     }
 

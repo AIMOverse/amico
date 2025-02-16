@@ -1,5 +1,5 @@
 use amico::ai::{
-    chat::{ChatHistory, Message},
+    chat::{ChatHistory, Message, ToolCall},
     errors::{CompletionError, ServiceError, ToolCallError},
     provider::{CompletionConfig, ModelChoice, Provider},
     tool::ToolSet,
@@ -54,23 +54,49 @@ impl amico::ai::service::Service for InMemoryService {
             Ok(choice) => match choice {
                 ModelChoice::Message(msg) => {
                     // Add the new response to the history list
-                    self.history.push(Message {
-                        role: "user".to_string(),
-                        content: prompt.clone(),
-                    });
-                    self.history.push(Message {
-                        role: "assistant".to_string(),
-                        content: msg.clone(),
-                    });
+                    self.history.push(Message::user(prompt.clone()));
+                    self.history.push(Message::assistant(msg.clone()));
 
                     // Return the response message
                     Ok(msg)
                 }
-                ModelChoice::ToolCall(name, _) => Err(ServiceError::ToolError(
-                    ToolCallError::ToolUnavailable(name),
-                )),
+                ModelChoice::ToolCall(name, params) => {
+                    println!("Calling {} with params {}", name, params);
+
+                    // Execute the tool
+                    if let Some(tool) = self.tools.get(&name) {
+                        match (tool.tool_call)(params.clone()) {
+                            Ok(res) => {
+                                println!("Tool {} returned {}", name, res);
+                                // Successfully called the tool
+                                self.history.push(Message::user(prompt.clone()));
+                                self.history.push(Message::assistant_tool_call(vec![
+                                    ToolCall::function(
+                                        "call_12345".to_string(),
+                                        name.clone(),
+                                        params.clone(),
+                                    ),
+                                ]));
+                                self.history
+                                    .push(Message::tool(name.clone(), res.to_string()));
+
+                                println!("History: {:#?}", self.history);
+                                // Re-generate the text with the prompt and the new information
+                                self.generate_text(prompt).await
+                            }
+                            Err(err) => Err(ServiceError::ToolError(err)),
+                        }
+                    } else {
+                        Err(ServiceError::ToolError(ToolCallError::ToolUnavailable(
+                            name,
+                        )))
+                    }
+                }
             },
-            Err(_) => Err(ServiceError::ProviderError(CompletionError::ApiError)),
+            Err(err) => {
+                println!("Provider error: {}", err);
+                Err(ServiceError::ProviderError(CompletionError::ApiError))
+            }
         }
     }
 

@@ -1,11 +1,11 @@
 use amico::ai::provider::{CompletionConfig, Provider};
 use amico::ai::service::Service;
-use amico::ai::tool::describe_tool_set;
+use amico::ai::tool::ToolSet;
 use amico_plugins::interface::Plugin;
 use amico_plugins::std::{providers::openai::OpenAI, service};
-use tools::search_jokes_tool;
 use std::io::{self, Write};
 use std::process;
+use tools::search_jokes_tool;
 
 mod tools;
 
@@ -68,12 +68,12 @@ async fn main() {
             model: "gpt-4o".to_string(),
         },
         Box::new(provider),
-        vec![search_jokes_tool()],
+        ToolSet::from(vec![search_jokes_tool()]),
     );
 
     println!();
     println!("Using service plugin: {}", service.info().name);
-    println!("Tools enabled:\n{}", describe_tool_set(&service.tools));
+    println!("Tools enabled:\n{}", service.tools.describe());
 
     // Print global prompt
     println!();
