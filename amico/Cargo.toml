@@ -19,3 +19,4 @@ tracing-subscriber = "0.3.19"
 tiny-bip39 = "2.0.0"
 solana-sdk = "2.2.1"
 alloy = { version = "0.11.1", features = ["signer-mnemonic"] }
+solana-client = "2.2.0"
