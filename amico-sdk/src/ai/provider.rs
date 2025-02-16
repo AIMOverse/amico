@@ -29,7 +29,8 @@ pub trait Provider: Send + Sync {
 /// Result of a model choice.
 pub enum ModelChoice {
     Message(String),
-    ToolCall(String, serde_json::Value),
+    // ToolCall(name, id, params)
+    ToolCall(String, String, serde_json::Value),
 }
 
 /// Configuration for the completion of a prompt.

@@ -30,15 +30,15 @@ lazy_static! {
 fn into_rig_message(message: &Message) -> rig::completion::Message {
     rig::completion::Message {
         role: message.role.clone(),
-        content: message.content.clone(),
+        content: message.content(),
     }
 }
 
 /// Convert `rig`'s `ModelChoice` into `sdk`'s `ModelChoice`
 fn from_rig_choice(choice: rig::completion::ModelChoice) -> ModelChoice {
     match choice {
-        rig::completion::ModelChoice::ToolCall(name, _, params) => {
-            ModelChoice::ToolCall(name, params)
+        rig::completion::ModelChoice::ToolCall(name, id, params) => {
+            ModelChoice::ToolCall(name, id, params)
         }
         rig::completion::ModelChoice::Message(msg) => ModelChoice::Message(msg),
     }

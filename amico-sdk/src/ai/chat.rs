@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "snake_case")]
 pub struct Message {
     pub role: String,
-    pub content: String,
+    pub content: Option<String>,
     pub name: Option<String>,              // Used in tool calls
     pub tool_calls: Option<Vec<ToolCall>>, // Used in tool calls
 }
@@ -15,7 +15,7 @@ impl Message {
     pub fn user(content: String) -> Self {
         Self {
             role: "user".to_string(),
-            content,
+            content: Some(content),
             name: None,
             tool_calls: None,
         }
@@ -25,7 +25,7 @@ impl Message {
     pub fn assistant(content: String) -> Self {
         Self {
             role: "assistant".to_string(),
-            content,
+            content: Some(content),
             name: None,
             tool_calls: None,
         }
@@ -35,7 +35,7 @@ impl Message {
     pub fn assistant_tool_call(tool_calls: Vec<ToolCall>) -> Self {
         Self {
             role: "assistant".to_string(),
-            content: "".to_string(),
+            content: None,
             name: None,
             tool_calls: Some(tool_calls),
         }
@@ -45,9 +45,16 @@ impl Message {
     pub fn tool(name: String, content: String) -> Self {
         Self {
             role: "tool".to_string(),
-            content,
+            content: Some(content),
             name: Some(name),
             tool_calls: None,
+        }
+    }
+
+    pub fn content(&self) -> String {
+        match self.content.clone() {
+            Some(content) => content,
+            None => "".to_string(),
         }
     }
 }

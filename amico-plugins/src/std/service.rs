@@ -60,8 +60,8 @@ impl amico::ai::service::Service for InMemoryService {
                     // Return the response message
                     Ok(msg)
                 }
-                ModelChoice::ToolCall(name, params) => {
-                    tracing::debug!("Calling {} with params {}", name, params);
+                ModelChoice::ToolCall(name, id, params) => {
+                    tracing::debug!("Calling {} ({}) with params {}", name, id, params);
 
                     // Execute the tool
                     if let Some(tool) = self.tools.get(&name) {
@@ -72,7 +72,7 @@ impl amico::ai::service::Service for InMemoryService {
                                 self.history.push(Message::user(prompt.clone()));
                                 self.history.push(Message::assistant_tool_call(vec![
                                     ToolCall::function(
-                                        "call_12345".to_string(),
+                                        id.clone(),
                                         name.clone(),
                                         params.clone(),
                                     ),
