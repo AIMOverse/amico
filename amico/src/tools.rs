@@ -1,7 +1,9 @@
 use alloy::signers::local::PrivateKeySigner;
-use amico::ai::tool::Tool;
+use amico::ai::{errors::ToolCallError, tool::Tool};
+use mpl_core::instructions::CreateV1Builder;
 use serde_json::json;
-use solana_sdk::{signature::Keypair, signer::Signer};
+use solana_client::rpc_client;
+use solana_sdk::{signature::Keypair, signer::Signer, transaction::Transaction};
 
 pub fn search_jokes_tool() -> Tool {
     Tool {
@@ -30,7 +32,15 @@ pub fn check_solana_balance(keypair: Keypair) -> Tool {
             tracing::debug!("Keypair: {}", keypair.pubkey());
 
             // Check balance
-            let balance = crate::utils::solana::get_balance_in_sol(&keypair.pubkey().to_string()).unwrap();
+            let balance = crate::utils::solana::get_balance_in_sol(&keypair.pubkey().to_string())
+                .map_err(|err| {
+                tracing::error!("Error checking balance: {}", err);
+                ToolCallError::ExecutionError {
+                    tool_name: "check_solana_balance".to_string(),
+                    params: json!({}),
+                    reason: err.to_string(),
+                }
+            })?;
             tracing::debug!("Balance: {} SOL", balance);
 
             Ok(json!({
@@ -50,6 +60,64 @@ pub fn check_ethereum_balance(wallet: PrivateKeySigner) -> Tool {
             Ok(json!({
                 "balance": format!("{} ETH", crate::utils::eth::check_eth_balance(&wallet.address()).unwrap()),
             }))
+        }),
+    }
+}
+
+pub fn create_asset_tool(keypair: Keypair) -> Tool {
+    Tool {
+        name: "create_asset".to_string(),
+        description: "Create a NFT on Solana representing yourself".to_string(),
+        parameters: json!({}),
+        tool_call: Box::new(move |_| {
+            tracing::info!("Calling create_asset tool");
+
+            // Create the NFT
+            let rpc_client =
+                rpc_client::RpcClient::new("https://api.devnet.solana.com".to_string());
+
+            let asset = Keypair::new();
+
+            let create_asset_ix = CreateV1Builder::new()
+                .asset(asset.pubkey())
+                .payer(keypair.pubkey())
+                .name("Agent NFT".into())
+                .uri("https://cyan-acute-python-533.mypinata.cloud/ipfs/QmR8n52jtQMZJgYkBFWszhzCXkC9L6qpdSz6omWwtRwLgs".into())
+                .instruction();
+
+            let signers = vec![&asset, &keypair];
+
+            let last_blockhash =
+                rpc_client
+                    .get_latest_blockhash()
+                    .map_err(|err| ToolCallError::ExecutionError {
+                        tool_name: "create_asset".to_string(),
+                        params: json!({}),
+                        reason: err.to_string(),
+                    })?;
+
+            let create_asset_tx = Transaction::new_signed_with_payer(
+                &[create_asset_ix],
+                Some(&keypair.pubkey()),
+                &signers,
+                last_blockhash,
+            );
+
+            match rpc_client.send_and_confirm_transaction(&create_asset_tx) {
+                Ok(res) => {
+                    tracing::info!("NFT created. Signature: {:?}", res);
+
+                    Ok(json!({
+                        "message": "NFT created successfully",
+                        "signature": res,
+                    }))
+                }
+                Err(err) => Err(amico::ai::errors::ToolCallError::ExecutionError {
+                    tool_name: "create_asset".to_string(),
+                    params: json!({}),
+                    reason: format!("Failed to create NFT: {:?}", err),
+                }),
+            }
         }),
     }
 }

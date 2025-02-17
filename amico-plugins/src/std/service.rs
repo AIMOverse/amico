@@ -52,6 +52,10 @@ fn user_tool_result_prompt(function_name: &str, result: &str) -> String {
     format!("I just called the tool `{}` for you and the result was `{}`. With these information, please respond again.", function_name, result)
 }
 
+fn user_tool_failed_prompt(function_name: &str, error: &str) -> String {
+    format!("I just called the tool `{}` for you, but there was an error: `{}`. If you cannot proceed, please let me know.", function_name, error)
+}
+
 #[async_trait]
 impl amico::ai::service::Service for InMemoryService {
     async fn generate_text(&mut self, prompt: String) -> Result<String, ServiceError> {
@@ -92,7 +96,20 @@ impl amico::ai::service::Service for InMemoryService {
                                 // Re-generate the text with the prompt and the new information
                                 self.generate_text(prompt).await
                             }
-                            Err(err) => Err(ServiceError::ToolError(err)),
+                            Err(err) => {
+                                // Failed to call the tool
+                                self.history.push(Message::user(prompt.clone()));
+                                self.history
+                                    .push(Message::assistant(assistant_tool_call_prompt(
+                                        name.as_str(),
+                                        params.to_string().as_str(),
+                                    )));
+                                self.history.push(Message::user(user_tool_failed_prompt(
+                                    name.as_str(),
+                                    err.to_string().as_str(),
+                                )));
+                                Err(ServiceError::ToolError(err))
+                            }
                         }
                     } else {
                         Err(ServiceError::ToolError(ToolCallError::ToolUnavailable(

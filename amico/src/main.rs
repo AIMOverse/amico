@@ -5,7 +5,7 @@ use amico_plugins::interface::Plugin;
 use amico_plugins::std::{providers::openai::OpenAI, service};
 use std::io::{self, Write};
 use std::process;
-use tools::{check_ethereum_balance, check_solana_balance, search_jokes_tool};
+use tools::{check_ethereum_balance, check_solana_balance, create_asset_tool, search_jokes_tool};
 use wallets::AgentWallet;
 
 mod tools;
@@ -23,7 +23,7 @@ fn print_message_separator() {
     println!("--------------------");
 }
 
-const AMICO_SYSTEM_PROMPT: &str = "You are Amico, a virtual assistant.";
+const AMICO_SYSTEM_PROMPT: &str = "You are Amico, a virtual assistant. You have several tools at your disposal. But do not call one tool more than once in a row.";
 
 #[tokio::main]
 async fn main() {
@@ -89,6 +89,7 @@ async fn main() {
             search_jokes_tool(),
             check_solana_balance(wallet.solana_keypair().unwrap()),
             check_ethereum_balance(wallet.ethereum_wallet().unwrap()),
+            create_asset_tool(wallet.solana_keypair().unwrap()),
         ]),
     );
 
