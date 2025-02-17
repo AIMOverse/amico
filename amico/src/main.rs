@@ -5,7 +5,10 @@ use amico_plugins::interface::Plugin;
 use amico_plugins::std::{providers::openai::OpenAI, service};
 use std::io::{self, Write};
 use std::process;
-use tools::{check_ethereum_balance, check_solana_balance, create_asset_tool, search_jokes_tool};
+use tools::{
+    check_ethereum_balance, check_solana_balance, create_asset_tool, search_jokes_tool,
+    trade_solana_token_tool,
+};
 use wallets::AgentWallet;
 
 mod tools;
@@ -100,6 +103,7 @@ async fn main() {
             check_solana_balance(wallet.solana_keypair().unwrap()),
             check_ethereum_balance(wallet.ethereum_wallet().unwrap()),
             create_asset_tool(wallet.solana_keypair().unwrap()),
+            trade_solana_token_tool(),
         ]),
     );
 
