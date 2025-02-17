@@ -1,8 +1,8 @@
 use solana_client::rpc_client::RpcClient;
-use solana_sdk::{native_token::LAMPORTS_PER_SOL, pubkey::Pubkey};
+use solana_sdk::pubkey::Pubkey;
 use std::str::FromStr;
 
-pub fn get_balance_in_sol(public_key: &str) -> Result<f64, Box<dyn std::error::Error>> {
+pub fn get_balance_lamports(public_key: &str) -> Result<u64, Box<dyn std::error::Error>> {
     // Connect to the Solana cluster (e.g., mainnet-beta)
     let rpc_url = get_rpc_url();
     let client = RpcClient::new(rpc_url);
@@ -13,10 +13,7 @@ pub fn get_balance_in_sol(public_key: &str) -> Result<f64, Box<dyn std::error::E
     // Fetch the account balance in lamports
     let balance_lamports = client.get_balance(&pubkey)?;
 
-    // Convert lamports to SOL
-    let balance_sol = balance_lamports as f64 / LAMPORTS_PER_SOL as f64;
-
-    Ok(balance_sol)
+    Ok(balance_lamports)
 }
 
 pub fn get_rpc_url() -> String {

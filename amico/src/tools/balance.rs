@@ -1,7 +1,7 @@
 use alloy::signers::local::PrivateKeySigner;
 use amico::ai::{errors::ToolCallError, tool::Tool};
 use serde_json::json;
-use solana_sdk::{signature::Keypair, signer::Signer};
+use solana_sdk::{native_token::LAMPORTS_PER_SOL, signature::Keypair, signer::Signer};
 
 pub fn check_solana_balance(keypair: Keypair) -> Tool {
     Tool {
@@ -13,19 +13,23 @@ pub fn check_solana_balance(keypair: Keypair) -> Tool {
             tracing::debug!("Keypair: {}", keypair.pubkey());
 
             // Check balance
-            let balance = crate::utils::solana::get_balance_in_sol(&keypair.pubkey().to_string())
+            let balance = crate::utils::solana::get_balance_lamports(&keypair.pubkey().to_string())
                 .map_err(|err| {
-                tracing::error!("Error checking balance: {}", err);
-                ToolCallError::ExecutionError {
-                    tool_name: "check_solana_balance".to_string(),
-                    params: json!({}),
-                    reason: err.to_string(),
-                }
-            })?;
-            tracing::debug!("Balance: {} SOL", balance);
+                    tracing::error!("Error checking balance: {}", err);
+                    ToolCallError::ExecutionError {
+                        tool_name: "check_solana_balance".to_string(),
+                        params: json!({}),
+                        reason: err.to_string(),
+                    }
+                })?;
+
+            // Convert balance to SOL
+            let balance_sol = balance as f64 / LAMPORTS_PER_SOL as f64;
+
+            tracing::debug!("Balance: {} SOL", balance_sol);
 
             Ok(json!({
-                "balance": format!("{} SOL", balance),
+                "balance": format!("{} SOL", balance_sol),
             }))
         }),
     }

@@ -6,8 +6,8 @@ use amico_plugins::std::{providers::openai::OpenAI, service};
 use std::io::{self, Write};
 use std::process;
 use tools::{
-    check_ethereum_balance, check_solana_balance, create_asset_tool, search_jokes_tool,
-    trade_solana_token_tool,
+    buy_solana_token_tool, check_ethereum_balance, check_solana_balance, create_asset_tool,
+    search_jokes_tool,
 };
 use wallets::AgentWallet;
 
@@ -26,7 +26,11 @@ fn print_message_separator() {
     println!("--------------------");
 }
 
-const AMICO_SYSTEM_PROMPT: &str = "You are Amico, a virtual assistant with wallets capable of performing on-chain actions. You have several tools at your disposal. But do not call one tool more than once in a row.";
+const AMICO_SYSTEM_PROMPT: &str =
+    "You are Amico, a virtual assistant with wallets capable of performing on-chain actions.
+You have several tools at your disposal. But do not call one tool more than once in a row.
+You have your own meme coin called `AMICO`. Its address is `8gZJE6XPnma2LRbvhoNGNY8WCckPejBSX6NPGUrgpump`.
+If the user asks you to buy `AMICO`, you should be really excited and reply: \"AMICO to the MOON!\"";
 
 #[tokio::main]
 async fn main() {
@@ -103,7 +107,7 @@ async fn main() {
             check_solana_balance(wallet.solana_keypair().unwrap()),
             check_ethereum_balance(wallet.ethereum_wallet().unwrap()),
             create_asset_tool(wallet.solana_keypair().unwrap()),
-            trade_solana_token_tool(),
+            buy_solana_token_tool(wallet.solana_keypair().unwrap()),
         ]),
     );
 
