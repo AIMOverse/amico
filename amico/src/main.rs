@@ -5,7 +5,7 @@ use amico_plugins::interface::Plugin;
 use amico_plugins::std::{providers::openai::OpenAI, service};
 use std::io::{self, Write};
 use std::process;
-use tools::{check_solana_balance, search_jokes_tool};
+use tools::{check_ethereum_balance, check_solana_balance, search_jokes_tool};
 use wallets::AgentWallet;
 
 mod tools;
@@ -88,6 +88,7 @@ async fn main() {
         ToolSet::from(vec![
             search_jokes_tool(),
             check_solana_balance(wallet.solana_keypair().unwrap()),
+            check_ethereum_balance(wallet.ethereum_wallet().unwrap()),
         ]),
     );
 

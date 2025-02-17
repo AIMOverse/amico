@@ -1,3 +1,4 @@
+use alloy::signers::local::PrivateKeySigner;
 use amico::ai::tool::Tool;
 use serde_json::json;
 use solana_sdk::{signature::Keypair, signer::Signer};
@@ -34,6 +35,20 @@ pub fn check_solana_balance(keypair: Keypair) -> Tool {
 
             Ok(json!({
                 "balance": format!("{} SOL", balance),
+            }))
+        }),
+    }
+}
+
+pub fn check_ethereum_balance(wallet: PrivateKeySigner) -> Tool {
+    Tool {
+        name: "check_ethereum_balance".to_string(),
+        description: "Check ETH balance on Ethereum in your own wallet".to_string(),
+        parameters: json!({}),
+        tool_call: Box::new(move |_| {
+            tracing::info!("Calling check_ethereum_balance tool");
+            Ok(json!({
+                "balance": format!("{} ETH", crate::utils::eth::check_eth_balance(&wallet.address()).unwrap()),
             }))
         }),
     }
