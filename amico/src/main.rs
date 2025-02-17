@@ -11,6 +11,7 @@ use tools::{
     search_jokes_tool,
 };
 use wallets::AgentWallet;
+use colored::Colorize;
 
 mod prompt;
 mod tools;
@@ -39,7 +40,7 @@ async fn main() {
     // Read `OPENAI_API_KEY` from environment variable
     let openai_api_key = match std::env::var("OPENAI_API_KEY") {
         Ok(key) => {
-            println!("Found $OPENAI_API_KEY");
+            println!("Found OPENAI_API_KEY");
             key
         }
         Err(_) => {
@@ -49,17 +50,17 @@ async fn main() {
     };
 
     if let Ok(proxy) = std::env::var("HTTP_PROXY") {
-        println!("Using HTTP proxy: {proxy}");
+        tracing::debug!("Using HTTP proxy: {proxy}");
     }
 
     if let Ok(proxy) = std::env::var("HTTPS_PROXY") {
-        println!("Using HTTPS proxy: {proxy}");
+        tracing::debug!("Using HTTPS proxy: {proxy}");
     }
 
-    if let Ok(key) = std::env::var("HELIUS_API_KEY") {
-        println!("Using Helius API key: {key}");
+    if let Ok(_) = std::env::var("HELIUS_API_KEY") {
+        println!("Found HELIUS_API_KEY");
     } else {
-        println!("Helius API key not found.");
+        println!("WARNING: Helius API key not found.");
         println!("We recommend you to use Helius API for on-chain actions.");
         println!("The default Solana RPC is not stable enough.");
         println!("Check out https://helius.dev for more information.");
@@ -113,7 +114,7 @@ async fn main() {
 
     // Print global prompt
     println!();
-    println!("Hi! I'm Amico, your personal AI assistant. How can I assist you today?");
+    println!("{}", "I'm Amico, your personal AI assistant. How can I assist you today?".green());
     print_message_separator();
 
     loop {
@@ -140,7 +141,8 @@ async fn main() {
                 continue;
             }
         };
-        println!("[Amico]\n{}", response);
+        println!("{}", "[Amico]".yellow());
+        println!("{}", response.green());
         print_message_separator();
     }
 }

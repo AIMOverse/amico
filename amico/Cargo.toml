@@ -22,3 +22,4 @@ alloy = { version = "0.11.1", features = ["full", "signer-mnemonic"] }
 solana-client = "2.2.0"
 mpl-core = "0.9.0"
 reqwest = "0.12.12"
+colored = "3.0.0"
