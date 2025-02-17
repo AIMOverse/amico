@@ -23,7 +23,7 @@ fn print_message_separator() {
     println!("--------------------");
 }
 
-const AMICO_SYSTEM_PROMPT: &str = "You are Amico, a virtual assistant. You have several tools at your disposal. But do not call one tool more than once in a row.";
+const AMICO_SYSTEM_PROMPT: &str = "You are Amico, a virtual assistant with wallets capable of performing on-chain actions. You have several tools at your disposal. But do not call one tool more than once in a row.";
 
 #[tokio::main]
 async fn main() {
@@ -53,6 +53,16 @@ async fn main() {
         println!("Using HTTPS proxy: {proxy}");
     }
 
+    if let Ok(key) = std::env::var("HELIUS_API_KEY") {
+        println!("Using Helius API key: {key}");
+    } else {
+        println!("Helius API key not found.");
+        println!("We recommend you to use Helius API for on-chain actions.");
+        println!("The default Solana RPC is not stable enough.");
+        println!("Check out https://helius.dev for more information.");
+        println!();
+    }
+
     // Load agent wallet
     let wallet = match AgentWallet::load_or_save_new("agent_wallet.txt") {
         Ok(wallet) => wallet,
@@ -80,7 +90,7 @@ async fn main() {
     let mut service = service::InMemoryService::new(
         CompletionConfig {
             system_prompt: AMICO_SYSTEM_PROMPT.to_string(),
-            temperature: 0.7,
+            temperature: 0.5,
             max_tokens: 1000,
             model: "gpt-4o".to_string(),
         },

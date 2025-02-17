@@ -5,6 +5,8 @@ use serde_json::json;
 use solana_client::rpc_client;
 use solana_sdk::{signature::Keypair, signer::Signer, transaction::Transaction};
 
+use crate::utils::solana::get_rpc_url;
+
 pub fn search_jokes_tool() -> Tool {
     Tool {
         name: "search_for_jokes".to_string(),
@@ -15,7 +17,9 @@ pub fn search_jokes_tool() -> Tool {
             Ok(json!({
                 "jokes": [
                     "Why don't scientists trust atoms?\nBecause they make up everything!",
-                    "Why don't skeletons fight each other?\nBecause they don't have the guts!",
+                    "Why do programmers prefer dark mode?\nBecause the light attracts bugs!",
+                    "Why did the TCP connection break up with UDP?\nBecause TCP wanted a reliable connection, but UDP just couldn't commit!",
+                    "Why do UDP packets never get invited to parties?\nBecause they never respond to invites!",
                 ],
             }))
         }),
@@ -73,8 +77,7 @@ pub fn create_asset_tool(keypair: Keypair) -> Tool {
             tracing::info!("Calling create_asset tool");
 
             // Create the NFT
-            let rpc_client =
-                rpc_client::RpcClient::new("https://api.devnet.solana.com".to_string());
+            let rpc_client = rpc_client::RpcClient::new(get_rpc_url());
 
             let asset = Keypair::new();
 
@@ -109,7 +112,7 @@ pub fn create_asset_tool(keypair: Keypair) -> Tool {
 
                     Ok(json!({
                         "message": "NFT created successfully",
-                        "signature": res,
+                        "signature": res.to_string(),
                     }))
                 }
                 Err(err) => Err(amico::ai::errors::ToolCallError::ExecutionError {
