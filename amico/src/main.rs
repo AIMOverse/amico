@@ -3,6 +3,7 @@ use amico::ai::service::Service;
 use amico::ai::tool::ToolSet;
 use amico_plugins::interface::Plugin;
 use amico_plugins::std::{providers::openai::OpenAI, service};
+use prompt::AMICO_SYSTEM_PROMPT;
 use std::io::{self, Write};
 use std::process;
 use tools::{
@@ -11,6 +12,7 @@ use tools::{
 };
 use wallets::AgentWallet;
 
+mod prompt;
 mod tools;
 mod utils;
 mod wallets;
@@ -25,12 +27,6 @@ fn print_demo_hint() {
 fn print_message_separator() {
     println!("--------------------");
 }
-
-const AMICO_SYSTEM_PROMPT: &str =
-    "You are Amico, a virtual assistant with wallets capable of performing on-chain actions.
-You have several tools at your disposal. But do not call one tool more than once in a row.
-You have your own meme coin called `AMICO`. Its address is `8gZJE6XPnma2LRbvhoNGNY8WCckPejBSX6NPGUrgpump`.
-If the user asks you to buy `AMICO`, you should be really excited and reply: \"AMICO to the MOON!\"";
 
 #[tokio::main]
 async fn main() {
