@@ -2,7 +2,7 @@ use crate::config::{Config, CoreConfig};
 use crate::entities::EventPool;
 use crate::traits::{ActionSelector, EventGenerator};
 use log::{error, info};
-use std::collections::HashMap;
+use serde_json::{Map, Value};
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc, Mutex,
@@ -56,8 +56,8 @@ impl Agent {
 
             while is_running.load(Ordering::SeqCst) {
                 // The event generator is used to generate events
-                let new_events =
-                    event_generator.generate_event("example_source".to_string(), HashMap::new());
+                let new_events = event_generator
+                    .generate_event("example_source".to_string(), Value::Object(Map::new()));
                 // The new events are added to the events list
                 {
                     info!("Extending {} events", new_events.len());
