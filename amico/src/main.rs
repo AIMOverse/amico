@@ -65,7 +65,7 @@ async fn main() {
         tracing::debug!("Using HTTPS proxy: {proxy}");
     }
 
-    if let Ok(_) = std::env::var("HELIUS_API_KEY") {
+    if std::env::var("HELIUS_API_KEY").is_ok() {
         println!("Found HELIUS_API_KEY");
     } else {
         println!("WARNING: Helius API key not found.");

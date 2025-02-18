@@ -21,7 +21,7 @@ pub fn raydium_buy(buyer: &Keypair, mint: &Pubkey, amount: u64) -> anyhow::Resul
     let swap_tx_url = "https://share.raydium.io/dialect/actions/swap/tx";
     let swap_tx_params = format!(
         "inputMint=sol&outputMint={}&amount={}",
-        mint.to_string(),
+        mint,
         amount as f64 / LAMPORTS_PER_SOL as f64
     );
 
