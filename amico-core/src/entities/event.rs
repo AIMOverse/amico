@@ -1,8 +1,6 @@
 use chrono::{DateTime, Duration, Utc};
 use serde::Serialize;
-use std::any::Any;
-use std::collections::HashMap;
-use std::sync::Arc;
+use serde_json::Value;
 
 /// Struct representing an event in the system.
 
@@ -15,7 +13,7 @@ pub struct Event {
     /// The source of the event.
     pub source: String,
     /// The parameters of the event, stored as a HashMap.
-    pub params: HashMap<String, Arc<dyn Any + Send + Sync>>,
+    pub params: Value,
     /// The Expiry time of the event.
     pub expiry_time: Option<DateTime<Utc>>,
 }
@@ -32,12 +30,7 @@ impl Event {
     /// # Returns
     ///
     /// * `Event` - The new Event instance.
-    pub fn new(
-        name: String,
-        source: String,
-        params: HashMap<String, Arc<dyn Any + Send + Sync>>,
-        lifetime: Option<Duration>,
-    ) -> Self {
+    pub fn new(name: String, source: String, params: Value, lifetime: Option<Duration>) -> Self {
         let expiry_time = lifetime.map(|lifetime| Utc::now() + lifetime);
         Self {
             id: 0,       // Placeholder value, will be set by the EventPool
