@@ -43,7 +43,7 @@ pub fn raydium_buy(buyer: &Keypair, mint: &Pubkey, amount: u64) -> anyhow::Resul
     let decoded_bytes = STANDARD.decode(res.transaction.as_str())?;
     let versioned_tx = bincode::deserialize::<VersionedTransaction>(&decoded_bytes)?;
 
-    tracing::info!("Decoded transaction: {:#?}", versioned_tx);
+    tracing::debug!("Decoded transaction: {:#?}", versioned_tx);
 
     let tx = VersionedTransaction::try_new(versioned_tx.message.clone(), &[buyer])?;
 
