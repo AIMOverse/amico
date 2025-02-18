@@ -18,8 +18,8 @@ pub fn get_balance_lamports(public_key: &str) -> Result<u64, Box<dyn std::error:
 
 pub fn get_rpc_url() -> String {
     if let Ok(api_key) = std::env::var("HELIUS_API_KEY") {
-        "https://devnet.helius-rpc.com/?api-key=".to_string() + &api_key
+        "https://mainnet.helius-rpc.com/?api-key=".to_string() + &api_key
     } else {
-        "https://api.devnet.solana.com".to_string()
+        "https://api.mainnet-beta.solana.com".to_string()
     }
 }
