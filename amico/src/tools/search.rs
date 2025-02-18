@@ -11,7 +11,9 @@ pub fn search_jokes_tool() -> Tool {
             Ok(json!({
                 "jokes": [
                     "Why don't scientists trust atoms?\nBecause they make up everything!",
-                    "Why don't skeletons fight each other?\nBecause they don't have the guts!",
+                    "Why do programmers prefer dark mode?\nBecause the light attracts bugs!",
+                    "Why did the TCP connection break up with UDP?\nBecause TCP wanted a reliable connection, but UDP just couldn't commit!",
+                    "Why do UDP packets never get invited to parties?\nBecause they never respond to invites!",
                 ],
             }))
         }),
