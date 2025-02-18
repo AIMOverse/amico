@@ -1,4 +1,5 @@
 use anyhow::Ok;
+use serde_json::json;
 use solana_sdk::{pubkey::Pubkey, signature::Keypair, signer::Signer};
 
 pub fn raydium_buy(buyer: &Keypair, mint: &Pubkey, amount: u64) -> anyhow::Result<()> {
@@ -12,8 +13,15 @@ pub fn raydium_buy(buyer: &Keypair, mint: &Pubkey, amount: u64) -> anyhow::Resul
     // Construct the full URL
     let full_url = format!("{}?{}", swap_tx_url, swap_tx_params);
 
-    // TODO: Send the request to the Raydium API
-    tracing::info!("{} Calling raydium_buy {:?}", buyer.pubkey(), full_url);
+    // Send the request to the Raydium API
+    let res = ureq::post(full_url)
+        .send_json(json!({
+            "account": buyer.pubkey().to_string(),
+        }))?
+        .body_mut()
+        .read_to_string()?;
+
+    tracing::info!("Swap result: {}", res);
 
     Ok(())
 }

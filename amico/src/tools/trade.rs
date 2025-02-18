@@ -87,7 +87,9 @@ pub fn buy_solana_token_tool(keypair: Keypair) -> Tool {
                 });
             }
 
-            Ok(json!({}))
+            Ok(json!({
+                "result": "Successfully swapped SOL for token",
+            }))
         }),
     }
 }
