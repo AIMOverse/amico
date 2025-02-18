@@ -1,11 +1,12 @@
 use chrono::{DateTime, Duration, Utc};
+use serde::Serialize;
 use std::any::Any;
 use std::collections::HashMap;
 use std::sync::Arc;
 
 /// Struct representing an event in the system.
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct Event {
     /// The ID of the event.
     pub id: u32,

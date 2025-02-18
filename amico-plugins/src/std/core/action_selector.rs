@@ -1,6 +1,7 @@
 use crate::interface::{Plugin, PluginCategory, PluginInfo};
 use amico::ai::service::Service;
 use amico::core::action_map::ActionMap;
+use amico::core::model::Model;
 use amico_core::entities::Event;
 use amico_core::errors::ActionSelectorError;
 use amico_core::traits::Action;
@@ -11,6 +12,7 @@ pub struct ActionSelector {
     // Actions
     pub actions_map: ActionMap,
     pub service: Box<dyn Service>,
+    pub model: Box<dyn Model>,
 }
 
 // Implement the Plugin trait for the ActionSelector struct
@@ -28,10 +30,18 @@ impl amico_core::traits::ActionSelector for ActionSelector {
     // Temporarily ignore the events
     fn select_action(
         &mut self,
-        _events: Vec<Event>,
+        events: Vec<Event>,
     ) -> Result<(Box<dyn Action>, Vec<u32>), ActionSelectorError> {
         // Update the prompt
-        let prompt = "example prompt".to_string();
+        let prompt = format!(
+            "Instruction - Return the correct action for the current state \
+                                     and return the id of the events that is going to be solved.\n\
+                                     Context - {}\n\
+                                     Received Events - {}",
+            self.model.get_environment_description(),
+            serde_json::to_string(&events).unwrap()
+        )
+        .to_string();
 
         // Call the asynchronous method to get the response text
         let response = match block_on(self.service.generate_text(prompt)) {
@@ -56,17 +66,23 @@ impl amico_core::traits::ActionSelector for ActionSelector {
         };
 
         // Extract the action name and parameters from the JSON response
-        if let (Some(action_name), Some(parameters)) = (
+        if let (Some(action_name), Some(parameters), Some(event_ids)) = (
             json_response["name"].as_str(),
             json_response["parameters"].as_object(),
+            json_response["event_ids"].as_array(),
         ) {
             // Check if the action exists in the actions_map
             if let Some(mut action) = self.actions_map.get(action_name) {
                 action.set_parameters(serde_json::Value::Object(parameters.clone()));
-                // TODO - Get the removing event IDs from the response
 
                 // Return the action and the Vec<u32>
-                return Ok((Box::new(action), vec![]));
+                return Ok((
+                    Box::new(action),
+                    event_ids
+                        .iter()
+                        .map(|id| id.as_u64().unwrap() as u32)
+                        .collect(),
+                ));
             }
         }
 
@@ -78,10 +94,11 @@ impl amico_core::traits::ActionSelector for ActionSelector {
 }
 
 impl ActionSelector {
-    pub fn new(actions_map: ActionMap, service: Box<dyn Service>) -> Self {
+    pub fn new(actions_map: ActionMap, service: Box<dyn Service>, model: Box<dyn Model>) -> Self {
         let mut instance = Self {
             actions_map,
             service,
+            model,
         };
         // Update the system prompt
         instance.update_system_prompt();
@@ -92,15 +109,17 @@ impl ActionSelector {
     fn update_system_prompt(&mut self) {
         // Set the system prompt
         let prompt = r#"You are an Action Selector to select actions to execute in an agent.
-            You will be provided with information of the environment and the state of the current agent
-            and make the best decision. Don't output the reason of choosing the action. Just output the
-            name and the parameters of the action you choose instead."#;
+            You will be provided with information of the environment, the state of the current agent
+             and the events that are received. Make the best decision based on these information.
+              Don't output the reason of choosing the action. Just output the
+            name, the parameters of the action you choose and the event ids you solved."#;
 
         let example_output = r#"{
             "name": "clean",
             "parameters": {
                 "room": "kitchen"
-            }
+            },
+            "event_ids": [1, 2, 3]
         }"#;
 
         let final_prompt = format!(

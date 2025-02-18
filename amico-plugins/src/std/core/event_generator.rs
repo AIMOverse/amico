@@ -11,6 +11,7 @@ impl amico_core::traits::EventGenerator for EventGenerator {
         source: String,
         params: HashMap<String, Arc<dyn Any + Send + Sync>>,
     ) -> Vec<Event> {
+        // TODO Implement the event generation logic here
         // Simulate some processing time
         thread::sleep(Duration::from_secs(30));
         vec![Event::new(
