@@ -3,6 +3,7 @@ use amico::ai::service::Service;
 use amico::ai::tool::ToolSet;
 use amico_plugins::interface::Plugin;
 use amico_plugins::std::{providers::openai::OpenAI, service};
+use colored::Colorize;
 use prompt::AMICO_SYSTEM_PROMPT;
 use std::io::{self, Write};
 use std::process;
@@ -11,7 +12,6 @@ use tools::{
     search_jokes_tool,
 };
 use wallets::AgentWallet;
-use colored::Colorize;
 
 mod prompt;
 mod tools;
@@ -49,6 +49,14 @@ async fn main() {
         }
     };
 
+    // Read base url configuration
+    let base_url = if let Ok(url) = std::env::var("OPENAI_BASE_URL") {
+        println!("Found OPENAI_BASE_URL: {}", url.clone());
+        Some(url)
+    } else {
+        None
+    };
+
     if let Ok(proxy) = std::env::var("HTTP_PROXY") {
         tracing::debug!("Using HTTP proxy: {proxy}");
     }
@@ -83,7 +91,7 @@ async fn main() {
         process::exit(1);
     }
 
-    let provider = match OpenAI::new(None, Some(&openai_api_key)) {
+    let provider = match OpenAI::new(base_url.as_deref(), Some(&openai_api_key)) {
         Ok(provider) => provider,
         Err(err) => {
             eprintln!("Error creating provider: {err}");
@@ -114,7 +122,10 @@ async fn main() {
 
     // Print global prompt
     println!();
-    println!("{}", "I'm Amico, your personal AI assistant. How can I assist you today?".green());
+    println!(
+        "{}",
+        "I'm Amico, your personal AI assistant. How can I assist you today?".green()
+    );
     print_message_separator();
 
     loop {
