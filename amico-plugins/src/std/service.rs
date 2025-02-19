@@ -2,7 +2,7 @@ use amico::ai::{
     chat::{ChatHistory, Message},
     errors::{CompletionError, ServiceError, ToolCallError},
     provider::{CompletionConfig, ModelChoice, Provider},
-    tool::ToolSet,
+    tool::{ToolCall, ToolSet},
 };
 use async_trait::async_trait;
 
@@ -83,7 +83,17 @@ impl amico::ai::service::Service for InMemoryService {
 
                     // Execute the tool
                     if let Some(tool) = self.tools.get(&name) {
-                        match (tool.tool_call)(params.clone()) {
+                        // Treat async & sync tool calls differently
+                        let result = match &tool.tool_call {
+                            ToolCall::Sync(tool_call) => tool_call(params.clone()),
+                            ToolCall::Async(tool_call) => {
+                                tool_call(params.clone()).await.map_err(|err| {
+                                    tracing::error!("Tool call error: {}", err);
+                                    ServiceError::RuntimeError(err.to_string())
+                                })?
+                            }
+                        };
+                        match result {
                             Ok(res) => {
                                 // Successfully called the tool
                                 tracing::debug!("Tool call succeeded with result: {}", res);

@@ -1,14 +1,22 @@
 use std::collections::HashMap;
 
+use serde_json::Value;
+
 use crate::ai::errors::ToolCallError;
 
 pub struct Tool {
     pub name: String,
     pub description: String,
-    pub parameters: serde_json::Value,
-    pub tool_call:
-        Box<dyn Fn(serde_json::Value) -> Result<serde_json::Value, ToolCallError> + Send + Sync>,
+    pub parameters: Value,
+    pub tool_call: ToolCall,
 }
+
+pub enum ToolCall {
+    Sync(Box<dyn Fn(Value) -> ToolResult + Send + Sync>),
+    Async(Box<dyn Fn(Value) -> tokio::task::JoinHandle<ToolResult> + Send + Sync>),
+}
+
+pub type ToolResult = Result<Value, ToolCallError>;
 
 pub struct ToolSet {
     pub tools: HashMap<String, Tool>,
