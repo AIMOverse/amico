@@ -9,7 +9,7 @@ use std::io::{self, Write};
 use std::process;
 use tools::{
     buy_solana_token_tool,
-    // check_aptos_balance,
+    check_aptos_balance,
     check_ethereum_balance,
     check_solana_balance,
     create_asset_tool,
@@ -115,7 +115,7 @@ async fn main() {
             search_jokes_tool(),
             check_solana_balance(wallet.solana_keypair().unwrap()),
             check_ethereum_balance(wallet.ethereum_wallet().unwrap()),
-            // check_aptos_balance(wallet.aptos_account().await.unwrap()),
+            check_aptos_balance(wallet.aptos_account().await.unwrap()),
             create_asset_tool(wallet.solana_keypair().unwrap()),
             buy_solana_token_tool(wallet.solana_keypair().unwrap()),
         ]),

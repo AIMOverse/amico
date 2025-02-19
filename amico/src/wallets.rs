@@ -1,18 +1,17 @@
-// use std::str::FromStr;
-
 use alloy::signers::local::{
     coins_bip39::English as AlloyEnglish, MnemonicBuilder as AlloyMnemonicBuilder, PrivateKeySigner,
 };
-// use aptos_sdk::{
-//     rest_client::FaucetClient as AptosFaucetClient, types::LocalAccount as AptosLocalAccount,
-// };
+use aptos_sdk::{
+    rest_client::FaucetClient as AptosFaucetClient, types::LocalAccount as AptosLocalAccount,
+};
 use bip39::{Language, Mnemonic, MnemonicType, Seed};
-// use once_cell::sync::Lazy;
+use once_cell::sync::Lazy;
 use solana_sdk::{
     signature::Keypair,
     signer::{SeedDerivable, Signer},
 };
-// use url::Url;
+use std::str::FromStr;
+use url::Url;
 
 pub struct AgentWallet {
     mnemonic: Mnemonic,
@@ -87,50 +86,50 @@ impl AgentWallet {
         let wallet = self.ethereum_wallet()?;
         println!("- Ethereum: {}", wallet.address());
 
-        // let aptos_account = self.aptos_account().await?;
-        // println!("- Aptos: {}", aptos_account.address());
+        let aptos_account = self.aptos_account().await?;
+        println!("- Aptos: {}", aptos_account.address());
 
         Ok(())
     }
 
-    // pub async fn aptos_account(&self) -> anyhow::Result<AptosLocalAccount> {
-    //     let account = AptosLocalAccount::from_derive_path("m/44'/637'/0'/0'/0'", self.phrase(), 0)?;
+    pub async fn aptos_account(&self) -> anyhow::Result<AptosLocalAccount> {
+        let account = AptosLocalAccount::from_derive_path("m/44'/637'/0'/0'/0'", self.phrase(), 0)?;
 
-    //     if let Err(e) = self.create_aptos_account(&account).await {
-    //         tracing::error!("Error creating account: {}", e);
-    //     }
+        if let Err(e) = self.create_aptos_account(&account).await {
+            tracing::error!("Error creating account: {}", e);
+        }
 
-    //     Ok(account)
-    // }
+        Ok(account)
+    }
 
-    // async fn create_aptos_account(&self, account: &AptosLocalAccount) -> anyhow::Result<()> {
-    //     let faucet_client =
-    //         AptosFaucetClient::new(APTOS_FAUCET_URL.clone(), APTOS_NODE_URL.clone()); // <:!:section_1a
+    async fn create_aptos_account(&self, account: &AptosLocalAccount) -> anyhow::Result<()> {
+        let faucet_client =
+            AptosFaucetClient::new(APTOS_FAUCET_URL.clone(), APTOS_NODE_URL.clone()); // <:!:section_1a
 
-    //     faucet_client.fund(account.address(), 100_000).await?;
+        faucet_client.fund(account.address(), 100_000).await?;
 
-    //     tracing::debug!("Created account: {}", account.address());
+        tracing::debug!("Created account: {}", account.address());
 
-    //     Ok(())
-    // }
+        Ok(())
+    }
 }
 
-// static APTOS_NODE_URL: Lazy<Url> = Lazy::new(|| {
-//     Url::from_str(
-//         std::env::var("APTOS_NODE_URL")
-//             .as_ref()
-//             .map(|s| s.as_str())
-//             .unwrap_or("https://fullnode.devnet.aptoslabs.com"),
-//     )
-//     .unwrap()
-// });
+static APTOS_NODE_URL: Lazy<Url> = Lazy::new(|| {
+    Url::from_str(
+        std::env::var("APTOS_NODE_URL")
+            .as_ref()
+            .map(|s| s.as_str())
+            .unwrap_or("https://fullnode.devnet.aptoslabs.com"),
+    )
+    .unwrap()
+});
 
-// static APTOS_FAUCET_URL: Lazy<Url> = Lazy::new(|| {
-//     Url::from_str(
-//         std::env::var("APTOS_FAUCET_URL")
-//             .as_ref()
-//             .map(|s| s.as_str())
-//             .unwrap_or("https://faucet.devnet.aptoslabs.com"),
-//     )
-//     .unwrap()
-// });
+static APTOS_FAUCET_URL: Lazy<Url> = Lazy::new(|| {
+    Url::from_str(
+        std::env::var("APTOS_FAUCET_URL")
+            .as_ref()
+            .map(|s| s.as_str())
+            .unwrap_or("https://faucet.devnet.aptoslabs.com"),
+    )
+    .unwrap()
+});

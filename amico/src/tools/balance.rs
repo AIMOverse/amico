@@ -3,7 +3,7 @@ use amico::ai::{
     errors::ToolCallError,
     tool::{Tool, ToolCall},
 };
-// use aptos_sdk::types::LocalAccount as AptosLocalAccount;
+use aptos_sdk::types::LocalAccount as AptosLocalAccount;
 use serde_json::json;
 use solana_sdk::{native_token::LAMPORTS_PER_SOL, signature::Keypair, signer::Signer};
 
@@ -55,29 +55,29 @@ pub fn check_ethereum_balance(wallet: PrivateKeySigner) -> Tool {
     }
 }
 
-// pub fn check_aptos_balance(account: AptosLocalAccount) -> Tool {
-//     Tool {
-//         name: "check_aptos_balance".to_string(),
-//         description: "Balance of APT in your Aptos wallet account".to_string(),
-//         parameters: json!({}),
-//         tool_call: ToolCall::Async(Box::new(move |_| {
-//             tracing::info!("Calling check_aptos_balance tool");
-//             tracing::debug!("Account: {}", account.address());
+pub fn check_aptos_balance(account: AptosLocalAccount) -> Tool {
+    Tool {
+        name: "check_aptos_balance".to_string(),
+        description: "Balance of APT in your Aptos wallet account".to_string(),
+        parameters: json!({}),
+        tool_call: ToolCall::Async(Box::new(move |_| {
+            tracing::info!("Calling check_aptos_balance tool");
+            tracing::debug!("Account: {}", account.address());
 
-//             let address = account.address();
+            let address = account.address();
 
-//             tokio::spawn(async move {
-//                 match crate::utils::aptos::check_aptos_balance(address).await {
-//                     Ok(balance) => Ok(json!({
-//                         "balance": format!("{} APT", balance),
-//                     })),
-//                     Err(err) => Err(amico::ai::errors::ToolCallError::ExecutionError {
-//                         tool_name: "check_aptos_balance".to_string(),
-//                         params: json!({}),
-//                         reason: err.to_string(),
-//                     }),
-//                 }
-//             })
-//         })),
-//     }
-// }
+            tokio::spawn(async move {
+                match crate::utils::aptos::check_aptos_balance(address).await {
+                    Ok(balance) => Ok(json!({
+                        "balance": format!("{} APT", balance),
+                    })),
+                    Err(err) => Err(amico::ai::errors::ToolCallError::ExecutionError {
+                        tool_name: "check_aptos_balance".to_string(),
+                        params: json!({}),
+                        reason: err.to_string(),
+                    }),
+                }
+            })
+        })),
+    }
+}
