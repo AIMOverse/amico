@@ -8,8 +8,9 @@ use prompt::AMICO_SYSTEM_PROMPT;
 use std::io::{self, Write};
 use std::process;
 use tools::{
-    buy_solana_token_tool, check_ethereum_balance, check_solana_balance, create_asset_tool,
-    search_jokes_tool,
+    buy_solana_token_tool, 
+    // check_aptos_balance, 
+    check_ethereum_balance, check_solana_balance, create_asset_tool, search_jokes_tool
 };
 use wallets::AgentWallet;
 
@@ -86,7 +87,7 @@ async fn main() {
 
     println!();
     println!("Agent wallet addresses:");
-    if let Err(e) = wallet.print_all_pubkeys() {
+    if let Err(e) = wallet.print_all_pubkeys().await {
         eprintln!("Error printing public keys: {e}");
         process::exit(1);
     }
@@ -111,6 +112,7 @@ async fn main() {
             search_jokes_tool(),
             check_solana_balance(wallet.solana_keypair().unwrap()),
             check_ethereum_balance(wallet.ethereum_wallet().unwrap()),
+            // check_aptos_balance(wallet.aptos_account().await.unwrap()),
             create_asset_tool(wallet.solana_keypair().unwrap()),
             buy_solana_token_tool(wallet.solana_keypair().unwrap()),
         ]),

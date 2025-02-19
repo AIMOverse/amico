@@ -1,3 +1,7 @@
 [workspace]
 members = ["amico", "amico-*"]
 resolver = "2"
+
+# [patch.crates-io]
+# merlin = { git = "https://github.com/aptos-labs/merlin" }
+# x25519-dalek = { git = "https://github.com/aptos-labs/x25519-dalek", branch = "zeroize_v1" }
