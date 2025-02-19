@@ -3,7 +3,7 @@ use amico::ai::{
     errors::ToolCallError,
     tool::{Tool, ToolCall},
 };
-use aptos_sdk::types::LocalAccount as AptosLocalAccount;
+// use aptos_sdk::types::LocalAccount as AptosLocalAccount;
 use serde_json::json;
 use solana_sdk::{native_token::LAMPORTS_PER_SOL, signature::Keypair, signer::Signer};
 

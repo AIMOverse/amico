@@ -8,9 +8,12 @@ use prompt::AMICO_SYSTEM_PROMPT;
 use std::io::{self, Write};
 use std::process;
 use tools::{
-    buy_solana_token_tool, 
-    // check_aptos_balance, 
-    check_ethereum_balance, check_solana_balance, create_asset_tool, search_jokes_tool
+    buy_solana_token_tool,
+    // check_aptos_balance,
+    check_ethereum_balance,
+    check_solana_balance,
+    create_asset_tool,
+    search_jokes_tool,
 };
 use wallets::AgentWallet;
 
