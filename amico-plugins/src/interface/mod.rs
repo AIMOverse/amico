@@ -1,7 +1,7 @@
-mod action_selector;
+mod core;
 mod plugin;
 mod provider;
 
-pub use action_selector::*;
+pub use core::*;
 pub use plugin::*;
 pub use provider::*;
