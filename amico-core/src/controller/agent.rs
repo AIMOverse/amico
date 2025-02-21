@@ -10,16 +10,27 @@ use std::sync::{
 use std::thread;
 use std::thread::JoinHandle;
 
+/// The Core Agent program
+/// Defines the workflow of the agent
+
 pub struct Agent {
-    name: String,
-    is_running: Arc<AtomicBool>,
-    event_pool: Arc<Mutex<EventPool>>,
-    event_generator_factory: Arc<Box<dyn Fn() -> Box<dyn EventGenerator + Send> + Send + Sync>>,
-    action_selector_factory: Arc<Box<dyn Fn() -> Box<dyn ActionSelector + Send> + Send + Sync>>,
-    thread_handles: Mutex<Vec<JoinHandle<()>>>,
+    name: String,                      // The name of the agent
+    is_running: Arc<AtomicBool>,       // A flag to indicate if the agent is running
+    event_pool: Arc<Mutex<EventPool>>, // The pool of events
+    event_generator_factory: Arc<Box<dyn Fn() -> Box<dyn EventGenerator + Send> + Send + Sync>>, // The factory to create an event generator
+    action_selector_factory: Arc<Box<dyn Fn() -> Box<dyn ActionSelector + Send> + Send + Sync>>, // The factory to create an action selector
+    thread_handles: Mutex<Vec<JoinHandle<()>>>, // The handles of the threads
 }
 
 impl Agent {
+    /// Create a new agent
+    /// Arguments:
+    ///    * `config_path` - The path to the configuration file.
+    ///   * `event_generator_factory` - The factory to create an event generator.
+    ///  * `action_selector_factory` - The factory to create an action selector.
+    /// Returns:
+    ///   * `Agent` - The new agent instance.
+
     pub fn new(
         config_path: &str,
         event_generator_factory: Box<dyn Fn() -> Box<dyn EventGenerator + Send> + Send + Sync>,
@@ -36,16 +47,27 @@ impl Agent {
         }
     }
 
+    /// The function to be called before starting the agent
+    /// This function initializes the logger
+    /// and logs the objects that are loaded for the agent.
+    /// This function is called by the start function.
     pub fn before_start(&self) {
         env_logger::init();
         info!("Loading objects for agent: {}", self.name);
     }
 
+    /// The function to start the agent
+    /// This function starts the agent by creating threads for the event generator and action selector.
+    /// This function is called by the start function.
+    /// The threads are stored in the thread_handles list.
     pub fn start(&self) {
+        // Call the before_start function
         self.before_start();
+        // Set the flag to indicate that the agent is running
         self.is_running.store(true, Ordering::SeqCst);
         info!("Agent {} started.", self.name);
 
+        // Clone the variables to be used in the Event Generator threads
         let is_running = Arc::clone(&self.is_running);
         let event_pool_for_eg = Arc::clone(&self.event_pool);
         let event_generator_factory = Arc::clone(&self.event_generator_factory);
@@ -71,6 +93,7 @@ impl Agent {
             }
         });
 
+        // Clone the variables to be used in the Action Selector threads
         let is_running_action = Arc::clone(&self.is_running);
         let event_pool_for_as = Arc::clone(&self.event_pool);
         let action_selector_factory = Arc::clone(&self.action_selector_factory);
@@ -119,11 +142,13 @@ impl Agent {
         handles.push(action_handle);
     }
 
+    /// The function to stop the agent
     pub fn stop(&self) {
         info!("Agent {} stopping.", self.name);
         self.is_running.store(false, Ordering::SeqCst);
     }
 
+    /// Wait for all threads to finish
     pub fn join(&self) {
         let mut handles = self.thread_handles.lock().unwrap();
         for handle in handles.drain(..) {
@@ -132,6 +157,7 @@ impl Agent {
         info!("All threads have finished.");
     }
 
+    /// Load the configuration from the file
     fn load_config(config_path: &str) -> CoreConfig {
         let config_str = std::fs::read_to_string(config_path).unwrap();
         CoreConfig::from_toml_str(&config_str).unwrap()
