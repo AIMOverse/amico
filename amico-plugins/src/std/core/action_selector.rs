@@ -117,7 +117,7 @@ impl ActionSelector {
               Don't output the reason of choosing the action. Just output the
             name, the parameters of the action you choose and the event ids you solved."#;
 
-        /// An example output to be shown in the system prompt
+        // An example output to be shown in the system prompt
         let example_output = r#"{
             "name": "clean",
             "parameters": {
@@ -126,7 +126,7 @@ impl ActionSelector {
             "event_ids": [1, 2, 3]
         }"#;
 
-        /// The final prompt to be set in the system
+        // The final prompt to be set in the system
         let final_prompt = format!(
             "{}\n\
             Here is an example of the output:{}\n\
@@ -136,7 +136,7 @@ impl ActionSelector {
             self.actions_map.describe()
         );
 
-        /// Set the system prompt
+        // Set the system prompt
         self.service.set_system_prompt(final_prompt);
     }
 
