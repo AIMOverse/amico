@@ -12,7 +12,6 @@ use std::thread::JoinHandle;
 
 /// The Core Agent program
 /// Defines the workflow of the agent
-
 pub struct Agent {
     name: String,                      // The name of the agent
     is_running: Arc<AtomicBool>,       // A flag to indicate if the agent is running
@@ -28,9 +27,8 @@ impl Agent {
     ///    * `config_path` - The path to the configuration file.
     ///   * `event_generator_factory` - The factory to create an event generator.
     ///  * `action_selector_factory` - The factory to create an action selector.
-    /// Returns:
+    ///    Returns:
     ///   * `Agent` - The new agent instance.
-
     pub fn new(
         config_path: &str,
         event_generator_factory: Box<dyn Fn() -> Box<dyn EventGenerator + Send> + Send + Sync>,
