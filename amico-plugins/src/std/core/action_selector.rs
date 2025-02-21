@@ -7,7 +7,7 @@ use amico_core::errors::ActionSelectorError;
 use amico_core::traits::Action;
 use futures::executor::block_on;
 
-/// Implementation of the ActionSelector Plugin.
+/// A Standard Implementation of the ActionSelector Plugin.
 pub struct ActionSelector {
     // Actions
     pub actions_map: ActionMap,
@@ -93,7 +93,9 @@ impl amico_core::traits::ActionSelector for ActionSelector {
     }
 }
 
+/// Implement the ActionSelector struct
 impl ActionSelector {
+    /// Create a new instance of the ActionSelector struct.
     pub fn new(actions_map: ActionMap, service: Box<dyn Service>, model: Box<dyn Model>) -> Self {
         let mut instance = Self {
             actions_map,
@@ -106,6 +108,7 @@ impl ActionSelector {
         instance
     }
 
+    /// Update the system prompt.
     fn update_system_prompt(&mut self) {
         // Set the system prompt
         let prompt = r#"You are an Action Selector to select actions to execute in an agent.
@@ -114,6 +117,7 @@ impl ActionSelector {
               Don't output the reason of choosing the action. Just output the
             name, the parameters of the action you choose and the event ids you solved."#;
 
+        /// An example output to be shown in the system prompt
         let example_output = r#"{
             "name": "clean",
             "parameters": {
@@ -122,6 +126,7 @@ impl ActionSelector {
             "event_ids": [1, 2, 3]
         }"#;
 
+        /// The final prompt to be set in the system
         let final_prompt = format!(
             "{}\n\
             Here is an example of the output:{}\n\
@@ -131,9 +136,11 @@ impl ActionSelector {
             self.actions_map.describe()
         );
 
+        /// Set the system prompt
         self.service.set_system_prompt(final_prompt);
     }
 
+    /// Set the AI service for the ActionSelector.
     pub fn set_service(&mut self, service: Box<dyn Service>) {
         // Set the service
         self.service = service;
