@@ -9,7 +9,7 @@ use super::tool::ToolSet;
 #[async_trait]
 pub trait Provider: Send + Sync {
     /// Creates a new provider.
-    fn new(base_url: Option<&str>, api_key: Option<&str>) -> Result<Self, CreationError>
+    fn new(base_url: &str, api_key: &str) -> Result<Self, CreationError>
     where
         Self: Sized;
 

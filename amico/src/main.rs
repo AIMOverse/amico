@@ -50,11 +50,15 @@ async fn main() {
     };
 
     // Read base url configuration
-    let base_url = if let Ok(url) = std::env::var("OPENAI_BASE_URL") {
-        println!("Found OPENAI_BASE_URL: {}", url.clone());
-        Some(url)
-    } else {
-        None
+    let base_url = match std::env::var("OPENAI_BASE_URL") {
+        Ok(key) => {
+            println!("Found OPENAI_BASE_URL");
+            key
+        }
+        Err(_) => {
+            eprintln!("Error: OPENAI_BASE_URL is not set");
+            process::exit(1);
+        }
     };
 
     if let Ok(proxy) = std::env::var("HTTP_PROXY") {
@@ -91,7 +95,7 @@ async fn main() {
         process::exit(1);
     }
 
-    let provider = match OpenAI::new(base_url.as_deref(), Some(&openai_api_key)) {
+    let provider = match OpenAI::new(&base_url, &openai_api_key) {
         Ok(provider) => provider,
         Err(err) => {
             eprintln!("Error creating provider: {err}");

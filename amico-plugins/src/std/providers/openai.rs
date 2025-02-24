@@ -59,21 +59,11 @@ pub struct OpenAI(openai::Client);
 #[async_trait]
 impl Provider for OpenAI {
     #[doc = " Creates a new provider."]
-    fn new(base_url: Option<&str>, api_key: Option<&str>) -> Result<Self, CreationError>
+    fn new(base_url: &str, api_key: &str) -> Result<Self, CreationError>
     where
         Self: Sized,
     {
-        if let (Some(api_key), Some(base_url)) = (api_key, base_url) {
-            // If both base_url and api_key are provided, use them.
-            Ok(OpenAI(openai::Client::from_url(api_key, base_url)))
-        } else if let (Some(api_key), None) = (api_key, base_url) {
-            // If only api_key is provided, use it.
-            Ok(OpenAI(openai::Client::new(api_key)))
-        } else {
-            // If neither base_url nor api_key is provided,
-            // or if only base_url is provided, return an error.
-            Err(CreationError::InvalidParam)
-        }
+        Ok(OpenAI(openai::Client::from_url(api_key, base_url)))
     }
 
     #[doc = " Completes a prompt with the provider."]
