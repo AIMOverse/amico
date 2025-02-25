@@ -4,7 +4,9 @@ use chrono::Duration;
 
 #[test]
 fn test_event_pool() -> Result<(), EventPoolError> {
+    // Create a new EventPool
     let mut event_pool = EventPool::new(5);
+    // Add two events to the event pool
     event_pool.extend_events(vec![
         Event::new(
             "ExampleEvent".to_string(),

@@ -1,7 +1,5 @@
 use crate::entities::Event;
-use std::any::Any;
-use std::collections::HashMap;
-use std::sync::Arc;
+use serde_json::Value;
 
 /// Trait for generating events.
 pub trait EventGenerator {
@@ -11,14 +9,10 @@ pub trait EventGenerator {
     ///
     /// * `source` - The source of the event.
     ///
-    /// * `params` - A HashMap that holds the parameters from inputs.
+    /// * `params` - A Json Object that holds the parameters from inputs.
     ///
     /// # Returns
     ///
     /// * `Vec<Event>` - A vector of Event instances that is going to be added into event pool.
-    fn generate_event(
-        &self,
-        source: String,
-        params: HashMap<String, Arc<dyn Any + Send + Sync>>,
-    ) -> Vec<Event>;
+    fn generate_event(&self, source: String, params: Value) -> Vec<Event>;
 }
