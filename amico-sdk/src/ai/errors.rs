@@ -41,6 +41,10 @@ pub enum ToolCallError {
 pub enum ServiceError {
     #[error("Provider error")]
     ProviderError(#[from] CompletionError),
+
     #[error("Tool error")]
     ToolError(#[from] ToolCallError),
+
+    #[error("Runtime error {0}")]
+    RuntimeError(String),
 }

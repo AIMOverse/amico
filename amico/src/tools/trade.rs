@@ -1,6 +1,9 @@
 use std::str::FromStr;
 
-use amico::ai::{errors::ToolCallError, tool::Tool};
+use amico::ai::{
+    errors::ToolCallError,
+    tool::{Tool, ToolCall},
+};
 use serde_json::json;
 use solana_sdk::{
     native_token::LAMPORTS_PER_SOL, pubkey::Pubkey, signature::Keypair, signer::Signer,
@@ -26,7 +29,7 @@ pub fn buy_solana_token_tool(keypair: Keypair) -> Tool {
             },
             "required": ["token_address", "amount_sol"],
         }),
-        tool_call: Box::new(move |params| {
+        tool_call: ToolCall::Sync(Box::new(move |params| {
             tracing::info!("Calling buy_solana_token tool {:?}", params);
 
             // Parse the parameters
@@ -90,6 +93,6 @@ pub fn buy_solana_token_tool(keypair: Keypair) -> Tool {
             Ok(json!({
                 "result": "Successfully swapped SOL for token",
             }))
-        }),
+        })),
     }
 }

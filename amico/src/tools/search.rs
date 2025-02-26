@@ -1,4 +1,4 @@
-use amico::ai::tool::Tool;
+use amico::ai::tool::{Tool, ToolCall};
 use serde_json::json;
 
 pub fn search_jokes_tool() -> Tool {
@@ -6,7 +6,7 @@ pub fn search_jokes_tool() -> Tool {
         name: "search_for_jokes".to_string(),
         description: "Search for jokes".to_string(),
         parameters: json!({}),
-        tool_call: Box::new(|_| {
+        tool_call: ToolCall::Sync(Box::new(|_| {
             tracing::info!("Calling search_for_jokes tool");
             Ok(json!({
                 "jokes": [
@@ -16,6 +16,6 @@ pub fn search_jokes_tool() -> Tool {
                     "Why do UDP packets never get invited to parties?\nBecause they never respond to invites!",
                 ],
             }))
-        }),
+        })),
     }
 }

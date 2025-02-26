@@ -1,4 +1,7 @@
-use amico::ai::{errors::ToolCallError, tool::Tool};
+use amico::ai::{
+    errors::ToolCallError,
+    tool::{Tool, ToolCall},
+};
 use mpl_core::instructions::CreateV1Builder;
 use serde_json::json;
 use solana_client::rpc_client;
@@ -11,7 +14,7 @@ pub fn create_asset_tool(keypair: Keypair) -> Tool {
         name: "create_asset".to_string(),
         description: "Create a NFT on Solana representing yourself".to_string(),
         parameters: json!({}),
-        tool_call: Box::new(move |_| {
+        tool_call: ToolCall::Sync(Box::new(move |_| {
             tracing::info!("Calling create_asset tool");
 
             // Create the NFT
@@ -59,6 +62,6 @@ pub fn create_asset_tool(keypair: Keypair) -> Tool {
                     reason: format!("Failed to create NFT: {:?}", err),
                 }),
             }
-        }),
+        })),
     }
 }
