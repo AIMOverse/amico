@@ -8,6 +8,7 @@ use async_trait::async_trait;
 
 use crate::interface::{Plugin, PluginCategory, PluginInfo};
 
+/// The AI Agent service that stores the chat history in memory using a struct
 pub struct InMemoryService {
     /// The configuration for the service
     pub config: CompletionConfig,
@@ -23,6 +24,7 @@ pub struct InMemoryService {
 }
 
 impl InMemoryService {
+    /// Build a new AI service
     pub fn new(config: CompletionConfig, provider: Box<dyn Provider>, tools: ToolSet) -> Self {
         Self {
             config,
@@ -66,6 +68,7 @@ impl amico::ai::service::Service for InMemoryService {
 
         match response {
             Ok(choice) => match choice {
+                // Successfully get chat completion response
                 ModelChoice::Message(msg) => {
                     tracing::debug!("Received message response: {}", msg);
 
@@ -85,9 +88,14 @@ impl amico::ai::service::Service for InMemoryService {
                     if let Some(tool) = self.tools.get(&name) {
                         // Treat async & sync tool calls differently
                         let result = match &tool.tool_call {
-                            ToolCall::Sync(tool_call) => tool_call(params.clone()),
+                            ToolCall::Sync(tool_call) => {
+                                // Tool call function is sync, so we can call it directly
+                                tool_call(params.clone())
+                            }
                             ToolCall::Async(tool_call) => {
+                                // Tool call function is async, so we need to await it
                                 tool_call(params.clone()).await.map_err(|err| {
+                                    // Catch tokio runtime errors
                                     tracing::error!("Tool call error: {}", err);
                                     ServiceError::RuntimeError(err.to_string())
                                 })?
@@ -99,6 +107,7 @@ impl amico::ai::service::Service for InMemoryService {
                                 tracing::debug!("Tool call succeeded with result: {}", res);
 
                                 // TODO: Use actual tool call format
+                                // Temporarily add tool call results as chat messages to chat history
                                 self.history.push(Message::user(prompt.clone()));
                                 self.history
                                     .push(Message::assistant(assistant_tool_call_prompt(
@@ -110,9 +119,9 @@ impl amico::ai::service::Service for InMemoryService {
                                     res.to_string().as_str(),
                                 )));
 
-                                tracing::debug!("Updated history: {:?}", self.history);
+                                // tracing::debug!("Updated history: {:?}", self.history);
+                                // tracing::debug!("Re-generating text");
 
-                                tracing::debug!("Re-generating text");
                                 // Re-generate the text with the prompt and the new information
                                 self.generate_text(prompt).await
                             }
@@ -120,6 +129,8 @@ impl amico::ai::service::Service for InMemoryService {
                                 // Failed to call the tool
                                 tracing::debug!("Tool call failed with error: {}", err);
 
+                                // TODO: Use actual tool call format
+                                // Temporarily add tool call results as chat messages to chat history
                                 self.history.push(Message::user(prompt.clone()));
                                 self.history
                                     .push(Message::assistant(assistant_tool_call_prompt(
@@ -131,14 +142,15 @@ impl amico::ai::service::Service for InMemoryService {
                                     err.to_string().as_str(),
                                 )));
 
-                                tracing::debug!("Updated history: {:?}", self.history);
+                                // tracing::debug!("Updated history: {:?}", self.history);
+                                // tracing::debug!("Re-generating text");
 
-                                tracing::debug!("Re-generating text");
-                                // Re-generate the text with the prompt and the new information
+                                // Also re-generate reply text with tool call error results
                                 self.generate_text(prompt).await
                             }
                         }
                     } else {
+                        // Failed to find the tool by name
                         Err(ServiceError::ToolError(ToolCallError::ToolUnavailable(
                             name,
                         )))
@@ -146,6 +158,7 @@ impl amico::ai::service::Service for InMemoryService {
                 }
             },
             Err(err) => {
+                // Completion request failed
                 tracing::error!("Provider error: {}", err);
                 Err(ServiceError::ProviderError(CompletionError::ApiError))
             }

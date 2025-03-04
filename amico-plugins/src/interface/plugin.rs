@@ -21,7 +21,7 @@ pub enum PluginCategory {
     Sensor,
     Effector,
     Service,
-    Api,
+    Provider,
 
     // Low level
     Embedding,
