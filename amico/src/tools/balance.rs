@@ -1,13 +1,18 @@
 use alloy::signers::local::PrivateKeySigner;
-use amico::ai::{errors::ToolCallError, tool::Tool};
+use amico::ai::{
+    errors::ToolCallError,
+    tool::{Tool, ToolDefinition},
+};
 use serde_json::json;
 use solana_sdk::{native_token::LAMPORTS_PER_SOL, signature::Keypair, signer::Signer};
 
 pub fn check_solana_balance(keypair: Keypair) -> Tool {
     Tool {
-        name: "check_solana_balance".to_string(),
-        description: "Check SOL balance on Solana in your own wallet".to_string(),
-        parameters: json!({}),
+        definition: ToolDefinition {
+            name: "check_solana_balance".to_string(),
+            description: "Check SOL balance on Solana in your own wallet".to_string(),
+            parameters: json!({}),
+        },
         tool_call: Box::new(move |_| {
             tracing::info!("Calling check_solana_balance tool");
             tracing::debug!("Keypair: {}", keypair.pubkey());
@@ -37,9 +42,11 @@ pub fn check_solana_balance(keypair: Keypair) -> Tool {
 
 pub fn check_ethereum_balance(wallet: PrivateKeySigner) -> Tool {
     Tool {
-        name: "check_ethereum_balance".to_string(),
-        description: "Check ETH balance on Ethereum in your own wallet".to_string(),
-        parameters: json!({}),
+        definition: ToolDefinition {
+            name: "check_ethereum_balance".to_string(),
+            description: "Check ETH balance on Ethereum in your own wallet".to_string(),
+            parameters: json!({}),
+        },
         tool_call: Box::new(move |_| {
             tracing::info!("Calling check_ethereum_balance tool");
             Ok(json!({

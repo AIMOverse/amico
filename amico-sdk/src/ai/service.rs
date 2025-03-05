@@ -38,6 +38,8 @@ where
     pub system_prompt: String,
     pub provider: P,
     pub model: String,
+    pub temperature: f64,
+    pub max_tokens: u64,
     pub tools: ToolSet,
 }
 
@@ -54,6 +56,16 @@ where
     pub fn update_model(&mut self, model: String) {
         self.model = model;
     }
+
+    /// Updates the temperature
+    pub fn update_temperature(&mut self, temperature: f64) {
+        self.temperature = temperature;
+    }
+
+    /// Updates the max tokens
+    pub fn update_max_tokens(&mut self, max_tokens: u64) {
+        self.max_tokens = max_tokens;
+    }
 }
 
 /// A ServiceBuilder allows to configure a Service before it is used.
@@ -61,8 +73,14 @@ pub struct ServiceBuilder<P>
 where
     P: Provider,
 {
+    /// Temporarily stores tools in a vector.
+    /// These are moved into the ServiceContext when the builder is built.
     tool_list: Vec<Tool>,
-    context: ServiceContext<P>,
+    system_prompt: String,
+    provider: P,
+    model: String,
+    temperature: f64,
+    max_tokens: u64,
 }
 
 impl<P> ServiceBuilder<P>
@@ -73,24 +91,23 @@ where
     pub fn new(provider: P) -> Self {
         Self {
             tool_list: Vec::new(),
-            context: ServiceContext {
-                system_prompt: String::new(),
-                provider,
-                model: String::new(),
-                tools: ToolSet::new(),
-            },
+            system_prompt: String::new(),
+            provider,
+            model: String::new(),
+            temperature: 0.2, // Default value
+            max_tokens: 1000, // Default value
         }
     }
 
     /// Sets the model for the Service.
     pub fn model(mut self, model: String) -> Self {
-        self.context.model = model;
+        self.model = model;
         self
     }
 
     /// Set the system prompt for the Service.
     pub fn system_prompt(mut self, prompt: String) -> Self {
-        self.context.system_prompt = prompt;
+        self.system_prompt = prompt;
         self
     }
 
@@ -100,12 +117,31 @@ where
         self
     }
 
+    /// Sets the temperature for the Service.
+    pub fn temperature(mut self, temperature: f64) -> Self {
+        self.temperature = temperature;
+        self
+    }
+
+    /// Sets the max tokens for the Service.
+    pub fn max_tokens(mut self, max_tokens: u64) -> Self {
+        self.max_tokens = max_tokens;
+        self
+    }
+
     /// Build the Service.
     pub fn build<S>(self) -> S
     where
         S: Service<P>,
     {
-        S::from(self.context)
+        S::from(ServiceContext {
+            provider: self.provider,
+            model: self.model,
+            system_prompt: self.system_prompt,
+            temperature: self.temperature,
+            max_tokens: self.max_tokens,
+            tools: ToolSet::from(self.tool_list),
+        })
     }
 }
 
@@ -150,10 +186,8 @@ mod test {
 
         async fn generate_text(&mut self, prompt: String) -> Result<String, ServiceError> {
             // Build the request
-            let request = CompletionRequestBuilder::new()
+            let request = CompletionRequestBuilder::from_ctx(&self.ctx)
                 .prompt(prompt)
-                .system_prompt(self.ctx.system_prompt.clone())
-                .model(self.ctx.model.clone())
                 .build();
 
             // Perform the completion
@@ -178,6 +212,8 @@ mod test {
         let mut service = ServiceBuilder::new(TestProvider)
             .model("test".to_string())
             .system_prompt("test".to_string())
+            .temperature(0.2)
+            .max_tokens(100)
             .build::<TestService>();
 
         assert_eq!(service.ctx.system_prompt, "test".to_string());

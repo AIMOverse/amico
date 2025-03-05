@@ -60,6 +60,8 @@ impl CompletionRequestBuilder {
             .model(ctx.model.clone())
             .system_prompt(ctx.system_prompt.clone())
             .tools(ctx.tools.iter_defs().cloned().collect())
+            .temperature(ctx.temperature)
+            .max_tokens(ctx.max_tokens)
     }
 
     /// Sets the prompt
