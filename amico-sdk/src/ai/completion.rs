@@ -38,7 +38,7 @@ impl Default for CompletionRequest {
 }
 
 /// Builder for `CompletionRequest`
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "snake_case")]
 pub struct CompletionRequestBuilder {
     /// The inner builder

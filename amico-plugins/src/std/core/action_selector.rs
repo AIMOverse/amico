@@ -10,7 +10,7 @@ use futures::executor::block_on;
 use std::marker::PhantomData;
 
 /// A Standard Implementation of the ActionSelector Plugin.
-pub struct ActionSelector<S, P> 
+pub struct ActionSelector<S, P>
 where
     S: Service<P>,
     P: Provider,
@@ -21,8 +21,8 @@ where
     pub model: Box<dyn Model>,
 
     // The PhantomData has zero runtime cost - it's
-    // just a marker that helps the compiler understand 
-    // our intentions with the type parameter. This should 
+    // just a marker that helps the compiler understand
+    // our intentions with the type parameter. This should
     // resolve the "type parameter P is never used" warning.
     // -- Claude 3.5 Sonnet
     _phantom: PhantomData<P>,
