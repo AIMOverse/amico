@@ -1,4 +1,5 @@
 use crate::interface::{Plugin, PluginCategory, PluginInfo};
+use amico::ai::provider::Provider;
 use amico::ai::service::Service;
 use amico::core::action_map::ActionMap;
 use amico::core::model::Model;
@@ -6,17 +7,33 @@ use amico_core::entities::Event;
 use amico_core::errors::ActionSelectorError;
 use amico_core::traits::Action;
 use futures::executor::block_on;
+use std::marker::PhantomData;
 
 /// A Standard Implementation of the ActionSelector Plugin.
-pub struct ActionSelector {
+pub struct ActionSelector<S, P>
+where
+    S: Service<P>,
+    P: Provider,
+{
     // Actions
     pub actions_map: ActionMap,
-    pub service: Box<dyn Service>,
+    pub service: S,
     pub model: Box<dyn Model>,
+
+    // The PhantomData has zero runtime cost - it's
+    // just a marker that helps the compiler understand
+    // our intentions with the type parameter. This should
+    // resolve the "type parameter P is never used" warning.
+    // -- Claude 3.5 Sonnet
+    _phantom: PhantomData<P>,
 }
 
 // Implement the Plugin trait for the ActionSelector struct
-impl Plugin for ActionSelector {
+impl<S, P> Plugin for ActionSelector<S, P>
+where
+    S: Service<P>,
+    P: Provider,
+{
     fn info(&self) -> &'static PluginInfo {
         &PluginInfo {
             name: "StandardActionSelector",
@@ -26,7 +43,11 @@ impl Plugin for ActionSelector {
 }
 
 // Implement the ActionSelector trait for the ActionSelector struct
-impl amico_core::traits::ActionSelector for ActionSelector {
+impl<S, P> amico_core::traits::ActionSelector for ActionSelector<S, P>
+where
+    S: Service<P>,
+    P: Provider,
+{
     // Temporarily ignore the events
     fn select_action(
         &mut self,
@@ -94,18 +115,19 @@ impl amico_core::traits::ActionSelector for ActionSelector {
 }
 
 /// Implement the ActionSelector struct
-impl ActionSelector {
+impl<S, P> ActionSelector<S, P>
+where
+    S: Service<P>,
+    P: Provider,
+{
     /// Create a new instance of the ActionSelector struct.
-    pub fn new(actions_map: ActionMap, service: Box<dyn Service>, model: Box<dyn Model>) -> Self {
-        let mut instance = Self {
+    pub fn new(actions_map: ActionMap, service: S, model: Box<dyn Model>) -> Self {
+        Self {
             actions_map,
             service,
             model,
-        };
-        // Update the system prompt
-        instance.update_system_prompt();
-        // Return the instance
-        instance
+            _phantom: PhantomData,
+        }
     }
 
     /// Update the system prompt.
@@ -137,11 +159,11 @@ impl ActionSelector {
         );
 
         // Set the system prompt
-        self.service.set_system_prompt(final_prompt);
+        self.service.mut_ctx().update_system_prompt(final_prompt);
     }
 
     /// Set the AI service for the ActionSelector.
-    pub fn set_service(&mut self, service: Box<dyn Service>) {
+    pub fn set_service(&mut self, service: S) {
         // Set the service
         self.service = service;
         // Update the system prompt

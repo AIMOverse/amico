@@ -1,8 +1,7 @@
-use amico::ai::provider::{CompletionConfig, Provider};
-use amico::ai::service::Service;
-use amico::ai::tool::ToolSet;
+use amico::ai::service::{Service, ServiceBuilder};
 use amico_plugins::interface::Plugin;
-use amico_plugins::std::{providers::openai::OpenAI, service};
+use amico_plugins::std::providers::openai::OpenAI;
+use amico_plugins::std::service::InMemoryService;
 use colored::Colorize;
 use prompt::AMICO_SYSTEM_PROMPT;
 use std::io::{self, Write};
@@ -103,26 +102,21 @@ async fn main() {
         }
     };
 
-    let mut service = service::InMemoryService::new(
-        CompletionConfig {
-            system_prompt: AMICO_SYSTEM_PROMPT.to_string(),
-            temperature: 0.2,
-            max_tokens: 1000,
-            model: "gpt-4o".to_string(),
-        },
-        Box::new(provider),
-        ToolSet::from(vec![
-            search_jokes_tool(),
-            check_solana_balance(wallet.solana_keypair().unwrap()),
-            check_ethereum_balance(wallet.ethereum_wallet().unwrap()),
-            create_asset_tool(wallet.solana_keypair().unwrap()),
-            buy_solana_token_tool(wallet.solana_keypair().unwrap()),
-        ]),
-    );
+    let mut service = ServiceBuilder::new(provider)
+        .model("gpt-4o".to_string())
+        .system_prompt(AMICO_SYSTEM_PROMPT.to_string())
+        .temperature(0.2)
+        .max_tokens(1000)
+        .tool(search_jokes_tool())
+        .tool(check_solana_balance(wallet.solana_keypair().unwrap()))
+        .tool(check_ethereum_balance(wallet.ethereum_wallet().unwrap()))
+        .tool(create_asset_tool(wallet.solana_keypair().unwrap()))
+        .tool(buy_solana_token_tool(wallet.solana_keypair().unwrap()))
+        .build::<InMemoryService<OpenAI>>();
 
     println!();
     println!("Using service plugin: {}", service.info().name);
-    println!("Tools enabled:\n{}", service.tools.describe());
+    println!("Tools enabled:\n{}", service.ctx().tools.describe());
 
     // Print global prompt
     println!();

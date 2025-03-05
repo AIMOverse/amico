@@ -1,8 +1,12 @@
-/// Errors during creation of AI service
+/// Errors during creation of AI Service
 #[derive(Debug, thiserror::Error)]
 pub enum CreationError {
-    #[error("Invalid param")]
-    InvalidParam,
+    #[error("Invalid API key")]
+    InvalidParam {
+        name: String,
+        value: serde_json::Value,
+        reason: String,
+    },
 }
 
 /// Errors during completion of chatting
@@ -16,7 +20,7 @@ pub enum CompletionError {
 }
 
 /// Errors during tool call
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, Clone, thiserror::Error)]
 pub enum ToolCallError {
     #[error("Tool {0} is unavailable")]
     ToolUnavailable(String),
@@ -41,6 +45,10 @@ pub enum ToolCallError {
 pub enum ServiceError {
     #[error("Provider error")]
     ProviderError(#[from] CompletionError),
+
+    #[error("Unexpected response: {0}")]
+    UnexpectedResponse(String),
+
     #[error("Tool error")]
     ToolError(#[from] ToolCallError),
 }

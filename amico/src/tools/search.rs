@@ -1,11 +1,13 @@
-use amico::ai::tool::Tool;
+use amico::ai::tool::{Tool, ToolDefinition};
 use serde_json::json;
 
 pub fn search_jokes_tool() -> Tool {
     Tool {
-        name: "search_for_jokes".to_string(),
-        description: "Search for jokes".to_string(),
-        parameters: json!({}),
+        definition: ToolDefinition {
+            name: "search_for_jokes".to_string(),
+            description: "Search for jokes".to_string(),
+            parameters: json!({}),
+        },
         tool_call: Box::new(|_| {
             tracing::info!("Calling search_for_jokes tool");
             Ok(json!({

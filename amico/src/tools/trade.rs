@@ -1,6 +1,9 @@
 use std::str::FromStr;
 
-use amico::ai::{errors::ToolCallError, tool::Tool};
+use amico::ai::{
+    errors::ToolCallError,
+    tool::{Tool, ToolDefinition},
+};
 use serde_json::json;
 use solana_sdk::{
     native_token::LAMPORTS_PER_SOL, pubkey::Pubkey, signature::Keypair, signer::Signer,
@@ -10,22 +13,25 @@ use crate::utils::sol_swap::raydium_buy;
 
 pub fn buy_solana_token_tool(keypair: Keypair) -> Tool {
     Tool {
-        name: "buy_solana_token".to_string(),
-        description: "Buy a Solana token".to_string(),
-        parameters: json!({
-            "type": "object",
-            "properties": {
-                "token_address": {
-                    "type": "string",
-                    "description": "The address of the token to buy",
+        definition: ToolDefinition {
+            name: "buy_solana_token".to_string(),
+            description: "Buy a Solana token".to_string(),
+            parameters: json!({
+                    "type": "object",
+                    "properties": {
+                    "token_address": {
+                        "type": "string",
+                        "description": "The address of the token to buy",
+                    },
+                    "amount_sol": {
+                        "type": "number",
+                        "description": "The amount of SOL to spend on the transaction",
+                    },
                 },
-                "amount_sol": {
-                    "type": "number",
-                    "description": "The amount of SOL to spend on the transaction",
-                },
-            },
-            "required": ["token_address", "amount_sol"],
-        }),
+                "required": ["token_address", "amount_sol"],
+            }),
+        },
+
         tool_call: Box::new(move |params| {
             tracing::info!("Calling buy_solana_token tool {:?}", params);
 

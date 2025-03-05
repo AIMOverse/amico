@@ -85,6 +85,3 @@ pub struct ToolCallFunction {
     pub name: String,
     pub arguments: serde_json::Value,
 }
-
-/// Type alias for a chat history
-pub type ChatHistory = Vec<Message>;
