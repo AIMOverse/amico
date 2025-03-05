@@ -1,6 +1,6 @@
 use amico::ai::{
-    message::Message,
     errors::{CompletionError, ServiceError, ToolCallError},
+    message::Message,
     provider::{ModelChoice, Provider},
     service::ServiceContext,
 };
