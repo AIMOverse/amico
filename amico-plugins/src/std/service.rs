@@ -1,5 +1,5 @@
 use amico::ai::{
-    chat::Message,
+    message::Message,
     errors::{CompletionError, ServiceError, ToolCallError},
     provider::{ModelChoice, Provider},
     service::ServiceContext,

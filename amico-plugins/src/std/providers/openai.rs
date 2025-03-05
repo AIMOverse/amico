@@ -1,7 +1,7 @@
 use amico::ai::{
-    chat::Message,
     completion::CompletionRequest,
     errors::{CompletionError, CreationError},
+    message::Message,
     provider::{ModelChoice, Provider},
     tool::ToolDefinition,
 };

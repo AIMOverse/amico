@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use super::{chat::Message, provider::Provider, service::ServiceContext, tool::ToolDefinition};
+use super::{message::Message, provider::Provider, service::ServiceContext, tool::ToolDefinition};
 
 /// Chat completion request schema
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
