@@ -20,12 +20,17 @@ where
     where
         Self: Sized;
 
+    /// Gets the context of the service
+    fn ctx(&self) -> &ServiceContext<P>;
+
+    /// Gets a mutable reference to the context of the service
+    fn mut_ctx(&mut self) -> &mut ServiceContext<P>;
+
     /// Generates text based on a prompt.
     async fn generate_text(&mut self, prompt: String) -> Result<String, ServiceError>;
 }
 
 /// The context of a Service.
-#[derive(Default)]
 pub struct ServiceContext<P>
 where
     P: Provider,
@@ -34,6 +39,21 @@ where
     pub provider: P,
     pub model: String,
     pub tools: ToolSet,
+}
+
+impl<P> ServiceContext<P>
+where
+    P: Provider,
+{
+    /// Updates the system prompt
+    pub fn update_system_prompt(&mut self, prompt: String) {
+        self.system_prompt = prompt;
+    }
+
+    /// Updates the model name
+    pub fn update_model(&mut self, model: String) {
+        self.model = model;
+    }
 }
 
 /// A ServiceBuilder allows to configure a Service before it is used.
@@ -50,22 +70,27 @@ where
     P: Provider,
 {
     /// Creates a new `ServiceBuilder` with default values.
-    pub fn new() -> Self {
+    pub fn new(provider: P) -> Self {
         Self {
             tool_list: Vec::new(),
-            context: ServiceContext::default(),
+            context: ServiceContext {
+                system_prompt: String::new(),
+                provider,
+                model: String::new(),
+                tools: ToolSet::new(),
+            },
         }
+    }
+
+    /// Sets the model for the Service.
+    pub fn model(mut self, model: String) -> Self {
+        self.context.model = model;
+        self
     }
 
     /// Set the system prompt for the Service.
     pub fn system_prompt(mut self, prompt: String) -> Self {
         self.context.system_prompt = prompt;
-        self
-    }
-
-    /// Set the provider for the Service.
-    pub fn provider(mut self, provider: P) -> Self {
-        self.context.provider = provider;
         self
     }
 
@@ -93,10 +118,8 @@ mod test {
 
     // Structs for testing
 
-    #[derive(Default)]
     struct TestProvider;
 
-    #[derive(Default)]
     struct TestService {
         ctx: ServiceContext<TestProvider>,
     }
@@ -117,11 +140,20 @@ mod test {
             TestService { ctx: context }
         }
 
+        fn ctx(&self) -> &ServiceContext<TestProvider> {
+            &self.ctx
+        }
+
+        fn mut_ctx(&mut self) -> &mut ServiceContext<TestProvider> {
+            &mut self.ctx
+        }
+
         async fn generate_text(&mut self, prompt: String) -> Result<String, ServiceError> {
             // Build the request
             let request = CompletionRequestBuilder::new()
                 .prompt(prompt)
                 .system_prompt(self.ctx.system_prompt.clone())
+                .model(self.ctx.model.clone())
                 .build();
 
             // Perform the completion
@@ -141,13 +173,17 @@ mod test {
         }
     }
 
-    #[test]
-    fn test_build_service() {
-        let service = ServiceBuilder::new()
+    #[tokio::test]
+    async fn test_build_service() {
+        let mut service = ServiceBuilder::new(TestProvider)
+            .model("test".to_string())
             .system_prompt("test".to_string())
-            .provider(TestProvider::default())
             .build::<TestService>();
 
         assert_eq!(service.ctx.system_prompt, "test".to_string());
+        assert_eq!(service.ctx.model, "test".to_string());
+
+        let response = service.generate_text("test".to_string()).await.unwrap();
+        assert_eq!(response, "test".to_string());
     }
 }

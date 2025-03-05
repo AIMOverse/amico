@@ -1,3 +1,14 @@
+/// Errors during creation of AI Service
+#[derive(Debug, thiserror::Error)]
+pub enum CreationError {
+    #[error("Invalid API key")]
+    InvalidParam {
+        name: String,
+        value: serde_json::Value,
+        reason: String,
+    },
+}
+
 /// Errors during completion of chatting
 #[derive(Debug, thiserror::Error)]
 pub enum CompletionError {

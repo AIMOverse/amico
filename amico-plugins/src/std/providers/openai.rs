@@ -1,13 +1,14 @@
 use amico::ai::{
-    chat::{ChatHistory, Message},
+    chat::Message,
+    completion::CompletionRequest,
     errors::{CompletionError, CreationError},
-    provider::{CompletionConfig, ModelChoice, Provider},
-    tool::{Tool, ToolSet},
+    provider::{ModelChoice, Provider},
+    tool::ToolDefinition,
 };
 use async_trait::async_trait;
 use lazy_static::lazy_static;
 use rig::{
-    completion::{CompletionModel, CompletionRequest},
+    completion::{CompletionModel, CompletionRequest as RigCompletionRequest},
     providers::openai,
 };
 
@@ -45,52 +46,52 @@ fn from_rig_choice(choice: rig::completion::ModelChoice) -> ModelChoice {
 }
 
 /// Convert `sdk`'s `Tool` into `rig`'s `ToolDefinition`
-fn into_rig_tool_def(tool: &Tool) -> rig::completion::ToolDefinition {
+fn into_rig_tool_def(def: &ToolDefinition) -> rig::completion::ToolDefinition {
     rig::completion::ToolDefinition {
-        name: tool.name.clone(),
-        description: tool.description.clone(),
-        parameters: tool.parameters.clone(),
+        name: def.name.clone(),
+        description: def.description.clone(),
+        parameters: def.parameters.clone(),
     }
 }
 
 /// OpenAI provider using `rig-core`
 pub struct OpenAI(openai::Client);
 
-#[async_trait]
-impl Provider for OpenAI {
-    #[doc = " Creates a new provider."]
-    fn new(base_url: &str, api_key: &str) -> Result<Self, CreationError>
+impl OpenAI {
+    pub fn new(base_url: &str, api_key: &str) -> Result<Self, CreationError>
     where
         Self: Sized,
     {
         Ok(OpenAI(openai::Client::from_url(api_key, base_url)))
     }
 
+    pub fn model_available(&self, model: &str) -> bool {
+        // Check if the model name is available
+        OPENAI_MODELS.contains(&model)
+    }
+}
+
+#[async_trait]
+impl Provider for OpenAI {
     #[doc = " Completes a prompt with the provider."]
-    async fn completion(
-        &self,
-        prompt: &str,
-        config: &CompletionConfig,
-        chat_history: &ChatHistory,
-        tools: &ToolSet,
-    ) -> Result<ModelChoice, CompletionError> {
+    async fn completion(&self, req: &CompletionRequest) -> Result<ModelChoice, CompletionError> {
         let Self(client) = self;
 
-        if !self.model_available(&config.model).await {
-            return Err(CompletionError::ModelUnavailable(config.model.clone()));
+        if !self.model_available(&req.model) {
+            return Err(CompletionError::ModelUnavailable(req.model.clone()));
         }
 
-        let model = client.completion_model(&config.model);
+        let model = client.completion_model(&req.model);
 
         // Build the rig completion request
-        let request = CompletionRequest {
-            chat_history: chat_history.iter().map(into_rig_message).collect(),
-            prompt: prompt.to_string(),
-            preamble: Some(config.system_prompt.clone()),
-            temperature: Some(config.temperature),
-            max_tokens: Some(config.max_tokens),
+        let request = RigCompletionRequest {
+            chat_history: req.chat_history.iter().map(into_rig_message).collect(),
+            prompt: req.prompt.to_string(),
+            preamble: req.system_prompt.clone(),
+            temperature: req.temperature,
+            max_tokens: req.max_tokens,
             additional_params: None,
-            tools: tools.tools.values().map(into_rig_tool_def).collect(),
+            tools: req.tools.iter().map(into_rig_tool_def).collect(),
             documents: Vec::new(),
         };
 
@@ -106,12 +107,6 @@ impl Provider for OpenAI {
                 Err(CompletionError::ApiError)
             }
         }
-    }
-
-    #[doc = " Checks if a model name is available."]
-    async fn model_available(&self, model: &str) -> bool {
-        // Check if the model name is available
-        OPENAI_MODELS.contains(&model)
     }
 }
 

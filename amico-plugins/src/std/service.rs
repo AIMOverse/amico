@@ -1,39 +1,25 @@
 use amico::ai::{
-    chat::{ChatHistory, Message},
+    chat::Message,
     errors::{CompletionError, ServiceError, ToolCallError},
-    provider::{CompletionConfig, ModelChoice, Provider},
-    tool::ToolSet,
+    provider::{ModelChoice, Provider},
+    service::ServiceContext,
 };
 use async_trait::async_trait;
 
 use crate::interface::{Plugin, PluginCategory, PluginInfo};
 
-pub struct InMemoryService {
-    /// The configuration for the service
-    pub config: CompletionConfig,
+pub struct InMemoryService<P>
+where
+    P: Provider,
+{
+    /// The context config for the service
+    pub ctx: ServiceContext<P>,
 
-    /// The provider to use
-    pub provider: Box<dyn Provider>,
-
-    /// Chat history
-    pub history: ChatHistory,
-
-    /// Tools to use
-    pub tools: ToolSet,
+    /// In-memory Chat history storage
+    pub history: Vec<Message>,
 }
 
-impl InMemoryService {
-    pub fn new(config: CompletionConfig, provider: Box<dyn Provider>, tools: ToolSet) -> Self {
-        Self {
-            config,
-            provider,
-            history: ChatHistory::new(),
-            tools,
-        }
-    }
-}
-
-impl Plugin for InMemoryService {
+impl<P: Provider> Plugin for InMemoryService<P> {
     fn info(&self) -> &'static PluginInfo {
         &PluginInfo {
             name: "StdInMemoryService",
@@ -57,12 +43,34 @@ fn user_tool_failed_prompt(function_name: &str, error: &str) -> String {
 }
 
 #[async_trait]
-impl amico::ai::service::Service for InMemoryService {
+impl<P> amico::ai::service::Service<P> for InMemoryService<P>
+where
+    P: Provider,
+{
+    fn from(context: ServiceContext<P>) -> Self
+    where
+        Self: Sized,
+    {
+        Self {
+            ctx: context,
+            history: Vec::new(),
+        }
+    }
+
+    fn ctx(&self) -> &ServiceContext<P> {
+        &self.ctx
+    }
+
+    fn mut_ctx(&mut self) -> &mut ServiceContext<P> {
+        &mut self.ctx
+    }
+
     async fn generate_text(&mut self, prompt: String) -> Result<String, ServiceError> {
-        let response = self
-            .provider
-            .completion(&prompt, &self.config, &self.history, &self.tools)
-            .await;
+        let request = amico::ai::completion::CompletionRequestBuilder::from_ctx(&self.ctx)
+            .prompt(prompt.clone())
+            .build();
+
+        let response = self.ctx.provider.completion(&request).await;
 
         match response {
             Ok(choice) => match choice {
@@ -82,7 +90,7 @@ impl amico::ai::service::Service for InMemoryService {
                     tracing::debug!("Calling {} ({}) with params {}", name, id, params);
 
                     // Execute the tool
-                    if let Some(tool) = self.tools.get(&name) {
+                    if let Some(tool) = self.ctx.tools.get(&name) {
                         match (tool.tool_call)(params.clone()) {
                             Ok(res) => {
                                 // Successfully called the tool
@@ -140,13 +148,5 @@ impl amico::ai::service::Service for InMemoryService {
                 Err(ServiceError::ProviderError(CompletionError::ApiError))
             }
         }
-    }
-
-    fn set_system_prompt(&mut self, prompt: String) {
-        self.config.system_prompt = prompt;
-    }
-
-    fn set_provider(&mut self, provider: Box<dyn Provider>) {
-        self.provider = provider;
     }
 }

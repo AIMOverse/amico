@@ -74,4 +74,14 @@ impl ToolSet {
         }
         result
     }
+
+    /// Iterate over the tools in the set.
+    pub fn iter(&self) -> impl Iterator<Item = &Tool> {
+        self.tools.values()
+    }
+
+    /// Iterate over the tool definitions in the set.
+    pub fn iter_defs(&self) -> impl Iterator<Item = &ToolDefinition> {
+        self.tools.values().map(|t| t.def())
+    }
 }
