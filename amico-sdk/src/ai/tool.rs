@@ -21,9 +21,10 @@ pub struct ToolDefinition {
 pub type ToolResult = Result<serde_json::Value, ToolCallError>;
 
 /// A tool that can be called by AI Agent.
+#[derive(Clone)]
 pub struct Tool {
     pub definition: ToolDefinition,
-    pub tool_call: ToolCallFn,
+    tool_call: ToolCallFn,
 }
 
 impl Tool {
@@ -50,6 +51,7 @@ impl Tool {
 }
 
 /// Type of the tool call function
+#[derive(Clone)]
 pub enum ToolCallFn {
     /// Synchronous tool call function
     Sync(Arc<dyn Fn(serde_json::Value) -> ToolResult + Send + Sync>),
@@ -74,14 +76,14 @@ impl ToolBuilder {
     }
 
     /// Sets the name of the tool
-    pub fn name(mut self, name: String) -> Self {
-        self.name = name;
+    pub fn name(mut self, name: &str) -> Self {
+        self.name = name.to_string();
         self
     }
 
     /// Sets the description of the tool
-    pub fn description(mut self, description: String) -> Self {
-        self.description = description;
+    pub fn description(mut self, description: &str) -> Self {
+        self.description = description.to_string();
         self
     }
 
@@ -182,5 +184,61 @@ impl ToolSet {
     /// Iterate over the tool definitions in the set.
     pub fn iter_defs(&self) -> impl Iterator<Item = &ToolDefinition> {
         self.tools.values().map(|t| t.def())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn build_test_tool() -> Tool {
+        ToolBuilder::new()
+            .name("test")
+            .description("test")
+            .parameters(serde_json::json!({}))
+            .build(|args| {
+                Ok(serde_json::json!({
+                    "message": "ok",
+                    "args": args,
+                }))
+            })
+    }
+
+    fn build_test_async_tool() -> Tool {
+        ToolBuilder::new()
+            .name("test_async")
+            .description("test_async")
+            .parameters(serde_json::json!({}))
+            .build_async(|args| async move {
+                tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+                Ok(serde_json::json!({
+                    "message": "ok",
+                    "args": args,
+                }))
+            })
+    }
+
+    #[tokio::test]
+    async fn test_tool_call() {
+        let tool = build_test_tool();
+        assert_eq!(tool.def().name, "test");
+        assert_eq!(tool.def().description, "test");
+        assert_eq!(tool.def().parameters, serde_json::json!({}));
+        assert_eq!(
+            tool.call(serde_json::json!({"a": "b"})).await.unwrap(),
+            serde_json::json!({"message": "ok", "args": serde_json::json!({"a": "b"})})
+        );
+    }
+
+    #[tokio::test]
+    async fn test_tool_call_async() {
+        let tool = build_test_async_tool();
+        assert_eq!(tool.def().name, "test_async");
+        assert_eq!(tool.def().description, "test_async");
+        assert_eq!(tool.def().parameters, serde_json::json!({}));
+        assert_eq!(
+            tool.call(serde_json::json!({"a": "b"})).await.unwrap(),
+            serde_json::json!({"message": "ok", "args": serde_json::json!({"a": "b"})})
+        );
     }
 }
