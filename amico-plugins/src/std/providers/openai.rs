@@ -8,8 +8,10 @@ use amico::ai::{
 use async_trait::async_trait;
 use lazy_static::lazy_static;
 use rig::{
-    completion::{CompletionModel, CompletionRequest as RigCompletionRequest},
+    completion::{self as rc, CompletionModel},
+    message as rm,
     providers::openai,
+    OneOrMany,
 };
 
 use crate::interface::{Plugin, PluginCategory, PluginInfo};
@@ -28,20 +30,41 @@ lazy_static! {
 // Implement type convertions
 
 /// Convert `sdk`'s `Message` into `rig`'s `Message`
-fn into_rig_message(message: &Message) -> rig::completion::Message {
-    rig::completion::Message {
-        role: message.role.clone(),
-        content: message.content(),
+fn into_rig_message(message: &Message) -> rc::Message {
+    match message {
+        Message::Assistant(content) => rc::Message::Assistant {
+            content: OneOrMany::one(rm::AssistantContent::text(content.clone())),
+        },
+        Message::User(content) => rc::Message::User {
+            content: OneOrMany::one(rm::UserContent::text(content.clone())),
+        },
+        Message::ToolCall(name, id, params) => rc::Message::Assistant {
+            content: OneOrMany::one(rm::AssistantContent::ToolCall(rm::ToolCall {
+                id: id.clone(),
+                function: rm::ToolFunction {
+                    name: name.clone(),
+                    arguments: params.clone(),
+                },
+            })),
+        },
+        Message::ToolResult(_, id, result) => rc::Message::User {
+            content: OneOrMany::one(rm::UserContent::ToolResult(rm::ToolResult {
+                id: id.clone(),
+                content: OneOrMany::one(rm::ToolResultContent::text(result.to_string())),
+            })),
+        },
     }
 }
 
 /// Convert `rig`'s `ModelChoice` into `sdk`'s `ModelChoice`
-fn from_rig_choice(choice: rig::completion::ModelChoice) -> ModelChoice {
-    match choice {
-        rig::completion::ModelChoice::ToolCall(name, id, params) => {
-            ModelChoice::ToolCall(name, id, params)
-        }
-        rig::completion::ModelChoice::Message(msg) => ModelChoice::Message(msg),
+fn from_rig_response(response: OneOrMany<rm::AssistantContent>) -> ModelChoice {
+    match response.first() {
+        rm::AssistantContent::ToolCall(tool_call) => ModelChoice::ToolCall(
+            tool_call.function.name,
+            tool_call.id,
+            tool_call.function.arguments,
+        ),
+        rm::AssistantContent::Text(text) => ModelChoice::Message(text.text.clone()),
     }
 }
 
@@ -51,6 +74,21 @@ fn into_rig_tool_def(def: &ToolDefinition) -> rig::completion::ToolDefinition {
         name: def.name.clone(),
         description: def.description.clone(),
         parameters: def.parameters.clone(),
+    }
+}
+
+fn into_rig_request(request: CompletionRequest) -> rc::CompletionRequest {
+    rc::CompletionRequest {
+        chat_history: request.chat_history.iter().map(into_rig_message).collect(),
+        prompt: rm::Message::User {
+            content: OneOrMany::one(rm::UserContent::text(request.prompt.clone())),
+        },
+        preamble: request.system_prompt.clone(),
+        temperature: request.temperature,
+        max_tokens: request.max_tokens,
+        additional_params: None,
+        tools: request.tools.iter().map(into_rig_tool_def).collect(),
+        documents: Vec::new(),
     }
 }
 
@@ -84,16 +122,7 @@ impl Provider for OpenAI {
         let model = client.completion_model(&req.model);
 
         // Build the rig completion request
-        let request = RigCompletionRequest {
-            chat_history: req.chat_history.iter().map(into_rig_message).collect(),
-            prompt: req.prompt.to_string(),
-            preamble: req.system_prompt.clone(),
-            temperature: req.temperature,
-            max_tokens: req.max_tokens,
-            additional_params: None,
-            tools: req.tools.iter().map(into_rig_tool_def).collect(),
-            documents: Vec::new(),
-        };
+        let request = into_rig_request(req.clone());
 
         // Perform request to the AI model API
         let response = model.completion(request).await;
@@ -101,7 +130,7 @@ impl Provider for OpenAI {
 
         // Convert the rig completion response to a ModelChoice
         match response {
-            Ok(res) => Ok(from_rig_choice(res.choice)),
+            Ok(res) => Ok(from_rig_response(res.choice)),
             Err(err) => {
                 tracing::error!("API error: {}", err);
                 Err(CompletionError::ApiError)

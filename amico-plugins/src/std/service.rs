@@ -91,7 +91,7 @@ where
 
                     // Execute the tool
                     if let Some(tool) = self.ctx.tools.get(&name) {
-                        match (tool.tool_call)(params.clone()) {
+                        match tool.call(params.clone()).await {
                             Ok(res) => {
                                 // Successfully called the tool
                                 tracing::debug!("Tool call succeeded with result: {}", res);

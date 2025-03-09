@@ -1,9 +1,11 @@
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::{collections::HashMap, future::Future, sync::Arc};
 
 use crate::ai::errors::ToolCallError;
 
 /// Definition of a tool in natural language
+///
+/// **TODO**: Restrict the parameters to be valid JSON Schema
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub struct ToolDefinition {
@@ -15,11 +17,13 @@ pub struct ToolDefinition {
     pub parameters: serde_json::Value,
 }
 
+/// Result type of a tool call
+pub type ToolResult = Result<serde_json::Value, ToolCallError>;
+
 /// A tool that can be called by AI Agent.
 pub struct Tool {
     pub definition: ToolDefinition,
-    pub tool_call:
-        Box<dyn Fn(serde_json::Value) -> Result<serde_json::Value, ToolCallError> + Send + Sync>,
+    pub tool_call: ToolCallFn,
 }
 
 impl Tool {
@@ -29,8 +33,96 @@ impl Tool {
     }
 
     /// Calls the tool with the given arguments.
-    pub fn call(&self, args: serde_json::Value) -> Result<serde_json::Value, ToolCallError> {
-        (self.tool_call)(args)
+    pub async fn call(&self, args: serde_json::Value) -> ToolResult {
+        match &self.tool_call {
+            ToolCallFn::Sync(f) => (f)(args),
+            ToolCallFn::Async(f) => {
+                (f)(args.clone())
+                    .await
+                    .map_err(|err| ToolCallError::ExecutionError {
+                        tool_name: self.definition.name.clone(),
+                        params: args.clone(),
+                        reason: err.to_string(),
+                    })?
+            }
+        }
+    }
+}
+
+/// Type of the tool call function
+pub enum ToolCallFn {
+    /// Synchronous tool call function
+    Sync(Arc<dyn Fn(serde_json::Value) -> ToolResult + Send + Sync>),
+    /// Asynchronous tool call function
+    Async(Arc<dyn Fn(serde_json::Value) -> tokio::task::JoinHandle<ToolResult> + Send + Sync>),
+}
+
+/// Builder for `Tool`
+///
+/// **TODO**: Restrict the parameters to be valid JSON Schema
+#[derive(Debug, Clone, PartialEq, Default)]
+pub struct ToolBuilder {
+    name: String,
+    description: String,
+    parameters: serde_json::Value,
+}
+
+impl ToolBuilder {
+    /// Creates a new `ToolBuilder` with default values
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Sets the name of the tool
+    pub fn name(mut self, name: String) -> Self {
+        self.name = name;
+        self
+    }
+
+    /// Sets the description of the tool
+    pub fn description(mut self, description: String) -> Self {
+        self.description = description;
+        self
+    }
+
+    /// Sets the parameters of the tool
+    pub fn parameters(mut self, parameters: serde_json::Value) -> Self {
+        self.parameters = parameters;
+        self
+    }
+
+    /// Builds the `Tool` with tool call function from the builder
+    pub fn build<F>(self, tool_call: F) -> Tool
+    where
+        F: Fn(serde_json::Value) -> Result<serde_json::Value, ToolCallError>
+            + Send
+            + Sync
+            + 'static,
+    {
+        Tool {
+            definition: ToolDefinition {
+                name: self.name,
+                description: self.description,
+                parameters: self.parameters,
+            },
+            tool_call: ToolCallFn::Sync(Arc::new(tool_call)),
+        }
+    }
+
+    /// Builds the `Tool` with async tool call function from the builder
+    pub fn build_async<F, Fut>(self, tool_call: F) -> Tool
+    where
+        F: Fn(serde_json::Value) -> Fut + Send + Sync + 'static,
+        Fut: Future<Output = ToolResult> + Send + Sync + 'static,
+    {
+        Tool {
+            definition: ToolDefinition {
+                name: self.name,
+                description: self.description,
+                parameters: self.parameters,
+            },
+            tool_call: ToolCallFn::Async(Arc::new(move |args| tokio::task::spawn(tool_call(args)))),
+        }
     }
 }
 

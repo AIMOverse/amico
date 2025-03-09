@@ -3,85 +3,47 @@ use serde::{Deserialize, Serialize};
 /// The schema representing a message in a chat
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub struct Message {
-    pub role: String,
-    pub content: Option<String>,
-    pub name: Option<String>,              // Used in tool calls
-    pub tool_calls: Option<Vec<ToolCall>>, // Used in tool calls
+pub enum Message {
+    /// An message sent by AI assistant
+    Assistant(String),
+
+    /// An message sent by user
+    User(String),
+
+    /// A tool call request by AI assistant
+    /// `ToolCall(name, id, params)`
+    ToolCall(String, String, serde_json::Value),
+
+    /// Result of the tool call
+    /// `ToolResult(name, id, result)`
+    ToolResult(String, String, serde_json::Value),
 }
 
 impl Message {
     /// Create a user message
     pub fn user(content: String) -> Self {
-        Self {
-            role: "user".to_string(),
-            content: Some(content),
-            name: None,
-            tool_calls: None,
-        }
+        Self::User(content)
     }
 
     /// Create an assistant message
     pub fn assistant(content: String) -> Self {
-        Self {
-            role: "assistant".to_string(),
-            content: Some(content),
-            name: None,
-            tool_calls: None,
-        }
+        Self::Assistant(content)
     }
 
-    /// Create an assistant message with a tool call
-    pub fn assistant_tool_call(tool_calls: Vec<ToolCall>) -> Self {
-        Self {
-            role: "assistant".to_string(),
-            content: None,
-            name: None,
-            tool_calls: Some(tool_calls),
-        }
+    /// Create a tool call message
+    pub fn tool_call(name: String, id: String, params: serde_json::Value) -> Self {
+        Self::ToolCall(name, id, params)
     }
 
-    /// Create a tool message
-    pub fn tool(name: String, content: String) -> Self {
-        Self {
-            role: "tool".to_string(),
-            content: Some(content),
-            name: Some(name),
-            tool_calls: None,
-        }
-    }
-
-    pub fn content(&self) -> String {
-        match self.content.clone() {
-            Some(content) => content,
-            None => "".to_string(),
-        }
+    /// Create a tool result message
+    pub fn tool_result(name: String, id: String, result: serde_json::Value) -> Self {
+        Self::ToolResult(name, id, result)
     }
 }
 
-/// The schema representing a tool call
+/// Content of a message
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub struct ToolCall {
-    pub id: String,
-    pub r#type: String,
-    pub function: ToolCallFunction,
-}
-
-impl ToolCall {
-    pub fn function(id: String, name: String, arguments: serde_json::Value) -> Self {
-        Self {
-            id,
-            r#type: "function".to_string(),
-            function: ToolCallFunction { name, arguments },
-        }
-    }
-}
-
-/// The schema representing a tool call function
-#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub struct ToolCallFunction {
-    pub name: String,
-    pub arguments: serde_json::Value,
+pub enum MessageContent {
+    /// Text content
+    Text(String),
 }
