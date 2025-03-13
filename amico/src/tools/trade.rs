@@ -63,7 +63,7 @@ fn buy_solana_token(keypair: &Keypair, params: &serde_json::Value) -> ToolResult
         });
     }
 
-    if let Err(err) = raydium_buy(&keypair, &token_mint, amount) {
+    if let Err(err) = raydium_buy(keypair, &token_mint, amount) {
         return Err(ToolCallError::ExecutionError {
             tool_name: "buy_solana_token".to_string(),
             params: params.clone(),

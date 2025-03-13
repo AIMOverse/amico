@@ -8,7 +8,8 @@ use amico::ai::{
 };
 use async_trait::async_trait;
 
-fn debug_history(history: &Vec<Message>) -> String {
+/// Convert a message history to a human-readable brief list for debugging
+fn debug_history(history: &[Message]) -> String {
     let mut messages = String::new();
 
     // Convert message to a prettier shorter string
@@ -133,11 +134,8 @@ where
                     };
 
                     // Update chat history with tool result
-                    self.history.push(Message::tool_result(
-                        name.clone(),
-                        id.clone(),
-                        result,
-                    ));
+                    self.history
+                        .push(Message::tool_result(name.clone(), id.clone(), result));
                     tracing::debug!("Updated history: \n{}", debug_history(&self.history));
                 }
                 // Handle potential errors from the API call.
