@@ -1,3 +1,5 @@
+use crate::interface::{Plugin, PluginCategory, PluginInfo};
+use amico::ai::completion::CompletionRequestBuilder;
 use amico::ai::{
     errors::{CompletionError, ServiceError, ToolCallError},
     message::Message,
@@ -6,7 +8,25 @@ use amico::ai::{
 };
 use async_trait::async_trait;
 
-use crate::interface::{Plugin, PluginCategory, PluginInfo};
+fn debug_history(history: &Vec<Message>) -> String {
+    let mut messages = String::new();
+
+    // Convert message to a prettier shorter string
+    for m in history.iter() {
+        match m {
+            Message::Assistant(text) => messages.push_str(&format!("a: {}\n", text)),
+            Message::User(text) => messages.push_str(&format!("u: {}\n", text)),
+            Message::ToolCall(name, id, params) => {
+                messages.push_str(&format!("tc: {}[{}] ({})\n", name, id, params))
+            }
+            Message::ToolResult(name, id, params) => {
+                messages.push_str(&format!("tr: {}[{}] => {}\n", name, id, params))
+            }
+        }
+    }
+
+    messages
+}
 
 pub struct InMemoryService<P>
 where
@@ -26,20 +46,6 @@ impl<P: Provider> Plugin for InMemoryService<P> {
             category: PluginCategory::Service,
         }
     }
-}
-
-// Tool call prompts
-
-fn assistant_tool_call_prompt(function_name: &str, arguments: &str) -> String {
-    format!("**Tool Call Request**\n\nI will call the tool funcion `{}` with arguments `{}`. Please tell me the result in your next message.", function_name, arguments)
-}
-
-fn user_tool_result_prompt(function_name: &str, result: &str) -> String {
-    format!("**Tool Call Result**\n\nThe result of calling the tool `{}` is `{}`. With these extra information, please respond to the user again.", function_name, result)
-}
-
-fn user_tool_failed_prompt(function_name: &str, error: &str) -> String {
-    format!("**Tool Call Failed**\n\nCalling the tool `{}` failed. The error is `{}`. Report the error to the user.", function_name, error)
 }
 
 #[async_trait]
@@ -66,8 +72,13 @@ where
     }
 
     async fn generate_text(&mut self, prompt: String) -> Result<String, ServiceError> {
-        let request = amico::ai::completion::CompletionRequestBuilder::from_ctx(&self.ctx)
+        tracing::debug!(
+            "Requesting completion with history:\n{}",
+            debug_history(&self.history)
+        );
+        let request = CompletionRequestBuilder::from_ctx(&self.ctx)
             .prompt(prompt.clone())
+            .history(self.history.clone())
             .build();
 
         let response = self.ctx.provider.completion(&request).await;
@@ -81,7 +92,7 @@ where
                     self.history.push(Message::user(prompt.clone()));
                     self.history.push(Message::assistant(msg.clone()));
 
-                    tracing::debug!("Updated history: {:?}", self.history);
+                    tracing::debug!("Updated history: \n{}", debug_history(&self.history));
 
                     // Return the response message
                     Ok(msg)
@@ -96,19 +107,22 @@ where
                                 // Successfully called the tool
                                 tracing::debug!("Tool call succeeded with result: {}", res);
 
-                                // TODO: Use actual tool call format
                                 self.history.push(Message::user(prompt.clone()));
-                                self.history
-                                    .push(Message::assistant(assistant_tool_call_prompt(
-                                        name.as_str(),
-                                        params.to_string().as_str(),
-                                    )));
-                                self.history.push(Message::user(user_tool_result_prompt(
-                                    name.as_str(),
-                                    res.to_string().as_str(),
-                                )));
+                                self.history.push(Message::tool_call(
+                                    name.clone(),
+                                    id.clone(),
+                                    params.clone(),
+                                ));
+                                self.history.push(Message::tool_result(
+                                    name.clone(),
+                                    id.clone(),
+                                    res.clone(),
+                                ));
 
-                                tracing::debug!("Updated history: {:?}", self.history);
+                                tracing::debug!(
+                                    "Updated history: \n{}",
+                                    debug_history(&self.history)
+                                );
 
                                 tracing::debug!("Re-generating text");
                                 // Re-generate the text with the prompt and the new information
@@ -117,19 +131,27 @@ where
                             Err(err) => {
                                 // Failed to call the tool
                                 tracing::debug!("Tool call failed with error: {}", err);
+                                tracing::error!("Failed to call tool: {}", err.to_string());
 
                                 self.history.push(Message::user(prompt.clone()));
-                                self.history
-                                    .push(Message::assistant(assistant_tool_call_prompt(
-                                        name.as_str(),
-                                        params.to_string().as_str(),
-                                    )));
-                                self.history.push(Message::user(user_tool_failed_prompt(
-                                    name.as_str(),
-                                    err.to_string().as_str(),
-                                )));
+                                self.history.push(Message::tool_call(
+                                    name.clone(),
+                                    id.clone(),
+                                    params.clone(),
+                                ));
+                                self.history.push(Message::tool_result(
+                                    name.clone(),
+                                    id.clone(),
+                                    serde_json::json!({
+                                        "result": "error",
+                                        "message": err.to_string(),
+                                    }),
+                                ));
 
-                                tracing::debug!("Updated history: {:?}", self.history);
+                                tracing::debug!(
+                                    "Updated history: \n{}",
+                                    debug_history(&self.history)
+                                );
 
                                 tracing::debug!("Re-generating text");
                                 // Re-generate the text with the prompt and the new information

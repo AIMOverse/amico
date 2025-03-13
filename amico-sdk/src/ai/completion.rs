@@ -95,7 +95,7 @@ impl CompletionRequestBuilder {
     }
 
     /// Sets the chat history
-    pub fn chat_history(mut self, chat_history: Vec<Message>) -> Self {
+    pub fn history(mut self, chat_history: Vec<Message>) -> Self {
         self.inner.chat_history = chat_history;
         self
     }
@@ -125,7 +125,7 @@ mod tests {
             .system_prompt("You are a helpful assistant.".to_string())
             .temperature(0.2)
             .max_tokens(100)
-            .chat_history(Vec::new())
+            .history(Vec::new())
             .tools(Vec::new())
             .build();
 

@@ -17,7 +17,7 @@ pub struct ToolDefinition {
     pub parameters: serde_json::Value,
 }
 
-/// Result type of a tool call
+/// Result type of tool call
 pub type ToolResult = Result<serde_json::Value, ToolCallError>;
 
 /// A tool that can be called by AI Agent.
@@ -159,7 +159,7 @@ impl ToolSet {
     }
 
     /// Returns the tool with the given name.
-    pub fn get<'a>(&'a self, name: &str) -> Option<&'a Tool> {
+    pub fn get(&self, name: &str) -> Option<&Tool> {
         self.tools.get(name)
     }
 
