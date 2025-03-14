@@ -1,7 +1,7 @@
 use crate::interface::{Plugin, PluginCategory, PluginInfo};
-use amico::ai::completion::CompletionRequestBuilder;
 use amico::ai::{
-    errors::{CompletionError, ServiceError},
+    completion::CompletionRequestBuilder,
+    errors::ServiceError,
     message::Message,
     provider::{ModelChoice, Provider},
     service::ServiceContext,
@@ -74,13 +74,14 @@ where
 
     async fn generate_text(&mut self, prompt: String) -> Result<String, ServiceError> {
         // Append the new user prompt to chat history.
-        self.history.push(Message::User(prompt.clone()));
+        self.history.push(Message::User(prompt));
 
         // Generate the final text
         loop {
             // Call the LLM API wrapper with the current prompt and chat history.
             let request = CompletionRequestBuilder::from_ctx(&self.ctx)
-                .prompt(prompt.clone())
+                // We've already added the user prompt to the history, so no need to add it again
+                // .prompt(prompt.clone())
                 .history(self.history.clone())
                 .build();
 
@@ -141,7 +142,7 @@ where
                 // Handle potential errors from the API call.
                 Err(err) => {
                     tracing::error!("Provider error: {}", err);
-                    return Err(ServiceError::ProviderError(CompletionError::ApiError));
+                    return Err(ServiceError::ProviderError(err));
                 }
             }
         }
