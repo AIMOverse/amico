@@ -1,7 +1,7 @@
 use amico::ai::service::{Service, ServiceBuilder};
-use amico_plugins::interface::Plugin;
-use amico_plugins::std::providers::openai::OpenAI;
-use amico_plugins::std::service::InMemoryService;
+use amico_mods::interface::Plugin;
+use amico_mods::std::providers::openai::OpenAI;
+use amico_mods::std::service::InMemoryService;
 use colored::Colorize;
 use prompt::AMICO_SYSTEM_PROMPT;
 use std::io::{self, Write};
