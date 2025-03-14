@@ -2,6 +2,19 @@
 
 Amico is a next-generation Autonomous AI Agent Framework designed for embedded AI devices and multi-agent systems.
 
+## Modules
+
+1. **`amico-core`**: Interfaces and workflows for the Engine Layer.
+2. **`amico-sdk`**: Interfaces and workflows for the AI Agent and Interaction Layers.
+3. **`amico-mods`**: Pluggable implementation modules.
+4. **`amico-hal`**: Hardware Abstraction Layer.
+
+## Development Plans
+
+- **Model Context Protocol (MCP) Integration**: Improves environmental awareness and control.
+- **Agent Networking**: Supports peer-to-peer networking using Web3 technologies.
+- **WASM Support**: Supports WASM-based AI Agent runtime.
+
 ## Getting Started
 
 **Note: This is a prototype version of Amico.** Currently, the Amico runtime functions as a command-line chatbot for testing the SDK. The Engine Layer integration is still in progress, while the Agent Layer and Interaction Layer are undergoing refactoring and integration.
@@ -142,20 +155,6 @@ Enter your message
 - **Agent Response**
   - Provides human-readable feedback after execution.
   - Responses may include tool calls for embedded devices (e.g., triggering a motor).
-
-## Modules
-
-1. **`amico-core`**: Interfaces and workflows for the Engine Layer.
-2. **`amico-sdk`**: Interfaces and workflows for the AI Agent and Interaction Layers.
-3. **`amico-mods`**: Pluggable implementation modules.
-4. **`amico-hal`**: Hardware Abstraction Layer.
-
-## Development Plans
-
-- **Model Context Protocol (MCP) Integration**: Improves environmental awareness and control.
-- **Agent Networking**: Supports peer-to-peer networking using Web3 technologies.
-- **Enhanced Decision Logic**: Explores reinforcement learning for decision-making in `ActionSelector`.
-- **Plugin Security**: Strengthens security for dynamically loaded plugins via WebAssembly (WASM) or sandboxing.
 
 ## License
 
