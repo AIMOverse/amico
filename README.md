@@ -1,10 +1,10 @@
 # Amico AI Agent Framework
 
-Amico is the next generation Autonomous AI Agent Framework tailored for embedded AI devices and multi-agent systems.
+Amico is a next-generation Autonomous AI Agent Framework designed for embedded AI devices and multi-agent systems.
 
 ## Getting Started
 
-**This is only the prototype version of Amico.** The Amico runtime is currently a command-line chatbot for testing our SDK. The integration of the Engine Layer is still in progress, but refactorings and integrations of the Agent Layer and Interaction Layer are already in progress.
+**Note: This is a prototype version of Amico.** Currently, the Amico runtime functions as a command-line chatbot for testing the SDK. The Engine Layer integration is still in progress, while the Agent Layer and Interaction Layer are undergoing refactoring and integration.
 
 ### Clone the Repository
 
@@ -18,21 +18,20 @@ cd amico
 ```bash
 export OPENAI_API_KEY=your_api_key
 
-# If you want to configure a custom base URL for OpenAI
+# To configure a custom base URL for OpenAI:
 # export OPENAI_BASE_URL=your_base_url
 
-# Use a helius api key for Solana actions.
-# We recommend you to use Helius API for on-chain actions.
-# The default Solana RPC is not stable enough.
-# Check out https://helius.dev for more information.
+# Use a Helius API key for Solana actions.
+# We recommend Helius API for on-chain actions, as the default Solana RPC is unstable.
+# More details at https://helius.dev
 export HELIUS_API_KEY=your_api_key
 
 cargo run -p amico
 ```
 
-This will create a wallet for the agent. The bip39 seed phrase will be saved in the `agent_wallet.txt` file.
+This will create a wallet for the agent. The BIP-39 seed phrase will be saved in `agent_wallet.txt`.
 
-Now you will get a command-line chatbot interface. You can develop your plugins or expand Amico's functionality and test them in the runtime.
+Once the runtime starts, you'll have access to a command-line chatbot interface. You can develop plugins, extend Amico’s functionality, and test them in this environment.
 
 ```txt
 $ cargo run -p amico
@@ -41,7 +40,7 @@ $ cargo run -p amico
    Compiling amico v0.0.1 (/home/.../amico/amico)
     Finished `dev` profile [unoptimized + debuginfo] target(s) in 1m 08s
      Running `target/debug/amico`
-This is only a PROTOTYPE VERSION of Amico.
+This is a PROTOTYPE VERSION of Amico.
 Check out our docs for more information:
 https://www.amico.dev
 
@@ -55,12 +54,11 @@ Agent wallet addresses:
 
 Using service plugin: StdInMemoryService
 Tools enabled:
-- create_asset: Create a NFT on Solana representing yourself
+- create_asset: Create an NFT on Solana representing yourself
 - buy_solana_token: Buy a Solana token
-- check_ethereum_balance: Check ETH balance on Ethereum in your own wallet
-- check_solana_balance: Check SOL balance on Solana in your own wallet
+- check_ethereum_balance: Check your ETH balance on Ethereum
+- check_solana_balance: Check your SOL balance on Solana
 - search_for_jokes: Search for jokes
-
 
 I'm Amico, your personal AI assistant. How can I assist you today?
 --------------------
@@ -70,90 +68,99 @@ Enter your message
 
 ## Architecture Overview
 
-### Framework Modules
+### Core Concepts
 
 ![Framework](https://raw.githubusercontent.com/AIMOverse/amico/refs/heads/main/images/framework-v2.png)
 
-- **Framework Layers**
+#### Framework Layers
 
-  - The **Interaction Layer** manages the communication between agents and the environment. In this layer, **sensors** are used to acquire the current state of the environment, and **effectors** are used to execute actions. The environment the layer interacts to is not only real-world but also virtual environments like the Internet or a block chain. The drivers for real-world hardware sensors and effectors are implemented in `amico-firmware` crate. **In the future, we aims to further decouple the current interaction layer into:**
-    - The **Environment Layer**, which passively receive/respond to the environment all the time without inter needed.
-    - The **Interaction Layer**, which actively receive/respond to users/agents' actions and state.
-  - The **Agent Layer** encapsulates the core logic of the agent, including state management, decision-making, and action execution. The concrete **LLM Providers** and **RAG Systems** are implemented in plugins. The framework provides several **Task execution model** (see the _Model-Based Agents_ section below) implementations in the `amico-std` crate, but you can also write your own implementations in plugins.
-  - The **Engine Layer** implements the core logic of task scheduling, event generation and action selection based on events. The framework provides an implementation of **Action Selector** based on mapping in the `amico-std` crate, but you can also write your own implementations in plugins.
+- **Interaction Layer**: Manages communication between agents and the environment. This includes:
 
-- **Plugins**
+  - **Sensors**: Acquire the current state of the environment.
+  - **Effectors**: Execute actions.
+  - The environment can be physical (real-world) or virtual (the Internet, blockchain, etc.).
+  - Hardware sensor and effector drivers are implemented in the `amico-firmware` crate.
+  - **Future Plans**: Decoupling into:
+    - **Environment Layer**: Passively receives/responds to environmental inputs.
+    - **Interaction Layer**: Actively handles actions and state changes from users and agents.
 
-  - **Effectors**: Perform actions like hardware module control, transaction execution, content posting, sending messages to other agents, etc.
-  - **Sensors**: Acquire the current state of the environment like sensor reading, social media content reading, receiving messages from other agents, etc.
-  - **LLM Providers**: Providing API access to LLM services like OpenAI, DeepSeek, etc.
-  - **Firmware Drivers**: Providing a low-level interface for interacting with embedded devices.
+- **Agent Layer**: Encapsulates core agent logic, including state management, decision-making, and action execution. Key components:
 
-- **Low-Level Plugins**
+  - **LLM Providers** and **RAG Systems** implemented as plugins.
+  - **Task execution models** (see _Model-Based Agents_ below) implemented in `amico-std`, with plugin support for custom models.
 
-  - **RAG Systems**: Providing a retrieval-augmented generation system.
-  - **Task Executors**: Providing a task execution workflow, like Model-Based Agents described below.
-  - **Action Selectors**: Providing an action selection algorithm, to select the most appropriate action given the current state and the available actions.
+- **Engine Layer**: Handles task scheduling, event generation, and action selection. The default **Action Selector** is in `amico-std`, but custom implementations can be added via plugins.
 
-### Model-Based Agents
+#### Pluggable Modules
+
+- **LLM Services**: Provides content generation, integrating LLM calls, RAG knowledge base, tool calling, etc.
+- **LLM Providers**: API integrations for services like OpenAI, DeepSeek, etc.
+- **Effectors**: Execute actions such as hardware control, transactions, content posting, and messaging.
+- **Sensors**: Capture environmental data, such as sensor readings and social media content.
+- **Hardware Abstraction**: Low-level interface for embedded device interaction.
+
+#### Low-Level Plugins
+
+- **RAG Systems**: Implements retrieval-augmented generation.
+- **Task Executors**: Provides task execution workflows (e.g., Model-Based Agents).
+- **Action Selectors**: Implements action selection algorithms.
+- **Event Generators**: Generates events based on the current environment state.
+
+### Model-Based Agents: Basic Design
 
 ![Basic Design](https://raw.githubusercontent.com/AIMOverse/amico/refs/heads/main/images/model_based.png)
 
-- **State Representation**: The state agent acquires the current state of the environment through sensors and represents it. This state describes the specific situation of the current world, such as the attributes of location, resources, or objects.
+- **State Representation**: The agent perceives and represents the current environment state.
 - **World Evolution**: Predicts the impact of actions.
-- **Condition-Action Rules**: Module for decision-making.
+- **Condition-Action Rules**: Guides decision-making.
 
 ### Task Execution Workflow
 
 ![Task Execution Workflow](https://raw.githubusercontent.com/AIMOverse/amico/refs/heads/main/images/task_exec.png)
 
-- **Event-Triggered Task**
+- **Event-Triggered Tasks**
 
-  - Tasks are triggered by various "events", such as timers, major on-chain or off-chain events, or signals from other agents.
-  - Each event carries context, the information of the event in natural language, which is then used as an additional knowledge source when the agent gathers information.
+  - Tasks initiate based on events (e.g., timers, on-chain/off-chain signals, messages from other agents).
+  - Each event carries context, providing additional knowledge for decision-making.
 
 - **Knowledge Acquisition**
 
-  - The agent collects relevant knowledge from its internal knowledge base as well as the context of the event.
-  - If needed, the agent can also acquire real-time data sources from both on-chain and off-chain environments.
-  - The agent synthesizes all these informations into a comprehensive report to guide its decision-making process.
+  - The agent gathers information from its internal knowledge base and real-time data sources.
+  - Information is synthesized into a comprehensive report to support decision-making.
 
 - **Decision Making**
 
-  - Using the knowledge report, the agent evaluates possible actions and makes fully-informed decisions.
-  - The agent can either respond to the user, execute a task, or do both.
-  - For critical decisions, the agent may optionally seek consensus from other agents to ensure the reliability of the decision in a SWARM-system environment.
+  - The agent evaluates potential actions and selects the most informed response.
+  - Possible responses include executing a task, responding to a user, or both.
+  - In SWARM systems, agents may seek consensus before executing critical actions.
 
 - **Execution of Decision**
 
-  - The agent carries out the chosen action, which could range from executing a transaction to posting content (e.g., a tweet).
-  - If the action requires consensus, the agent will optinally first communicate with other agents before proceeding.
+  - Actions can range from executing transactions to posting content.
+  - If required, the agent communicates with other agents before execution.
 
 - **Agent Response**
-
-  - Following execution, the agent can provide feedback to the user in human-readable way.
-  - This response could also include instructions (tool calls) for embedded devices, such as triggering a motor or adjusting the environment in some way.
+  - Provides human-readable feedback after execution.
+  - Responses may include tool calls for embedded devices (e.g., triggering a motor).
 
 ## Modules
 
-1. **`amico-core`**: Engine layer interfaces and workflows.
-2. **`amico-sdk`**: AI Agent layer and Interaction layer interfaces and workflows.
-3. **`amico-mods`**: Pluggable implementation modules that actually implement the interfaces.
-4. **`amico-hal`**: Hardware abstraction layer.
+1. **`amico-core`**: Interfaces and workflows for the Engine Layer.
+2. **`amico-sdk`**: Interfaces and workflows for the AI Agent and Interaction Layers.
+3. **`amico-mods`**: Pluggable implementation modules.
+4. **`amico-hal`**: Hardware Abstraction Layer.
 
-## Future Improvements
+## Development Plans
 
-- **Enhanced decision logic**: Investigate support for reinforcement learning-based decision-making within
-  `ActionSelector`.
-- **Plugin security**: Strengthen security for dynamically loaded plugins using WebAssembly (WASM) or sandboxing
-  techniques.
+- **Model Context Protocol (MCP) Integration**: Improves environmental awareness and control.
+- **Agent Networking**: Supports peer-to-peer networking using Web3 technologies.
+- **Enhanced Decision Logic**: Explores reinforcement learning for decision-making in `ActionSelector`.
+- **Plugin Security**: Strengthens security for dynamically loaded plugins via WebAssembly (WASM) or sandboxing.
 
 ## License
 
-AMICO is released under the [MIT License](https://raw.githubusercontent.com/AIMOverse/amico/main/LICENSE).
+Amico is released under the [MIT License](https://raw.githubusercontent.com/AIMOverse/amico/main/LICENSE).
 
 ## Contributing
 
-Contributions are welcome! Please read
-our [contributing guidelines](https://raw.githubusercontent.com/AIMOverse/amico/main/CONTRIBUTING.md) before submitting
-a pull request.
+Contributions are welcome! Please read our [contributing guidelines](https://raw.githubusercontent.com/AIMOverse/amico/main/CONTRIBUTING.md) before submitting a pull request.
