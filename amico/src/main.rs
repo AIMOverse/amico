@@ -17,8 +17,10 @@ mod tools;
 mod utils;
 mod wallets;
 
+const DEFAULT_OPENAI_BASE_URL: &str = "https://api.openai.com/v1";
+
 fn print_demo_hint() {
-    println!("This is only a DEMO VERSION of Amico.");
+    println!("{}", "This is only a PROTOTYPE VERSION of Amico.".yellow());
     println!("Check out our docs for more information:");
     println!("https://www.amico.dev");
     println!();
@@ -55,23 +57,15 @@ async fn main() {
             key
         }
         Err(_) => {
-            eprintln!("Error: OPENAI_BASE_URL is not set");
-            process::exit(1);
+            println!("Using default OPENAI_BASE_URL ({DEFAULT_OPENAI_BASE_URL})");
+            DEFAULT_OPENAI_BASE_URL.to_string()
         }
     };
-
-    if let Ok(proxy) = std::env::var("HTTP_PROXY") {
-        tracing::debug!("Using HTTP proxy: {proxy}");
-    }
-
-    if let Ok(proxy) = std::env::var("HTTPS_PROXY") {
-        tracing::debug!("Using HTTPS proxy: {proxy}");
-    }
 
     if std::env::var("HELIUS_API_KEY").is_ok() {
         println!("Found HELIUS_API_KEY");
     } else {
-        println!("WARNING: Helius API key not found.");
+        println!("{}", "WARNING: Helius API key not found.".yellow());
         println!("We recommend you to use Helius API for on-chain actions.");
         println!("The default Solana RPC is not stable enough.");
         println!("Check out https://helius.dev for more information.");

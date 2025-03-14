@@ -47,24 +47,12 @@ impl<P> ServiceContext<P>
 where
     P: Provider,
 {
-    /// Updates the system prompt
-    pub fn update_system_prompt(&mut self, prompt: String) {
-        self.system_prompt = prompt;
-    }
-
-    /// Updates the model name
-    pub fn update_model(&mut self, model: String) {
-        self.model = model;
-    }
-
-    /// Updates the temperature
-    pub fn update_temperature(&mut self, temperature: f64) {
-        self.temperature = temperature;
-    }
-
-    /// Updates the max tokens
-    pub fn update_max_tokens(&mut self, max_tokens: u64) {
-        self.max_tokens = max_tokens;
+    /// Updates the context with a function.
+    pub fn update<F>(&mut self, update: F)
+    where
+        F: Fn(&mut ServiceContext<P>),
+    {
+        update(self);
     }
 }
 
@@ -207,19 +195,49 @@ mod test {
         }
     }
 
-    #[tokio::test]
-    async fn test_build_service() {
-        let mut service = ServiceBuilder::new(TestProvider)
+    /// Builds a test service
+    fn build_test_service() -> TestService {
+        ServiceBuilder::new(TestProvider)
             .model("test".to_string())
             .system_prompt("test".to_string())
             .temperature(0.2)
             .max_tokens(100)
-            .build::<TestService>();
+            .build::<TestService>()
+    }
 
-        assert_eq!(service.ctx.system_prompt, "test".to_string());
-        assert_eq!(service.ctx.model, "test".to_string());
+    #[tokio::test]
+    async fn test_build_service() {
+        let service = build_test_service();
+
+        // Ensure the service is dynamically compatible
+        let mut service: Box<dyn Service<TestProvider>> = Box::new(service);
+
+        assert_eq!(service.ctx().system_prompt, "test".to_string());
+        assert_eq!(service.ctx().model, "test".to_string());
 
         let response = service.generate_text("test".to_string()).await.unwrap();
         assert_eq!(response, "test".to_string());
+    }
+
+    #[test]
+    fn test_update_context() {
+        let service = build_test_service();
+
+        // Ensure the service is dynamically compatible
+        let mut service: Box<dyn Service<TestProvider>> = Box::new(service);
+
+        service.mut_ctx().update(|ctx| {
+            ctx.system_prompt = "new test".to_string();
+            ctx.model = "new test".to_string();
+            ctx.temperature = 0.3;
+            ctx.max_tokens = 200;
+            ctx.tools = ToolSet::from(vec![]);
+        });
+
+        assert_eq!(service.ctx().system_prompt, "new test".to_string());
+        assert_eq!(service.ctx().model, "new test".to_string());
+        assert_eq!(service.ctx().temperature, 0.3);
+        assert_eq!(service.ctx().max_tokens, 200);
+        assert_eq!(service.ctx().tools.tools.len(), 0);
     }
 }

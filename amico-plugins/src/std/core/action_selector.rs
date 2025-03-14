@@ -159,7 +159,9 @@ where
         );
 
         // Set the system prompt
-        self.service.mut_ctx().update_system_prompt(final_prompt);
+        self.service.mut_ctx().update(move |ctx| {
+            ctx.system_prompt = final_prompt.to_string();
+        });
     }
 
     /// Set the AI service for the ActionSelector.
