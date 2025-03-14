@@ -1,13 +1,13 @@
 [package]
 name = "amico-core"
-version = "0.1.0"
+version = "0.0.1"
 edition = "2021"
 description = "The core of the Amico AI Agent Framework"
 repository = "https://github.com/AIMOverse/amico"
 license = "MIT"
 
 [dependencies]
-amico-macros = { path = "../amico-macros" }
+core-macros = { path = "./core-macros" }
 serde = { version = "1.0.217", features = ["derive"] }
 thiserror = "2.0.11"
 toml = "0.8.19"

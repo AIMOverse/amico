@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-pub use amico_macros::WithParams;
+pub use core_macros::WithParams;
 
 pub type ParamValue = toml::Value;
 

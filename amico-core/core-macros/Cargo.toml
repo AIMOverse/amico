@@ -1,6 +1,6 @@
 [package]
-name = "amico-macros"
-version = "0.1.0"
+name = "core-macros"
+version = "0.0.1"
 edition = "2021"
 description = "Procedural macros for the Amico AI Agent Framework"
 repository = "https://github.com/AIMOverse/amico"
