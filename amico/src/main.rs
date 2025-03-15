@@ -4,8 +4,9 @@ use amico_mods::std::ai::providers::RigProvider;
 use amico_mods::std::ai::services::InMemoryService;
 use colored::Colorize;
 use prompt::AMICO_SYSTEM_PROMPT;
-use std::io::{self, Write};
 use std::process;
+use tasks::cli::CliTask;
+use tasks::interface::{Task, TaskContext};
 use tools::{
     buy_solana_token_tool, check_ethereum_balance, check_solana_balance, create_asset_tool,
     search_jokes_tool,
@@ -13,6 +14,7 @@ use tools::{
 use wallets::AgentWallet;
 
 mod prompt;
+mod tasks;
 mod tools;
 mod utils;
 mod wallets;
@@ -24,10 +26,6 @@ fn print_demo_hint() {
     println!("Check out our docs for more information:");
     println!("https://www.amico.dev");
     println!();
-}
-
-fn print_message_separator() {
-    println!("--------------------");
 }
 
 #[tokio::main]
@@ -96,7 +94,7 @@ async fn main() {
         }
     };
 
-    let mut service = ServiceBuilder::new(provider)
+    let service = ServiceBuilder::new(provider)
         .model("gpt-4o".to_string())
         .system_prompt(AMICO_SYSTEM_PROMPT.to_string())
         .temperature(0.2)
@@ -112,40 +110,15 @@ async fn main() {
     println!("Using service plugin: {}", service.info().name);
     println!("Tools enabled:\n{}", service.ctx().tools.describe());
 
-    // Print global prompt
-    println!();
-    println!(
-        "{}",
-        "I'm Amico, your personal AI assistant. How can I assist you today?".green()
-    );
-    print_message_separator();
+    // Create a task
+    let mut task = CliTask::setup(TaskContext::new(service)).unwrap_or_else(|e| {
+        eprintln!("Error creating task: {e}");
+        process::exit(1);
+    });
 
-    loop {
-        println!("Enter your message");
-        print!("> ");
-        io::stdout().flush().unwrap();
-
-        let mut input = String::new();
-        io::stdin().read_line(&mut input).unwrap();
-        let input = input.trim();
-
-        if input.eq_ignore_ascii_case("quit") {
-            println!("Exiting chatbot. Goodbye!");
-            break;
-        }
-
-        print_message_separator();
-
-        // Get response from AI service
-        let response = match service.generate_text(input.to_string()).await {
-            Ok(response) => response,
-            Err(err) => {
-                eprintln!("Error generating text: {err}");
-                continue;
-            }
-        };
-        println!("{}", "[Amico]".yellow());
-        println!("{}", response.green());
-        print_message_separator();
+    // Run the task
+    if let Err(e) = task.run().await {
+        eprintln!("Error running task: {e}");
+        process::exit(1);
     }
 }
