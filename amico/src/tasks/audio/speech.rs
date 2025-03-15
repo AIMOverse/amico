@@ -3,24 +3,20 @@ use reqwest::Client;
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
-use std::process::Command;
 
 #[derive(Debug, thiserror::Error)]
 pub enum TtsError {
-    #[error("Failed to read audio file")]
-    ReadError(#[from] std::io::Error),
-
-    #[error("Failed to initialize TTS engine")]
-    TtsInitError(String),
+    #[error("IO error: {0}")]
+    IoError(#[from] std::io::Error),
 
     #[error("Failed to synthesize speech")]
     TtsSynthesisError(String),
 
-    #[error("Piper binary not found")]
-    PiperNotFound,
+    #[error("API request error: {0}")]
+    ApiRequestError(#[from] reqwest::Error),
 
-    #[error("Piper voice model not found")]
-    VoiceModelNotFound,
+    #[error("API key not found")]
+    ApiKeyNotFound(#[from] std::env::VarError),
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -28,8 +24,8 @@ pub enum SttError {
     #[error("Failed to get API key")]
     EnvVarError(#[from] std::env::VarError),
 
-    #[error("Failed to read audio file")]
-    ReadError(#[from] std::io::Error),
+    #[error("IO error: {0}")]
+    IoError(#[from] std::io::Error),
 
     #[error("Failed to create multipart request")]
     MultipartError(#[from] reqwest::Error),
@@ -39,75 +35,66 @@ pub enum SttError {
 }
 
 pub async fn text_to_speech(text: &str, file_path: &str) -> Result<(), TtsError> {
-    tracing::debug!("tts text: {}, file: {}", text, file_path);
+    tracing::debug!("tts text: {}, output file: {}", text, file_path);
 
-    // Define paths to Piper binary and voice model
-    // These paths should be configured based on your deployment environment
-    let piper_binary =
-        std::env::var("PIPER_BINARY").unwrap_or_else(|_| "~/piper/piper".to_string());
-    let piper_model = std::env::var("PIPER_MODEL")
-        .unwrap_or_else(|_| "~/piper/voices/zh_CN-huayan-medium.onnx".to_string());
+    // Get OpenAI API key from environment variable
+    let api_key = std::env::var("OPENAI_API_KEY").map_err(|e| TtsError::ApiKeyNotFound(e))?;
 
-    // Expand tilde in paths if present
-    let piper_binary = if piper_binary.starts_with("~") {
-        if let Ok(home) = std::env::var("HOME") {
-            piper_binary.replacen("~", &home, 1)
-        } else {
-            piper_binary
-        }
-    } else {
-        piper_binary
-    };
-
-    let piper_model = if piper_model.starts_with("~") {
-        if let Ok(home) = std::env::var("HOME") {
-            piper_model.replacen("~", &home, 1)
-        } else {
-            piper_model
-        }
-    } else {
-        piper_model
-    };
-
-    // Check if the binary and model exist
-    if !Path::new(&piper_binary).exists() {
-        return Err(TtsError::PiperNotFound);
+    // Define request body for OpenAI's text-to-speech API
+    #[derive(serde::Serialize)]
+    struct TtsRequest {
+        model: String,
+        input: String,
+        voice: String,
+        response_format: String,
+        speed: f32,
     }
 
-    if !Path::new(&piper_model).exists() {
-        return Err(TtsError::VoiceModelNotFound);
+    let request_body = TtsRequest {
+        model: "tts-1".to_string(), // Can be upgraded to tts-1-hd for higher quality
+        input: text.to_string(),
+        voice: "alloy".to_string(), // Options: alloy, echo, fable, onyx, nova, shimmer
+        response_format: "mp3".to_string(),
+        speed: 1.0,
+    };
+
+    // Create a reqwest client and send the POST request
+    let client = reqwest::Client::new();
+    let response = client
+        .post("https://api.openai.com/v1/audio/speech")
+        .bearer_auth(api_key)
+        .json(&request_body)
+        .send()
+        .await
+        .map_err(|e| TtsError::ApiRequestError(e))?;
+
+    // Check if the request was successful
+    if !response.status().is_success() {
+        let error_message = response
+            .text()
+            .await
+            .unwrap_or_else(|_| "Unknown error".to_string());
+        return Err(TtsError::TtsSynthesisError(format!(
+            "OpenAI API error: {}",
+            error_message
+        )));
     }
 
-    // Clone the text and file_path to own the data before moving into the closure
-    let text_owned = text.to_string();
-    let file_path_owned = file_path.to_string();
+    // Get the audio bytes from the response
+    let audio_bytes = response
+        .bytes()
+        .await
+        .map_err(|e| TtsError::ApiRequestError(e))?;
 
-    // Use tokio spawn_blocking for process execution
-    tokio::task::spawn_blocking(move || {
-        // Create a temporary file for the input text
-        let temp_dir = std::env::temp_dir();
-        let input_file = temp_dir.join("piper_input.txt");
-        std::fs::write(&input_file, &text_owned)?;
+    // Create the directory for the output file if it doesn't exist
+    if let Some(parent) = Path::new(file_path).parent() {
+        std::fs::create_dir_all(parent).map_err(|e| TtsError::IoError(e))?;
+    }
 
-        // Run Piper as a subprocess
-        let output = Command::new(&piper_binary)
-            .arg("--model")
-            .arg(&piper_model)
-            .arg("--output_file")
-            .arg(&file_path_owned)
-            .arg("--input_file")
-            .arg(input_file)
-            .output()?;
+    // Write the audio bytes to the file
+    std::fs::write(file_path, audio_bytes).map_err(|e| TtsError::IoError(e))?;
 
-        if !output.status.success() {
-            let error_message = String::from_utf8_lossy(&output.stderr).to_string();
-            return Err(TtsError::TtsSynthesisError(error_message));
-        }
-
-        Ok(())
-    })
-    .await
-    .unwrap_or_else(|e| Err(TtsError::TtsInitError(e.to_string())))
+    Ok(())
 }
 
 pub async fn speech_to_text(file_path: &str) -> Result<String, SttError> {
@@ -118,8 +105,8 @@ pub async fn speech_to_text(file_path: &str) -> Result<String, SttError> {
 
     // Create a multipart form with the file and the required "model" parameter.
     let file_part = multipart::Part::bytes(file_bytes)
-        .file_name("audio.wav")
-        .mime_str("audio/wav")?; // Changed to WAV format
+        .file_name("audio.mp3")
+        .mime_str("audio/mpeg")?; // Changed to MP3 format
 
     let form = multipart::Form::new()
         .text("model", "whisper-1") // OpenAI's Whisper model
@@ -137,9 +124,15 @@ pub async fn speech_to_text(file_path: &str) -> Result<String, SttError> {
         .send()
         .await?;
 
+    // Response schema of OpenAI's Whisper API
+    #[derive(serde::Deserialize)]
+    struct WhisperResponse {
+        text: String,
+    }
+
     // Check the status and print the response.
     let status = response.status();
-    let text = response.text().await?;
+    let text = response.json::<WhisperResponse>().await?.text;
     tracing::debug!("Status: {}\nResponse: {}", status, text);
 
     Ok(text)

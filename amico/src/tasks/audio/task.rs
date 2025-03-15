@@ -10,7 +10,7 @@ use crate::tasks::audio::{
 
 use super::super::interface::{Task, TaskContext};
 
-pub struct PulseAudioTask<S, P>
+pub struct AudioChatTask<S, P>
 where
     S: Service<P>,
     P: Provider,
@@ -25,7 +25,7 @@ fn print_message_separator() {
 }
 
 #[async_trait]
-impl<S, P> Task<S, P> for PulseAudioTask<S, P>
+impl<S, P> Task<S, P> for AudioChatTask<S, P>
 where
     S: Service<P>,
     P: Provider,
@@ -38,7 +38,7 @@ where
             "I'm Amico, your personal AI assistant. How can I assist you today?".green()
         );
         print_message_separator();
-        Ok(PulseAudioTask {
+        Ok(AudioChatTask {
             context,
             phantom: std::marker::PhantomData,
         })
@@ -61,41 +61,45 @@ where
             }
 
             // Record user's voice into a file
-            record_blocking("cache/user.wav")?;
+            record_blocking("cache/user.mp3")?;
+            tracing::info!("Recorded user's voice");
 
             // Convert sound file to text
-            let stt_res = speech_to_text("cache/user.wav").await?;
+            let stt_res = speech_to_text("cache/user.mp3").await?;
+            tracing::info!("Converted sound file to text");
 
             println!("[User] {}", stt_res);
 
             print_message_separator();
 
             // Get response from AI service
-            let response = match self
+            match self
                 .context
                 .service
                 .generate_text(stt_res.to_string())
                 .await
             {
                 Ok(response) => {
+                    println!("{}", "[Amico]".yellow());
+                    println!("{}", response.green());
+
                     // Convert response text to audio
-                    text_to_speech(&response, "cache/assistant.wav").await?;
+                    tracing::info!("Converting response text to audio");
+                    text_to_speech(&response, "./cache/assistant.mp3").await?;
+                    tracing::info!("Converted response text to audio");
 
                     // Play the sound in a separate thread
-                    if let Err(err) = playback("cache/assistant.wav").await {
+                    if let Err(err) = playback("cache/assistant.mp3").await {
                         tracing::error!("Error playing audio: {err}");
                         eprintln!("Error playing audio");
                     }
-
-                    response
                 }
                 Err(err) => {
                     eprintln!("Error generating text: {err}");
                     continue;
                 }
             };
-            println!("{}", "[Amico]".yellow());
-            println!("{}", response.green());
+
             print_message_separator();
         }
 

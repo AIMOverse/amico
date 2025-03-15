@@ -4,8 +4,8 @@ use amico_mods::std::ai::providers::RigProvider;
 use amico_mods::std::ai::services::InMemoryService;
 use colored::Colorize;
 use prompt::AMICO_SYSTEM_PROMPT;
-use tasks::audio::PulseAudioTask;
 use std::process;
+use tasks::audio::AudioChatTask;
 use tasks::interface::{Task, TaskContext};
 use tools::{
     buy_solana_token_tool, check_ethereum_balance, check_solana_balance, create_asset_tool,
@@ -112,7 +112,7 @@ async fn main() {
 
     // Create a task
     //let mut task = CliTask::setup(TaskContext::new(service)).unwrap_or_else(|e| {
-    let mut task = PulseAudioTask::setup(TaskContext::new(service)).unwrap_or_else(|e| {
+    let mut task = AudioChatTask::setup(TaskContext::new(service)).unwrap_or_else(|e| {
         eprintln!("Error creating task: {e}");
         process::exit(1);
     });
