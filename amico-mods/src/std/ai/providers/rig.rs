@@ -93,14 +93,14 @@ fn into_rig_request(request: CompletionRequest) -> rc::CompletionRequest {
 }
 
 /// OpenAI provider using `rig-core`
-pub struct OpenAI(openai::Client);
+pub struct RigProvider(openai::Client);
 
-impl OpenAI {
+impl RigProvider {
     pub fn new(base_url: &str, api_key: &str) -> Result<Self, CreationError>
     where
         Self: Sized,
     {
-        Ok(OpenAI(openai::Client::from_url(api_key, base_url)))
+        Ok(RigProvider(openai::Client::from_url(api_key, base_url)))
     }
 
     pub fn model_available(&self, model: &str) -> bool {
@@ -110,7 +110,7 @@ impl OpenAI {
 }
 
 #[async_trait]
-impl Provider for OpenAI {
+impl Provider for RigProvider {
     #[doc = " Completes a prompt with the provider."]
     async fn completion(&self, req: &CompletionRequest) -> Result<ModelChoice, CompletionError> {
         let Self(client) = self;
@@ -139,7 +139,7 @@ impl Provider for OpenAI {
     }
 }
 
-impl Plugin for OpenAI {
+impl Plugin for RigProvider {
     fn info(&self) -> &'static PluginInfo {
         &PluginInfo {
             name: "StdOpenAIProvider",

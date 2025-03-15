@@ -1,7 +1,7 @@
 use amico::ai::service::{Service, ServiceBuilder};
-use amico_plugins::interface::Plugin;
-use amico_plugins::std::providers::openai::OpenAI;
-use amico_plugins::std::service::InMemoryService;
+use amico_mods::interface::Plugin;
+use amico_mods::std::ai::providers::RigProvider;
+use amico_mods::std::ai::services::InMemoryService;
 use colored::Colorize;
 use prompt::AMICO_SYSTEM_PROMPT;
 use std::io::{self, Write};
@@ -88,7 +88,7 @@ async fn main() {
         process::exit(1);
     }
 
-    let provider = match OpenAI::new(&base_url, &openai_api_key) {
+    let provider = match RigProvider::new(&base_url, &openai_api_key) {
         Ok(provider) => provider,
         Err(err) => {
             eprintln!("Error creating provider: {err}");
@@ -106,7 +106,7 @@ async fn main() {
         .tool(check_ethereum_balance(wallet.ethereum_wallet().unwrap()))
         .tool(create_asset_tool(wallet.solana_keypair().unwrap()))
         .tool(buy_solana_token_tool(wallet.solana_keypair().unwrap()))
-        .build::<InMemoryService<OpenAI>>();
+        .build::<InMemoryService<RigProvider>>();
 
     println!();
     println!("Using service plugin: {}", service.info().name);

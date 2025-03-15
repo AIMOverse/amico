@@ -1,5 +1,5 @@
 [package]
-name = "amico-plugins"
+name = "amico-mods"
 version = "0.1.1"
 edition = "2021"
 description = "The plugins of the Amico AI Agent Framework"
