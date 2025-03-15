@@ -1,0 +1,41 @@
+name: Release Cross Compile
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target:
+          - x86_64-unknown-linux-gnu
+          - aarch64-unknown-linux-gnu
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: Install cross compile dependencies for aarch64
+        if: matrix.target == 'aarch64-unknown-linux-gnu'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu
+
+      - name: Cross compile with cargo-cross
+        uses: actions-rs/cross@v1
+        with:
+          target: ${{ matrix.target }}
+          release: true
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: binary-${{ matrix.target }}
+          path: target/${{ matrix.target }}/release/amico
