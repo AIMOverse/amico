@@ -57,7 +57,7 @@ where
 
             if stdin_input.trim().eq_ignore_ascii_case("quit") {
                 println!("Exiting chatbot. Goodbye!");
-                break;
+                return Ok(());
             }
 
             // Record user's voice into a file
@@ -102,7 +102,5 @@ where
 
             print_message_separator();
         }
-
-        Ok(())
     }
 }

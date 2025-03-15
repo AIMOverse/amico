@@ -118,8 +118,13 @@ async fn main() {
     });
 
     // Run the task
-    if let Err(e) = task.run().await {
-        eprintln!("Error running task: {e}");
-        process::exit(1);
+    loop {
+        if let Err(e) = task.run().await {
+            eprintln!("Error running task. Re-running");
+            tracing::error!("Error running task: {:?}", e);
+            continue;
+        } else {
+            break;
+        }
     }
 }
