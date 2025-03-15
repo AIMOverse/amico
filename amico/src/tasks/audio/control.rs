@@ -139,11 +139,11 @@ pub fn record_blocking(filepath: &str) -> Result<(), AudioRecordingError> {
         )
         .expect("Failed to build input stream");
 
-    println!("Recording for 5 seconds...");
+    println!("Recording for 3 seconds...");
     stream.play().unwrap();
 
     // Use a blocking sleep instead of tokio's async sleep
-    std::thread::sleep(std::time::Duration::from_secs(5));
+    std::thread::sleep(std::time::Duration::from_secs(3));
 
     drop(stream);
 
