@@ -50,10 +50,12 @@ impl<P: Provider> Plugin for InMemoryService<P> {
 }
 
 #[async_trait]
-impl<P> amico::ai::service::Service<P> for InMemoryService<P>
+impl<P> amico::ai::service::Service for InMemoryService<P>
 where
     P: Provider,
 {
+    type Provider = P;
+
     fn from(context: ServiceContext<P>) -> Self
     where
         Self: Sized,

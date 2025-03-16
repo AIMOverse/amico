@@ -11,20 +11,20 @@ use crate::ai::errors::ServiceError;
 ///
 /// A service should contain a context that is used to configure the service.
 #[async_trait]
-pub trait Service<P>: Send + Sync
-where
-    P: Provider,
-{
+pub trait Service: Send + Sync {
+    /// The LLM API provider type the service uses
+    type Provider: Provider;
+
     /// A service should be built from a context
-    fn from(context: ServiceContext<P>) -> Self
+    fn from(context: ServiceContext<Self::Provider>) -> Self
     where
         Self: Sized;
 
     /// Gets the context of the service
-    fn ctx(&self) -> &ServiceContext<P>;
+    fn ctx(&self) -> &ServiceContext<Self::Provider>;
 
     /// Gets a mutable reference to the context of the service
-    fn mut_ctx(&mut self) -> &mut ServiceContext<P>;
+    fn mut_ctx(&mut self) -> &mut ServiceContext<Self::Provider>;
 
     /// Generates text based on a prompt.
     async fn generate_text(&mut self, prompt: String) -> Result<String, ServiceError>;
@@ -120,7 +120,7 @@ where
     /// Build the Service.
     pub fn build<S>(self) -> S
     where
-        S: Service<P>,
+        S: Service<Provider = P>,
     {
         S::from(ServiceContext {
             provider: self.provider,
@@ -159,7 +159,9 @@ mod test {
     }
 
     #[async_trait]
-    impl Service<TestProvider> for TestService {
+    impl Service for TestService {
+        type Provider = TestProvider;
+
         fn from(context: ServiceContext<TestProvider>) -> Self {
             TestService { ctx: context }
         }
@@ -210,7 +212,7 @@ mod test {
         let service = build_test_service();
 
         // Ensure the service is dynamically compatible
-        let mut service: Box<dyn Service<TestProvider>> = Box::new(service);
+        let mut service: Box<dyn Service<Provider = TestProvider>> = Box::new(service);
 
         assert_eq!(service.ctx().system_prompt, "test".to_string());
         assert_eq!(service.ctx().model, "test".to_string());
@@ -224,7 +226,7 @@ mod test {
         let service = build_test_service();
 
         // Ensure the service is dynamically compatible
-        let mut service: Box<dyn Service<TestProvider>> = Box::new(service);
+        let mut service: Box<dyn Service<Provider = TestProvider>> = Box::new(service);
 
         service.mut_ctx().update(|ctx| {
             ctx.system_prompt = "new test".to_string();

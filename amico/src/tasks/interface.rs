@@ -1,33 +1,28 @@
-use amico::ai::{provider::Provider, service::Service};
+use amico::ai::service::Service;
 use async_trait::async_trait;
 
-pub struct TaskContext<S, P>
+pub struct TaskContext<S>
 where
-    S: Service<P>,
-    P: Provider,
+    S: Service,
 {
     pub service: S,
-
-    phantom: std::marker::PhantomData<P>,
 }
 
-impl<S, P> TaskContext<S, P>
+impl<S> TaskContext<S>
 where
-    S: Service<P>,
-    P: Provider,
+    S: Service,
 {
     pub fn new(service: S) -> Self {
-        TaskContext { service, phantom: std::marker::PhantomData }
+        TaskContext { service }
     }
 }
 
 #[async_trait]
-pub trait Task<S, P>
+pub trait Task<S>
 where
-    S: Service<P>,
-    P: Provider,
+    S: Service,
 {
-    fn setup(context: TaskContext<S, P>) -> Result<Self, Box<dyn std::error::Error>>
+    fn setup(context: TaskContext<S>) -> Result<Self, Box<dyn std::error::Error>>
     where
         Self: Sized;
 

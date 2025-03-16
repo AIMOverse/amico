@@ -1,4 +1,4 @@
-use amico::ai::{provider::Provider, service::Service};
+use amico::ai::service::Service;
 use async_trait::async_trait;
 use colored::Colorize;
 use std::io::{self, Write};
@@ -10,14 +10,11 @@ use crate::tasks::audio::{
 
 use super::super::interface::{Task, TaskContext};
 
-pub struct AudioChatTask<S, P>
+pub struct AudioChatTask<S>
 where
-    S: Service<P>,
-    P: Provider,
+    S: Service,
 {
-    pub context: TaskContext<S, P>,
-
-    phantom: std::marker::PhantomData<P>,
+    pub context: TaskContext<S>,
 }
 
 fn print_message_separator() {
@@ -25,12 +22,11 @@ fn print_message_separator() {
 }
 
 #[async_trait]
-impl<S, P> Task<S, P> for AudioChatTask<S, P>
+impl<S> Task<S> for AudioChatTask<S>
 where
-    S: Service<P>,
-    P: Provider,
+    S: Service,
 {
-    fn setup(context: TaskContext<S, P>) -> Result<Self, Box<dyn std::error::Error>> {
+    fn setup(context: TaskContext<S>) -> Result<Self, Box<dyn std::error::Error>> {
         // Print global prompt
         println!();
         println!(
@@ -38,10 +34,7 @@ where
             "I'm Amico, your personal AI assistant. How can I assist you today?".green()
         );
         print_message_separator();
-        Ok(AudioChatTask {
-            context,
-            phantom: std::marker::PhantomData,
-        })
+        Ok(AudioChatTask { context })
     }
 
     async fn run(&mut self) -> Result<(), Box<dyn std::error::Error>> {
