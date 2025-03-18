@@ -184,6 +184,8 @@ pub enum WalletError {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    use amico::resource::Resource;
     use std::fs;
     use std::path::Path;
     use tempfile::tempdir;
@@ -321,5 +323,37 @@ mod tests {
         let wallet = Wallet::new().expect("Failed to create new wallet");
         wallet.print_all_pubkeys();
         // No assertion needed, just checking that it doesn't panic
+    }
+
+    #[test]
+    fn test_wallet_resource() {
+        // Create a new wallet
+        let wallet = Wallet::new().expect("Failed to create new wallet");
+        let phrase = wallet.phrase().to_string();
+
+        // Create a resource with the wallet
+        let wallet_resource = Resource::new("my_wallet".to_string(), wallet);
+
+        // Test resource name
+        assert_eq!(wallet_resource.name(), "my_wallet");
+
+        // Test accessing wallet methods through the resource
+        let resource_phrase = wallet_resource.borrow_then(|w| w.phrase().to_string());
+        assert_eq!(resource_phrase, phrase);
+
+        // Test that we can access wallet functionality through the resource
+        #[cfg(feature = "web3-solana")]
+        {
+            let solana_pubkey =
+                wallet_resource.borrow_then(|w| w.solana_keypair().pubkey().to_string());
+            assert!(!solana_pubkey.is_empty());
+        }
+
+        #[cfg(feature = "web3-ethereum")]
+        {
+            let eth_address =
+                wallet_resource.borrow_then(|w| w.ethereum_wallet().address().to_string());
+            assert!(!eth_address.is_empty());
+        }
     }
 }
