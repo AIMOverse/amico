@@ -9,18 +9,49 @@ license = "MIT"
 # Control which (static) plugins should be enabled using feature flags
 [features]
 # By default, the standard set of plugins is enabled
-default = ["std"]
+# Temporarily set to full for development
+default = ["full"]
 
 # The standard set of plugins
 std = ["rig-core"]
 
+# Web3 features and tools
+web3 = ["tiny-bip39"]
+web3-solana = ["web3", "solana-sdk", "solana-client"]
+web3-ethereum = ["web3", "alloy"]
+
+# Full features
+full = ["std", "web3", "web3-solana", "web3-ethereum"]
+
 [dependencies]
+amico-core = { path = "../amico-core" }
 amico-sdk = { path = "../amico-sdk" }
 async-trait = "0.1.86"
 lazy_static = "1.5.0"
-rig-core = { version = "0.9.1", optional = true }
 serde = "1.0.217"
-amico-core = { path = "../amico-core" }
 serde_json = "1.0.138"
 futures = "0.3.31"
 tracing = "0.1.41"
+
+# Plugin-specific dependencies
+
+# Std
+rig-core = { version = "0.9.1", optional = true }
+
+# Web3
+tiny-bip39 = { version = "2.0.0", optional = true }
+# Solana
+solana-sdk = { version = "2.2.1", optional = true }
+solana-client = { version = "2.2.3", optional = true }
+# Ethereum
+alloy = { version = "0.12.5", features = [
+    "full",
+    "signer-mnemonic",
+], optional = true }
+thiserror = "2.0.12"
+ecdsa = "0.16.9"
+
+
+# Testing dependencies
+[dev-dependencies]
+tempfile = "3.10.1"
