@@ -2,6 +2,7 @@ use alloy::signers::{
     k256::Secp256k1,
     local::{LocalSigner, LocalSignerError},
 };
+use amico::resource::Resource;
 use bip39::{Language, Mnemonic, MnemonicType, Seed};
 
 // Ethereum
@@ -357,3 +358,5 @@ mod tests {
         }
     }
 }
+
+pub type WalletResource = Resource<Wallet>;
