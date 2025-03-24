@@ -27,7 +27,9 @@ use solana_sdk::{
     signer::{SeedDerivable, Signer},
 };
 
-/// A wallet containing a mnemonic phrase and optional Ethereum and Solana signers
+/// A wallet containing a mnemonic phrase and optional Ethereum and Solana signers.
+///
+/// Wallets should not be cloned, as they contain sensitive information.
 #[derive(Debug)]
 pub struct Wallet {
     mnemonic: Mnemonic,
@@ -339,21 +341,27 @@ mod tests {
         assert_eq!(wallet_resource.name(), "my_wallet");
 
         // Test accessing wallet methods through the resource
-        let resource_phrase = wallet_resource.borrow_then(|w| w.phrase().to_string());
+        let resource_phrase = wallet_resource.value().phrase().to_string();
         assert_eq!(resource_phrase, phrase);
 
         // Test that we can access wallet functionality through the resource
         #[cfg(feature = "web3-solana")]
         {
-            let solana_pubkey =
-                wallet_resource.borrow_then(|w| w.solana_keypair().pubkey().to_string());
+            let solana_pubkey = wallet_resource
+                .value()
+                .solana_keypair()
+                .pubkey()
+                .to_string();
             assert!(!solana_pubkey.is_empty());
         }
 
         #[cfg(feature = "web3-ethereum")]
         {
-            let eth_address =
-                wallet_resource.borrow_then(|w| w.ethereum_wallet().address().to_string());
+            let eth_address = wallet_resource
+                .value()
+                .ethereum_wallet()
+                .address()
+                .to_string();
             assert!(!eth_address.is_empty());
         }
     }
