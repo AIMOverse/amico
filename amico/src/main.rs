@@ -1,23 +1,18 @@
 use amico::ai::service::{Service, ServiceBuilder};
+use amico::resource::Resource;
 use amico_mods::interface::Plugin;
 use amico_mods::std::ai::providers::RigProvider;
 use amico_mods::std::ai::services::InMemoryService;
+use amico_mods::web3::wallet::Wallet;
 use colored::Colorize;
 use prompt::AMICO_SYSTEM_PROMPT;
 use std::process;
+use std::sync::Arc;
 use tasks::audio::AudioChatTask;
 use tasks::interface::{Task, TaskContext};
-use tools::{
-    buy_solana_token_tool, check_ethereum_balance, check_solana_balance, create_asset_tool,
-    search_jokes_tool,
-};
-use wallets::AgentWallet;
 
 mod prompt;
 mod tasks;
-mod tools;
-mod utils;
-mod wallets;
 
 const DEFAULT_OPENAI_BASE_URL: &str = "https://api.openai.com/v1";
 
@@ -49,7 +44,7 @@ async fn main() {
     };
 
     // Read base url configuration
-    let base_url = match std::env::var("OPENAI_BASE_URL") {
+    let base_url = match std::env::opvar("OPENAI_BASE_URL") {
         Ok(key) => {
             println!("Found OPENAI_BASE_URL");
             key
@@ -71,28 +66,21 @@ async fn main() {
     }
 
     // Load agent wallet
-    let wallet = match AgentWallet::load_or_save_new("agent_wallet.txt") {
-        Ok(wallet) => wallet,
-        Err(err) => {
-            eprintln!("Error loading agent wallet: {err}");
-            process::exit(1);
-        }
-    };
+    let wallet = Wallet::load_or_save_new("agent_wallet.txt").unwrap_or_else(|err| {
+        eprintln!("Error loading wallet: {err}");
+        process::exit(1);
+    });
+    // Make wallet a resource
+    let wallet = Arc::new(Resource::new("wallet".to_string(), wallet));
 
     println!();
     println!("Agent wallet addresses:");
-    if let Err(e) = wallet.print_all_pubkeys() {
-        eprintln!("Error printing public keys: {e}");
-        process::exit(1);
-    }
+    wallet.value().print_all_pubkeys();
 
-    let provider = match RigProvider::new(&base_url, &openai_api_key) {
-        Ok(provider) => provider,
-        Err(err) => {
-            eprintln!("Error creating provider: {err}");
-            process::exit(1);
-        }
-    };
+    let provider = RigProvider::new(&base_url, &openai_api_key).unwrap_or_else(|err| {
+        eprintln!("Error creating provider: {err}");
+        process::exit(1);
+    });
 
     let service = ServiceBuilder::new(provider)
         .model("gpt-4o".to_string())

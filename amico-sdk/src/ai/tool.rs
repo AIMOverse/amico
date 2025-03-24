@@ -96,10 +96,7 @@ impl ToolBuilder {
     /// Builds the `Tool` with tool call function from the builder
     pub fn build<F>(self, tool_call: F) -> Tool
     where
-        F: Fn(serde_json::Value) -> Result<serde_json::Value, ToolCallError>
-            + Send
-            + Sync
-            + 'static,
+        F: Fn(serde_json::Value) -> ToolResult + Send + Sync + 'static,
     {
         Tool {
             definition: ToolDefinition {
