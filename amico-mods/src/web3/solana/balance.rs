@@ -42,10 +42,10 @@ pub struct BalanceSensorResult {
 #[async_trait]
 impl Sensor for BalanceSensor {
     type Args = BalanceSensorArgs;
-    type Result = BalanceSensorResult;
+    type Output = BalanceSensorResult;
     type Error = BalanceSensorError;
 
-    async fn sense(&self, args: Self::Args) -> Result<Self::Result, Self::Error> {
+    async fn sense(&self, args: Self::Args) -> Result<Self::Output, Self::Error> {
         let lamports = self.get_lamports(&args.pubkey).await?;
         Ok(BalanceSensorResult { lamports })
     }
