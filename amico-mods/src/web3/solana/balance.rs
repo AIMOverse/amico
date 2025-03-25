@@ -14,12 +14,15 @@ pub struct BalanceSensor {
 }
 
 impl BalanceSensor {
+    /// Create a new balance sensor
+    ///
+    /// Arguments:
+    ///    * `client` - The client resource.
+    ///
+    /// Returns:
+    ///    * `BalanceSensor` - The new balance sensor instance.
     pub fn new(client: Arc<ClientResource>) -> Self {
         Self { client }
-    }
-
-    async fn get_lamports(&self, pubkey: &Pubkey) -> Result<u64, ClientError> {
-        self.client.value().get_balance(pubkey).await
     }
 }
 
@@ -45,8 +48,15 @@ impl Sensor for BalanceSensor {
     type Output = BalanceSensorResult;
     type Error = BalanceSensorError;
 
+    /// Sense the balance of a Solana account
+    ///
+    /// Arguments:
+    ///    * `args` - The arguments for the sensor.
+    ///
+    /// Returns:
+    ///    * `Result<BalanceSensorResult, BalanceSensorError>` - The result of the sensor.
     async fn sense(&self, args: Self::Args) -> Result<Self::Output, Self::Error> {
-        let lamports = self.get_lamports(&args.pubkey).await?;
+        let lamports = self.client.value().get_balance(&args.pubkey).await?;
         Ok(BalanceSensorResult { lamports })
     }
 }

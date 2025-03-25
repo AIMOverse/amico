@@ -112,7 +112,7 @@ impl ToolBuilder {
     pub fn build_async<F, Fut>(self, tool_call: F) -> Tool
     where
         F: Fn(serde_json::Value) -> Fut + Send + Sync + 'static,
-        Fut: Future<Output = ToolResult> + Send + Sync + 'static,
+        Fut: Future<Output = ToolResult> + Send + 'static,
     {
         Tool {
             definition: ToolDefinition {
