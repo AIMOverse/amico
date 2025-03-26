@@ -67,10 +67,12 @@ async fn main() {
     }
 
     // Load agent wallet
-    let wallet = Wallet::load_or_save_new("agent_wallet.txt").unwrap_or_else(|err| {
-        eprintln!("Error loading wallet: {err}");
-        process::exit(1);
-    });
+    let wallet = Wallet::load_or_save_new("agent_wallet.txt")
+        .inspect(|_| println!("Loaded agent wallet"))
+        .unwrap_or_else(|err| {
+            eprintln!("Error loading wallet: {err}");
+            process::exit(1);
+        });
     // Make wallet a resource
     let wallet = Resource::new("wallet".to_string(), wallet);
 
@@ -119,7 +121,7 @@ async fn main() {
         process::exit(1);
     });
 
-    // Run the task
+    // Run the task. If encounter error, re-run the task.
     while let Err(e) = task.run().await {
         eprintln!("Error running task. Re-running");
         tracing::error!("Error running task: {:?}", e);
