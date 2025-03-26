@@ -44,6 +44,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Install build dependencies
+        run: for i in $(cat pkglist-deb.txt); do sudo apt-get install -y $i; done
+
       - name: Install Rust stable
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
@@ -67,6 +70,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Install build dependencies
+        run: for i in $(cat pkglist-deb.txt); do sudo apt-get install -y $i; done
+
       - name: Install Rust stable
         uses: actions-rust-lang/setup-rust-toolchain@v1
 
@@ -89,6 +95,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: for i in $(cat pkglist-deb.txt); do sudo apt-get install -y $i; done
 
       - name: Install Rust stable
         uses: actions-rust-lang/setup-rust-toolchain@v1
