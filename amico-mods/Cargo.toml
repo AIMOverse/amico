@@ -50,6 +50,7 @@ alloy = { version = "0.12.5", features = [
 ], optional = true }
 thiserror = "2.0.12"
 ecdsa = "0.16.9"
+colored = "3.0.0"
 
 
 # Testing dependencies
