@@ -1,18 +1,20 @@
-# Amico Autonomous AI Agent
+# Amico AI Agent Runtime
 
-Amico is the next generation Autonomous AI Agent tailored for embedded AI devices and multi-agent systems.
+This crate is a part of the [**Amico** project](https://github.com/AIMOverse/amico), a powerful and flexible AI agent framework.
 
-## Quick Start
+## What does this crate do
 
-### Install & Run AMICO Immediately
+This crate provides the runtime for the Amico AI Agent Framework, including the following features:
 
-```bash
-cargo install amico
+1. Dynamic modules (plugins) loading for extensible functionality;
+2. Comprehensive configuration via files with flexible options;
+3. A general-purpose AI agent executable built with the **Standard Agent Engine** implementation.
 
-# This will run Amico using the default config.
-amico
-```
+## Documents
 
-### Configuration
+- [How to run and configure amico](https://www.amico.dev/docs/getting-started/run)
+- [Module reference](https://www.amico.dev/docs/modules/amico)
 
-Amico comes with a default configuration file `amico.toml`. You can override the values in this file or provide your own.
+## License
+
+This crate is released under the [**MIT License**](https://github.com/AIMOverse/amico/blob/main/LICENSE)

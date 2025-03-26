@@ -2,6 +2,10 @@
 
 Amico is a next-generation Autonomous AI Agent Framework designed for embedded AI devices and multi-agent systems.
 
+## Detailed Documentation
+
+See our [Document Site](https://www.amico.dev) for more information.
+
 ## Modules
 
 1. **`amico`**: The main executable crate.
@@ -15,73 +19,6 @@ Amico is a next-generation Autonomous AI Agent Framework designed for embedded A
 - **Model Context Protocol (MCP) Integration**: Improves environmental awareness and control.
 - **Agent Networking**: Supports peer-to-peer networking using Web3 technologies.
 - **WASM Support**: Supports WASM-based AI Agent runtime.
-
-## Getting Started
-
-**Note: This is a prototype version of Amico.** Currently, the Amico runtime functions as a command-line chatbot for testing the SDK. The Engine Layer integration is still in progress.
-
-### Dependencies
-
-Your system must have the following dependencies installed to build Amico.
-
-#### Debian-based Linux
-
-- `libasound2-dev` for `alsa-sys` required for audio driver.
-
-### Clone the Repository
-
-```bash
-git clone https://github.com/AIMOverse/amico.git
-cd amico
-```
-
-### Run the Runtime
-
-```bash
-export OPENAI_API_KEY=your_api_key
-
-# To configure a custom base URL for OpenAI:
-# export OPENAI_BASE_URL=your_base_url
-
-cargo run -p amico
-```
-
-This will create a wallet for the agent. The BIP-39 seed phrase will be saved in `agent_wallet.txt`.
-
-Once the runtime starts, you'll have access to a command-line chatbot interface. You can develop plugins, extend Amico’s functionality, and test them in this environment.
-
-```txt
-$ cargo run -p amico
-   Compiling amico-sdk v0.0.2 (/home/.../amico/amico-sdk)
-   Compiling amico-plugins v0.1.1 (/home/.../amico/amico-plugins)
-   Compiling amico v0.0.1 (/home/.../amico/amico)
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1m 08s
-     Running `target/debug/amico`
-This is a PROTOTYPE VERSION of Amico.
-Check out our docs for more information:
-https://www.amico.dev
-
-Found OPENAI_API_KEY
-Found OPENAI_BASE_URL
-Found HELIUS_API_KEY
-
-Agent wallet addresses:
-- Solana: F1t15xYmLqrALX45p9XVpvwxcRsjXKq676xDWEFazUYD
-- Ethereum: 0xA7283cb5A2Fc2766674325FA6a9f5711aC8f1b63
-
-Using service plugin: StdInMemoryService
-Tools enabled:
-- create_asset: Create an NFT on Solana representing yourself
-- buy_solana_token: Buy a Solana token
-- check_ethereum_balance: Check your ETH balance on Ethereum
-- check_solana_balance: Check your SOL balance on Solana
-- search_for_jokes: Search for jokes
-
-I'm Amico, your personal AI assistant. How can I assist you today?
---------------------
-Enter your message
->
-```
 
 ## Architecture Overview
 
