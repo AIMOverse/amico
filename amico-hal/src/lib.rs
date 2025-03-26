@@ -1,2 +1,3 @@
 pub mod interface;
-pub mod linux;
+pub mod os;
+pub mod wasm;
