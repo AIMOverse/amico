@@ -2,12 +2,12 @@ use std::sync::Arc;
 
 use amico::environment::Effector;
 use async_trait::async_trait;
-use solana_sdk::pubkey::Pubkey;
 
 use crate::web3::wallet::WalletResource;
 
 use super::{resources::ClientResource, utils::swap::swap};
 
+#[derive(Clone)]
 pub struct TradeEffector {
     client: Arc<ClientResource>,
     wallet: Arc<WalletResource>,
@@ -20,9 +20,9 @@ impl TradeEffector {
 }
 
 pub struct TradeEffectorArgs {
-    pub input_mint: Pubkey,
-    pub output_mint: Pubkey,
-    pub amount: u64,
+    pub input_mint: String,
+    pub output_mint: String,
+    pub amount: String,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -43,7 +43,7 @@ impl Effector for TradeEffector {
             self.wallet.value().solana_keypair(),
             &args.input_mint,
             &args.output_mint,
-            args.amount,
+            &args.amount,
         )
         .map_err(|_| TradeError::ClientError)
     }

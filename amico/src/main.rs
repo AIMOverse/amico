@@ -8,6 +8,7 @@ use amico_mods::std::ai::tasks::chatbot::cli::CliTask;
 use amico_mods::std::ai::tasks::chatbot::context::ChatbotContext;
 use amico_mods::web3::solana::balance::BalanceSensor;
 use amico_mods::web3::solana::resources::ClientResource;
+use amico_mods::web3::solana::trade::TradeEffector;
 use amico_mods::web3::wallet::Wallet;
 use colored::Colorize;
 use helpers::solana_rpc_url;
@@ -16,7 +17,7 @@ use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::signer::Signer;
 use std::process;
 use std::sync::Arc;
-use tools::balance_sensor_tool;
+use tools::{balance_sensor_tool, trade_effector_tool};
 
 mod helpers;
 mod prompt;
@@ -77,17 +78,25 @@ async fn main() {
         });
     // Make wallet a resource
     let wallet = Resource::new("wallet".to_string(), wallet);
+    let wallet_ptr = Arc::new(wallet);
 
     // Create Client resource
     let client = ClientResource::new(
         "Client resource".to_string(),
         Arc::new(RpcClient::new(solana_rpc_url("devnet"))),
     );
+    let client_ptr = Arc::new(client);
 
     // Create BalanceSensor instance
     let balance_sensor = Resource::new(
         "balance_sensor".to_string(),
-        BalanceSensor::new(Arc::new(client)),
+        BalanceSensor::new(client_ptr.clone()),
+    );
+
+    // Create TradeEffector instance
+    let trade_effector = Resource::new(
+        "TradeEffector".to_string(),
+        TradeEffector::new(client_ptr.clone(), wallet_ptr.clone()),
     );
 
     // Create the Provider
@@ -104,13 +113,14 @@ async fn main() {
         .max_tokens(1000)
         .tool(balance_sensor_tool(
             balance_sensor.clone(),
-            &wallet.value().solana_keypair().pubkey(),
+            &wallet_ptr.value().solana_keypair().pubkey(),
         ))
+        .tool(trade_effector_tool(trade_effector.clone()))
         .build::<InMemoryService<RigProvider>>();
 
     println!();
     println!("Agent wallet addresses:");
-    wallet.value().print_all_pubkeys();
+    wallet_ptr.value().print_all_pubkeys();
 
     println!();
     println!("Using service plugin: {}", service.info().name);
