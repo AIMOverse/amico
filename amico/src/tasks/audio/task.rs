@@ -54,7 +54,7 @@ where
             }
 
             // Record user's voice into a file
-            record_blocking("cache/user.mp3")?;
+            record_blocking("cache/user.mp3").await?;
             tracing::info!("Recorded user's voice");
 
             // Convert sound file to text
