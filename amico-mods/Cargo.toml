@@ -24,14 +24,7 @@ web3-ethereum = ["web3", "alloy"]
 full = ["std", "web3", "web3-solana", "web3-ethereum"]
 
 [dependencies]
-amico-core = { path = "../amico-core" }
-amico-sdk = { path = "../amico-sdk" }
-async-trait = "0.1.86"
-lazy_static = "1.5.0"
-serde = "1.0.217"
-serde_json = "1.0.138"
-futures = "0.3.31"
-tracing = "0.1.41"
+
 
 # Plugin-specific dependencies
 
@@ -48,10 +41,25 @@ alloy = { version = "0.12.5", features = [
     "full",
     "signer-mnemonic",
 ], optional = true }
+
+# Common dependencies
 thiserror = "2.0.12"
 ecdsa = "0.16.9"
 colored = "3.0.0"
-
+reqwest = { version = "0.12.15", features = [
+    "json",
+    "rustls-tls",
+    "multipart",
+] }
+amico-core = { path = "../amico-core" }
+amico-sdk = { path = "../amico-sdk" }
+amico-hal = { path = "../amico-hal" }
+async-trait = "0.1.86"
+lazy_static = "1.5.0"
+serde = "1.0.217"
+serde_json = "1.0.138"
+futures = "0.3.31"
+tracing = "0.1.41"
 
 # Testing dependencies
 [dev-dependencies]
