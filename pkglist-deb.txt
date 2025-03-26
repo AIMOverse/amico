@@ -1,0 +1,2 @@
+pkg-config
+libasound2-dev

@@ -4,10 +4,11 @@ Amico is a next-generation Autonomous AI Agent Framework designed for embedded A
 
 ## Modules
 
-1. **`amico-core`**: Interfaces and workflows for the Engine Layer.
-2. **`amico-sdk`**: Interfaces and workflows for the AI Agent and Interaction Layers.
-3. **`amico-mods`**: Pluggable implementation modules.
-4. **`amico-hal`**: Hardware Abstraction Layer.
+1. **`amico`**: The main executable crate.
+2. **`amico-core`**: Interfaces and workflows for the Engine Layer.
+3. **`amico-sdk`**: Interfaces and workflows for the AI Agent and Interaction Layers.
+4. **`amico-mods`**: Pluggable implementation modules.
+5. **`amico-hal`**: Hardware Abstraction Layer.
 
 ## Development Plans
 
@@ -17,7 +18,15 @@ Amico is a next-generation Autonomous AI Agent Framework designed for embedded A
 
 ## Getting Started
 
-**Note: This is a prototype version of Amico.** Currently, the Amico runtime functions as a command-line chatbot for testing the SDK. The Engine Layer integration is still in progress, while the Agent Layer and Interaction Layer are undergoing refactoring and integration.
+**Note: This is a prototype version of Amico.** Currently, the Amico runtime functions as a command-line chatbot for testing the SDK. The Engine Layer integration is still in progress.
+
+### Dependencies
+
+Your system must have the following dependencies installed to build Amico.
+
+#### Debian-based Linux
+
+- `libasound2-dev` for `alsa-sys` required for audio driver.
 
 ### Clone the Repository
 
@@ -33,11 +42,6 @@ export OPENAI_API_KEY=your_api_key
 
 # To configure a custom base URL for OpenAI:
 # export OPENAI_BASE_URL=your_base_url
-
-# Use a Helius API key for Solana actions.
-# We recommend Helius API for on-chain actions, as the default Solana RPC is unstable.
-# More details at https://helius.dev
-export HELIUS_API_KEY=your_api_key
 
 cargo run -p amico
 ```
