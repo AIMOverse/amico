@@ -37,7 +37,9 @@ async fn main() {
 
     // Initialize tracing
     // `export RUST_LOG=debug`
-    tracing_subscriber::fmt::init();
+    if std::env::var("RUST_LOG").is_ok() {
+        tracing_subscriber::fmt::init();
+    }
 
     // Read `OPENAI_API_KEY` from environment variable
     let openai_api_key = std::env::var("OPENAI_API_KEY")
