@@ -22,23 +22,23 @@ pub enum TtsError {
 #[derive(Debug, thiserror::Error)]
 pub enum SttError {
     #[error("Failed to get API key")]
-    EnvVarError(#[from] std::env::VarError),
+    EnvVar(#[from] std::env::VarError),
 
     #[error("IO error: {0}")]
     IoError(#[from] std::io::Error),
 
     #[error("Failed to create multipart request")]
-    MultipartError(#[from] reqwest::Error),
+    Multipart(#[from] reqwest::Error),
 
     #[error("Failed to set mime type")]
-    MimeError(#[from] reqwest::header::InvalidHeaderValue),
+    Mime(#[from] reqwest::header::InvalidHeaderValue),
 }
 
 pub async fn text_to_speech(text: &str, file_path: &str) -> Result<(), TtsError> {
     tracing::debug!("tts text: {}, output file: {}", text, file_path);
 
     // Get OpenAI API key from environment variable
-    let api_key = std::env::var("OPENAI_API_KEY").map_err(|e| TtsError::ApiKeyNotFound(e))?;
+    let api_key = std::env::var("OPENAI_API_KEY").map_err(TtsError::ApiKeyNotFound)?;
 
     // Define request body for OpenAI's text-to-speech API
     #[derive(serde::Serialize)]
@@ -66,7 +66,7 @@ pub async fn text_to_speech(text: &str, file_path: &str) -> Result<(), TtsError>
         .json(&request_body)
         .send()
         .await
-        .map_err(|e| TtsError::ApiRequestError(e))?;
+        .map_err(TtsError::ApiRequestError)?;
 
     // Check if the request was successful
     if !response.status().is_success() {
@@ -81,18 +81,15 @@ pub async fn text_to_speech(text: &str, file_path: &str) -> Result<(), TtsError>
     }
 
     // Get the audio bytes from the response
-    let audio_bytes = response
-        .bytes()
-        .await
-        .map_err(|e| TtsError::ApiRequestError(e))?;
+    let audio_bytes = response.bytes().await.map_err(TtsError::ApiRequestError)?;
 
     // Create the directory for the output file if it doesn't exist
     if let Some(parent) = Path::new(file_path).parent() {
-        std::fs::create_dir_all(parent).map_err(|e| TtsError::IoError(e))?;
+        std::fs::create_dir_all(parent).map_err(TtsError::IoError)?;
     }
 
     // Write the audio bytes to the file
-    std::fs::write(file_path, audio_bytes).map_err(|e| TtsError::IoError(e))?;
+    std::fs::write(file_path, audio_bytes).map_err(TtsError::IoError)?;
 
     Ok(())
 }
@@ -113,7 +110,7 @@ pub async fn speech_to_text(file_path: &str) -> Result<String, SttError> {
         .part("file", file_part);
 
     // Replace with your OpenAI API key.
-    let api_key = std::env::var("OPENAI_API_KEY").map_err(|err| SttError::EnvVarError(err))?;
+    let api_key = std::env::var("OPENAI_API_KEY").map_err(SttError::EnvVar)?;
 
     // Create a reqwest client and send the POST request.
     let client = Client::new();
