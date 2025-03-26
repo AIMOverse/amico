@@ -6,10 +6,18 @@ description = "The HAL of the Amico AI Agent Framework"
 repository = "https://github.com/AIMOverse/amico"
 license = "MIT"
 
+[features]
+default = ["os-common"]
+os-common = ["cpal", "hound", "lame", "rodio"]
+
 [dependencies]
-cpal = "0.15.3"
-hound = "3.5.1"
-lame = "0.1.3"
-rodio = "0.20.1"
+
+# Cross-platform audio dependencies
+cpal = { version = "0.15.3", optional = true }
+hound = { version = "3.5.1", optional = true }
+lame = { version = "0.1.3", optional = true }
+rodio = { version = "0.20.1", optional = true }
+
+# Default dependencies
 thiserror = "2.0.12"
 tokio = { version = "1.44.1", features = ["rt", "macros"] }
