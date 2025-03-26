@@ -1,7 +1,41 @@
 use std::sync::Arc;
 
-/// Resources, such as wallets, can be used in actions.
-#[derive(Debug, Clone)]
+/// `Resource<T>` represents a globally available resource instance that can be shared among agents.
+///
+/// The actual resource instance is stored in an `Arc` (Atomic Reference Counted pointer),
+/// allowing the resource to be safely shared across multiple owners and threads without
+/// copying the underlying data. This design enables `Resource` types to be efficiently cloned
+/// wherever needed while still referring to the same underlying resource instance.
+///
+/// ## Example
+///
+/// ```rust
+/// use amico::resource::Resource;
+///
+/// fn resource_consumer_one(resource: Resource<i32>) {
+///     // Resource consumers don't need to consume
+///     // a resource with references.
+///     assert_eq!(*resource.value(), 1);
+/// }
+///
+/// fn resource_consumer_two(resource: Resource<i32>) {
+///     assert_eq!(*resource.value(), 1);
+/// }
+///
+/// fn main() {
+///     let resource = Resource::new("one".to_string(), 1);
+///
+///     // Just clone the resource wherever needed.
+///     resource_consumer_one(resource.clone());
+///
+///     // Just clone the resource wherever needed.
+///     resource_consumer_two(resource.clone());
+///
+///     // The resource is still available here.
+///     assert_eq!(*resource.value(), 1);
+/// }
+/// ```
+#[derive(Debug)]
 pub struct Resource<T> {
     /// The name of the resource.
     name: String,
@@ -48,6 +82,19 @@ impl<T> Resource<T> {
     ///    * `Arc<T>` - A clone of the value of the resource.
     pub fn value_ptr(&self) -> Arc<T> {
         Arc::clone(&self.value)
+    }
+}
+
+impl<T> Clone for Resource<T> {
+    /// Clone the resource
+    ///
+    /// Returns:
+    ///    * `Resource` - A clone of the resource.
+    fn clone(&self) -> Self {
+        Self {
+            name: self.name.clone(),
+            value: Arc::clone(&self.value),
+        }
     }
 }
 

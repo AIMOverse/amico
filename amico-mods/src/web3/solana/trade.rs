@@ -1,20 +1,18 @@
-use std::sync::Arc;
-
 use amico::environment::Effector;
 use async_trait::async_trait;
 
 use crate::web3::wallet::WalletResource;
 
-use super::{resources::ClientResource, utils::swap::swap};
+use super::{resources::SolanaClientResource, utils::swap::swap};
 
 #[derive(Clone)]
 pub struct TradeEffector {
-    client: Arc<ClientResource>,
-    wallet: Arc<WalletResource>,
+    client: SolanaClientResource,
+    wallet: WalletResource,
 }
 
 impl TradeEffector {
-    pub fn new(client: Arc<ClientResource>, wallet: Arc<WalletResource>) -> Self {
+    pub fn new(client: SolanaClientResource, wallet: WalletResource) -> Self {
         Self { client, wallet }
     }
 }

@@ -3,14 +3,13 @@ use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use solana_client::client_error::ClientError;
 use solana_sdk::pubkey::Pubkey;
-use std::sync::Arc;
 
-use super::resources::ClientResource;
+use super::resources::SolanaClientResource;
 
 /// A sensor that gets the balance of a Solana account.
 #[derive(Clone)]
 pub struct BalanceSensor {
-    client: Arc<ClientResource>,
+    client: SolanaClientResource,
 }
 
 impl BalanceSensor {
@@ -21,7 +20,7 @@ impl BalanceSensor {
     ///
     /// Returns:
     ///    * `BalanceSensor` - The new balance sensor instance.
-    pub fn new(client: Arc<ClientResource>) -> Self {
+    pub fn new(client: SolanaClientResource) -> Self {
         Self { client }
     }
 }

@@ -367,4 +367,5 @@ mod tests {
     }
 }
 
+/// The resource to access a wallet
 pub type WalletResource = Resource<Wallet>;
