@@ -8,6 +8,7 @@ use crate::std::ai::{providers::RigProvider, services::InMemoryService};
 use super::context::ChatbotContext;
 
 /// A task that runs a chatbot in the CLI.
+#[derive(Debug)]
 pub struct CliTask;
 
 /// Errors that may occur during chatbot task

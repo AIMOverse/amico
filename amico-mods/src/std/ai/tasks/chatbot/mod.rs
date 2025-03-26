@@ -1,5 +1,5 @@
 pub mod audio;
 pub mod cli;
+pub mod context;
 
-mod context;
 mod speech;

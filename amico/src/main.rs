@@ -1,8 +1,11 @@
 use amico::ai::service::{Service, ServiceBuilder};
 use amico::resource::Resource;
+use amico::task::Task;
 use amico_mods::interface::Plugin;
 use amico_mods::std::ai::providers::RigProvider;
 use amico_mods::std::ai::services::InMemoryService;
+use amico_mods::std::ai::tasks::chatbot::cli::CliTask;
+use amico_mods::std::ai::tasks::chatbot::context::ChatbotContext;
 use amico_mods::web3::solana::balance::BalanceSensor;
 use amico_mods::web3::solana::resources::ClientResource;
 use amico_mods::web3::wallet::Wallet;
@@ -13,13 +16,10 @@ use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::signer::Signer;
 use std::process;
 use std::sync::Arc;
-use tasks::audio::AudioChatTask;
-use tasks::interface::{Task, TaskContext};
 use tools::balance_sensor_tool;
 
 mod helpers;
 mod prompt;
-mod tasks;
 mod tools;
 
 const DEFAULT_OPENAI_BASE_URL: &str = "https://api.openai.com/v1";
@@ -115,16 +115,27 @@ async fn main() {
     println!("Tools enabled:\n{}", service.ctx().tools.describe());
 
     // Create a task
-    //let mut task = CliTask::setup(TaskContext::new(service)).unwrap_or_else(|e| {
-    let mut task = AudioChatTask::setup(TaskContext::new(service)).unwrap_or_else(|e| {
-        eprintln!("Error creating task: {e}");
-        process::exit(1);
-    });
+    let mut chatbot_ctx = ChatbotContext { service };
+    let mut task = CliTask;
 
-    // Run the task. If encounter error, re-run the task.
-    while let Err(e) = task.run().await {
+    // Run the task in execution order. If encounter error, re-run the task.
+    task.before_run(&mut chatbot_ctx)
+        .await
+        .unwrap_or_else(|err| {
+            eprintln!("Error during {task:?}.before_run");
+            tracing::error!("{err}");
+        });
+
+    while let Err(e) = task.run(&mut chatbot_ctx).await {
         eprintln!("Error running task. Re-running");
         tracing::error!("Error running task: {:?}", e);
         continue;
     }
+
+    task.after_run(&mut chatbot_ctx)
+        .await
+        .unwrap_or_else(|err| {
+            eprintln!("Error during {task:?}.after_run");
+            tracing::error!("{err}");
+        });
 }
