@@ -134,8 +134,8 @@ impl Wallet {
     #[cfg(feature = "web3-solana")]
     pub fn load_solana_keypair(mnemonic: &Mnemonic) -> Result<Keypair, WalletError> {
         let seed = Seed::new(mnemonic, "");
-        let keypair = Keypair::from_seed(seed.as_bytes())
-            .map_err(|err| WalletError::SolanaKeyPairError(err))?;
+        let keypair =
+            Keypair::from_seed(seed.as_bytes()).map_err(WalletError::SolanaKeyPairError)?;
         Ok(keypair)
     }
 
@@ -146,7 +146,7 @@ impl Wallet {
         let signer = AlloyMnemonicBuilder::<AlloyEnglish>::default()
             .phrase(phrase)
             .build()
-            .map_err(|err| WalletError::EthereumSignerError(err))?;
+            .map_err(WalletError::EthereumSignerError)?;
         Ok(signer)
     }
 

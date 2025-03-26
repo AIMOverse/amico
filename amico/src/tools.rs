@@ -10,8 +10,8 @@ use solana_sdk::native_token::LAMPORTS_PER_SOL;
 use solana_sdk::pubkey::Pubkey;
 
 pub fn balance_sensor_tool(sensor: Resource<BalanceSensor>, pubkey: &Pubkey) -> Tool {
-    // Clone the pubkey here so the closure owns it
-    let pubkey = pubkey.clone();
+    // `Pubkey` implements the `Copy` trait, so we can just copy it
+    let pubkey = *pubkey;
     let sensor = sensor.clone();
 
     ToolBuilder::new()
@@ -21,7 +21,7 @@ pub fn balance_sensor_tool(sensor: Resource<BalanceSensor>, pubkey: &Pubkey) -> 
         .build_async(move |args| {
             // Clone the sensor and pubkey to move into the async block
             let sensor = sensor.clone();
-            let pubkey = pubkey.clone();
+            let pubkey = pubkey;
             let args = args.clone();
 
             // Return a boxed future that is both Send and Sync

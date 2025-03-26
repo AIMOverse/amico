@@ -7,6 +7,6 @@ pub fn swap(
     _input_mint: &Pubkey,
     _output_mint: &Pubkey,
     _amount: u64,
-) -> Result<(), ()> {
+) -> Result<(), Box<dyn std::error::Error>> {
     todo!();
 }

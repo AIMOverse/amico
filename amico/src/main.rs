@@ -41,10 +41,7 @@ async fn main() {
 
     // Read `OPENAI_API_KEY` from environment variable
     let openai_api_key = std::env::var("OPENAI_API_KEY")
-        .map(|key| {
-            println!("Found OPENAI_API_KEY");
-            key
-        })
+        .inspect(|_| println!("Found OPENAI_API_KEY"))
         .unwrap_or_else(|_| {
             eprintln!("Error: OPENAI_API_KEY is not set");
             process::exit(1);
@@ -52,10 +49,7 @@ async fn main() {
 
     // Read base url configuration
     let base_url = std::env::var("OPENAI_BASE_URL")
-        .map(|key| {
-            println!("Found OPENAI_BASE_URL");
-            key
-        })
+        .inspect(|_| println!("Found OPENAI_BASE_URL"))
         .unwrap_or_else(|_| {
             println!("Using default OPENAI_BASE_URL ({DEFAULT_OPENAI_BASE_URL})");
             DEFAULT_OPENAI_BASE_URL.to_string()
@@ -126,13 +120,9 @@ async fn main() {
     });
 
     // Run the task
-    loop {
-        if let Err(e) = task.run().await {
-            eprintln!("Error running task. Re-running");
-            tracing::error!("Error running task: {:?}", e);
-            continue;
-        } else {
-            break;
-        }
+    while let Err(e) = task.run().await {
+        eprintln!("Error running task. Re-running");
+        tracing::error!("Error running task: {:?}", e);
+        continue;
     }
 }
