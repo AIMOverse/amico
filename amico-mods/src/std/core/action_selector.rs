@@ -116,45 +116,45 @@ where
         }
     }
 
-    /// Update the system prompt.
-    fn update_system_prompt(&mut self) {
-        // Set the system prompt
-        let prompt = r#"You are an Action Selector to select actions to execute in an agent.
-            You will be provided with information of the environment, the state of the current agent
-             and the events that are received. Make the best decision based on these information.
-              Don't output the reason of choosing the action. Just output the
-            name, the parameters of the action you choose and the event ids you solved."#;
+    // /// Update the system prompt.
+    // fn update_system_prompt(&mut self) {
+    //     // Set the system prompt
+    //     let prompt = r#"You are an Action Selector to select actions to execute in an agent.
+    //         You will be provided with information of the environment, the state of the current agent
+    //          and the events that are received. Make the best decision based on these information.
+    //           Don't output the reason of choosing the action. Just output the
+    //         name, the parameters of the action you choose and the event ids you solved."#;
 
-        // An example output to be shown in the system prompt
-        let example_output = r#"{
-            "name": "clean",
-            "parameters": {
-                "room": "kitchen"
-            },
-            "event_ids": [1, 2, 3]
-        }"#;
+    //     // An example output to be shown in the system prompt
+    //     let example_output = r#"{
+    //         "name": "clean",
+    //         "parameters": {
+    //             "room": "kitchen"
+    //         },
+    //         "event_ids": [1, 2, 3]
+    //     }"#;
 
-        // The final prompt to be set in the system
-        let final_prompt = format!(
-            "{}\n\
-            Here is an example of the output:{}\n\
-            Here are the available actions:{}",
-            prompt.trim(),
-            example_output,
-            self.actions_map.describe()
-        );
+    //     // The final prompt to be set in the system
+    //     let final_prompt = format!(
+    //         "{}\n\
+    //         Here is an example of the output:{}\n\
+    //         Here are the available actions:{}",
+    //         prompt.trim(),
+    //         example_output,
+    //         self.actions_map.describe()
+    //     );
 
-        // Set the system prompt
-        self.service.mut_ctx().update(move |ctx| {
-            ctx.system_prompt = final_prompt.to_string();
-        });
-    }
+    //     // Set the system prompt
+    //     self.service.mut_ctx().update(move |ctx| {
+    //         ctx.system_prompt = final_prompt.to_string();
+    //     });
+    // }
 
-    /// Set the AI service for the ActionSelector.
-    pub fn set_service(&mut self, service: S) {
-        // Set the service
-        self.service = service;
-        // Update the system prompt
-        self.update_system_prompt();
-    }
+    // /// Set the AI service for the ActionSelector.
+    // pub fn set_service(&mut self, service: S) {
+    //     // Set the service
+    //     self.service = service;
+    //     // Update the system prompt
+    //     self.update_system_prompt();
+    // }
 }

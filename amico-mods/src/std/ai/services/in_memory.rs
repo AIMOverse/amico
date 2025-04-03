@@ -66,14 +66,6 @@ where
         }
     }
 
-    fn ctx(&self) -> &ServiceContext<M> {
-        &self.ctx
-    }
-
-    fn mut_ctx(&mut self) -> &mut ServiceContext<M> {
-        &mut self.ctx
-    }
-
     async fn generate_text(&mut self, prompt: String) -> Result<String, ServiceError> {
         // Append the new user prompt to chat history.
         self.history.push(Message::User(prompt));

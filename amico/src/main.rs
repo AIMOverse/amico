@@ -1,4 +1,4 @@
-use amico::ai::services::{CompletionService, ServiceBuilder};
+use amico::ai::services::ServiceBuilder;
 use amico::resource::Resource;
 use amico::task::Task;
 use amico_mods::interface::Plugin;
@@ -121,7 +121,7 @@ async fn main() {
 
     println!();
     println!("Using service plugin: {}", service.info().name);
-    println!("Tools enabled:\n{}", service.ctx().tools.describe());
+    println!("Tools enabled:\n{}", service.ctx.tools.describe());
 
     // Create a task
     let mut chatbot_ctx = ChatbotContext { service };

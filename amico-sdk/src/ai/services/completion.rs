@@ -20,12 +20,6 @@ pub trait CompletionService: Send + Sync {
     where
         Self: Sized;
 
-    /// Gets the context of the service
-    fn ctx(&self) -> &ServiceContext<Self::Model>;
-
-    /// Gets a mutable reference to the context of the service
-    fn mut_ctx(&mut self) -> &mut ServiceContext<Self::Model>;
-
     /// Generates text based on a prompt.
     async fn generate_text(&mut self, prompt: String) -> Result<String, ServiceError>;
 }
@@ -166,14 +160,6 @@ mod test {
             TestService { ctx: context }
         }
 
-        fn ctx(&self) -> &ServiceContext<TestCompletionModel> {
-            &self.ctx
-        }
-
-        fn mut_ctx(&mut self) -> &mut ServiceContext<TestCompletionModel> {
-            &mut self.ctx
-        }
-
         async fn generate_text(&mut self, prompt: String) -> Result<String, ServiceError> {
             // Build the request
             let request = CompletionRequestBuilder::from_ctx(&self.ctx)
@@ -211,8 +197,8 @@ mod test {
     async fn test_build_service() {
         let mut service = build_test_service();
 
-        assert_eq!(service.ctx().system_prompt, "test".to_string());
-        assert_eq!(service.ctx().model_name, "test".to_string());
+        assert_eq!(service.ctx.system_prompt, "test".to_string());
+        assert_eq!(service.ctx.model_name, "test".to_string());
 
         let response = service.generate_text("test".to_string()).await.unwrap();
         assert_eq!(response, "test".to_string());
@@ -222,7 +208,7 @@ mod test {
     fn test_update_context() {
         let mut service = build_test_service();
 
-        service.mut_ctx().update(|ctx| {
+        service.ctx.update(|ctx| {
             ctx.system_prompt = "new test".to_string();
             ctx.model_name = "new test".to_string();
             ctx.temperature = 0.3;
@@ -230,11 +216,11 @@ mod test {
             ctx.tools = ToolSet::from(vec![]);
         });
 
-        assert_eq!(service.ctx().system_prompt, "new test".to_string());
-        assert_eq!(service.ctx().model_name, "new test".to_string());
-        assert_eq!(service.ctx().temperature, 0.3);
-        assert_eq!(service.ctx().max_tokens, 200);
-        assert_eq!(service.ctx().tools.tools.len(), 0);
+        assert_eq!(service.ctx.system_prompt, "new test".to_string());
+        assert_eq!(service.ctx.model_name, "new test".to_string());
+        assert_eq!(service.ctx.temperature, 0.3);
+        assert_eq!(service.ctx.max_tokens, 200);
+        assert_eq!(service.ctx.tools.tools.len(), 0);
     }
 
     #[test]
