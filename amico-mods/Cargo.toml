@@ -29,7 +29,7 @@ full = ["std", "web3", "web3-solana", "web3-ethereum"]
 # Plugin-specific dependencies
 
 # Std
-rig-core = { version = "0.9.1", optional = true }
+rig-core = { version = "0.11.0", optional = true }
 
 # Web3
 tiny-bip39 = { version = "2.0.0", optional = true }
@@ -37,7 +37,7 @@ tiny-bip39 = { version = "2.0.0", optional = true }
 solana-sdk = { version = "2.2.1", optional = true }
 solana-client = { version = "2.2.3", optional = true }
 # Ethereum
-alloy = { version = "0.12.5", features = [
+alloy = { version = "0.13.0", features = [
     "full",
     "signer-mnemonic",
 ], optional = true }
