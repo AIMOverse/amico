@@ -1,6 +1,9 @@
 ### Secrets
 agent_wallet.txt
 
+### Audio cache
+cache
+
 ### VisualStudioCode template
 .vscode/*
 !.vscode/settings.json

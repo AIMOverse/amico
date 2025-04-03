@@ -1,21 +1,26 @@
 use amico::ai::service::{Service, ServiceBuilder};
+use amico::resource::Resource;
+use amico::task::Task;
 use amico_mods::interface::Plugin;
 use amico_mods::std::ai::providers::RigProvider;
 use amico_mods::std::ai::services::InMemoryService;
+use amico_mods::std::ai::tasks::chatbot::cli::CliTask;
+use amico_mods::std::ai::tasks::chatbot::context::ChatbotContext;
+use amico_mods::web3::solana::balance::BalanceSensor;
+use amico_mods::web3::solana::resources::SolanaClientResource;
+use amico_mods::web3::solana::trade::TradeEffector;
+use amico_mods::web3::wallet::Wallet;
 use colored::Colorize;
+use helpers::solana_rpc_url;
 use prompt::AMICO_SYSTEM_PROMPT;
-use std::io::{self, Write};
+use solana_client::nonblocking::rpc_client::RpcClient;
+use solana_sdk::signer::Signer;
 use std::process;
-use tools::{
-    buy_solana_token_tool, check_ethereum_balance, check_solana_balance, create_asset_tool,
-    search_jokes_tool,
-};
-use wallets::AgentWallet;
+use tools::{balance_sensor_tool, trade_effector_tool};
 
+mod helpers;
 mod prompt;
 mod tools;
-mod utils;
-mod wallets;
 
 const DEFAULT_OPENAI_BASE_URL: &str = "https://api.openai.com/v1";
 
@@ -26,42 +31,33 @@ fn print_demo_hint() {
     println!();
 }
 
-fn print_message_separator() {
-    println!("--------------------");
-}
-
 #[tokio::main]
 async fn main() {
     print_demo_hint();
 
     // Initialize tracing
     // `export RUST_LOG=debug`
-    tracing_subscriber::fmt::init();
+    if std::env::var("RUST_LOG").is_ok() {
+        tracing_subscriber::fmt::init();
+    }
 
     // Read `OPENAI_API_KEY` from environment variable
-    let openai_api_key = match std::env::var("OPENAI_API_KEY") {
-        Ok(key) => {
-            println!("Found OPENAI_API_KEY");
-            key
-        }
-        Err(_) => {
+    let openai_api_key = std::env::var("OPENAI_API_KEY")
+        .inspect(|_| println!("Found OPENAI_API_KEY"))
+        .unwrap_or_else(|_| {
             eprintln!("Error: OPENAI_API_KEY is not set");
             process::exit(1);
-        }
-    };
+        });
 
     // Read base url configuration
-    let base_url = match std::env::var("OPENAI_BASE_URL") {
-        Ok(key) => {
-            println!("Found OPENAI_BASE_URL");
-            key
-        }
-        Err(_) => {
+    let base_url = std::env::var("OPENAI_BASE_URL")
+        .inspect(|_| println!("Found OPENAI_BASE_URL"))
+        .unwrap_or_else(|_| {
             println!("Using default OPENAI_BASE_URL ({DEFAULT_OPENAI_BASE_URL})");
             DEFAULT_OPENAI_BASE_URL.to_string()
-        }
-    };
+        });
 
+    // Read Helius API key
     if std::env::var("HELIUS_API_KEY").is_ok() {
         println!("Found HELIUS_API_KEY");
     } else {
@@ -73,79 +69,82 @@ async fn main() {
     }
 
     // Load agent wallet
-    let wallet = match AgentWallet::load_or_save_new("agent_wallet.txt") {
-        Ok(wallet) => wallet,
-        Err(err) => {
-            eprintln!("Error loading agent wallet: {err}");
+    let wallet = Wallet::load_or_save_new("agent_wallet.txt")
+        .inspect(|_| println!("Loaded agent wallet"))
+        .unwrap_or_else(|err| {
+            eprintln!("Error loading wallet: {err}");
             process::exit(1);
-        }
-    };
+        });
+    // Make wallet a resource
+    let wallet = Resource::new("wallet".to_string(), wallet);
 
-    println!();
-    println!("Agent wallet addresses:");
-    if let Err(e) = wallet.print_all_pubkeys() {
-        eprintln!("Error printing public keys: {e}");
+    // Create Client resource
+    let client = SolanaClientResource::new(
+        "Client resource".to_string(),
+        RpcClient::new(solana_rpc_url("devnet")),
+    );
+
+    // Create BalanceSensor instance
+    let balance_sensor = Resource::new(
+        "balance_sensor".to_string(),
+        BalanceSensor::new(client.clone()),
+    );
+
+    // Create TradeEffector instance
+    let trade_effector = Resource::new(
+        "TradeEffector".to_string(),
+        TradeEffector::new(client.clone(), wallet.clone()),
+    );
+
+    // Create the Provider
+    let provider = RigProvider::new(&base_url, &openai_api_key).unwrap_or_else(|err| {
+        eprintln!("Error creating provider: {err}");
         process::exit(1);
-    }
+    });
 
-    let provider = match RigProvider::new(&base_url, &openai_api_key) {
-        Ok(provider) => provider,
-        Err(err) => {
-            eprintln!("Error creating provider: {err}");
-            process::exit(1);
-        }
-    };
-
-    let mut service = ServiceBuilder::new(provider)
+    // Create the Service
+    let service = ServiceBuilder::new(provider)
         .model("gpt-4o".to_string())
         .system_prompt(AMICO_SYSTEM_PROMPT.to_string())
         .temperature(0.2)
         .max_tokens(1000)
-        .tool(search_jokes_tool())
-        .tool(check_solana_balance(wallet.solana_keypair().unwrap()))
-        .tool(check_ethereum_balance(wallet.ethereum_wallet().unwrap()))
-        .tool(create_asset_tool(wallet.solana_keypair().unwrap()))
-        .tool(buy_solana_token_tool(wallet.solana_keypair().unwrap()))
+        .tool(balance_sensor_tool(
+            balance_sensor.clone(),
+            &wallet.value().solana_keypair().pubkey(),
+        ))
+        .tool(trade_effector_tool(trade_effector.clone()))
         .build::<InMemoryService<RigProvider>>();
+
+    println!();
+    println!("Agent wallet addresses:");
+    wallet.value().print_all_pubkeys();
 
     println!();
     println!("Using service plugin: {}", service.info().name);
     println!("Tools enabled:\n{}", service.ctx().tools.describe());
 
-    // Print global prompt
-    println!();
-    println!(
-        "{}",
-        "I'm Amico, your personal AI assistant. How can I assist you today?".green()
-    );
-    print_message_separator();
+    // Create a task
+    let mut chatbot_ctx = ChatbotContext { service };
+    let mut task = CliTask;
 
-    loop {
-        println!("Enter your message");
-        print!("> ");
-        io::stdout().flush().unwrap();
+    // Run the task in execution order. If encounter error, re-run the task.
+    task.before_run(&mut chatbot_ctx)
+        .await
+        .unwrap_or_else(|err| {
+            eprintln!("Error during {task:?}.before_run");
+            tracing::error!("{err}");
+        });
 
-        let mut input = String::new();
-        io::stdin().read_line(&mut input).unwrap();
-        let input = input.trim();
-
-        if input.eq_ignore_ascii_case("quit") {
-            println!("Exiting chatbot. Goodbye!");
-            break;
-        }
-
-        print_message_separator();
-
-        // Get response from AI service
-        let response = match service.generate_text(input.to_string()).await {
-            Ok(response) => response,
-            Err(err) => {
-                eprintln!("Error generating text: {err}");
-                continue;
-            }
-        };
-        println!("{}", "[Amico]".yellow());
-        println!("{}", response.green());
-        print_message_separator();
+    while let Err(e) = task.run(&mut chatbot_ctx).await {
+        eprintln!("Error running task. Re-running");
+        tracing::error!("Error running task: {:?}", e);
+        continue;
     }
+
+    task.after_run(&mut chatbot_ctx)
+        .await
+        .unwrap_or_else(|err| {
+            eprintln!("Error during {task:?}.after_run");
+            tracing::error!("{err}");
+        });
 }

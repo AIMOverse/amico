@@ -96,10 +96,7 @@ impl ToolBuilder {
     /// Builds the `Tool` with tool call function from the builder
     pub fn build<F>(self, tool_call: F) -> Tool
     where
-        F: Fn(serde_json::Value) -> Result<serde_json::Value, ToolCallError>
-            + Send
-            + Sync
-            + 'static,
+        F: Fn(serde_json::Value) -> ToolResult + Send + Sync + 'static,
     {
         Tool {
             definition: ToolDefinition {
@@ -115,7 +112,7 @@ impl ToolBuilder {
     pub fn build_async<F, Fut>(self, tool_call: F) -> Tool
     where
         F: Fn(serde_json::Value) -> Fut + Send + Sync + 'static,
-        Fut: Future<Output = ToolResult> + Send + Sync + 'static,
+        Fut: Future<Output = ToolResult> + Send + 'static,
     {
         Tool {
             definition: ToolDefinition {

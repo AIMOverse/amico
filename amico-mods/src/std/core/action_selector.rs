@@ -1,5 +1,4 @@
 use crate::interface::{Plugin, PluginCategory, PluginInfo};
-use amico::ai::provider::Provider;
 use amico::ai::service::Service;
 use amico::core::action_map::ActionMap;
 use amico::core::model::Model;
@@ -7,32 +6,22 @@ use amico_core::entities::Event;
 use amico_core::errors::ActionSelectorError;
 use amico_core::traits::Action;
 use futures::executor::block_on;
-use std::marker::PhantomData;
 
 /// A Standard Implementation of the ActionSelector Plugin.
-pub struct ActionSelector<S, P>
+pub struct ActionSelector<S>
 where
-    S: Service<P>,
-    P: Provider,
+    S: Service,
 {
     // Actions
     pub actions_map: ActionMap,
     pub service: S,
     pub model: Box<dyn Model>,
-
-    // The PhantomData has zero runtime cost - it's
-    // just a marker that helps the compiler understand
-    // our intentions with the type parameter. This should
-    // resolve the "type parameter P is never used" warning.
-    // -- Claude 3.5 Sonnet
-    _phantom: PhantomData<P>,
 }
 
 // Implement the Plugin trait for the ActionSelector struct
-impl<S, P> Plugin for ActionSelector<S, P>
+impl<S> Plugin for ActionSelector<S>
 where
-    S: Service<P>,
-    P: Provider,
+    S: Service,
 {
     fn info(&self) -> &'static PluginInfo {
         &PluginInfo {
@@ -43,10 +32,9 @@ where
 }
 
 // Implement the ActionSelector trait for the ActionSelector struct
-impl<S, P> amico_core::traits::ActionSelector for ActionSelector<S, P>
+impl<S> amico_core::traits::ActionSelector for ActionSelector<S>
 where
-    S: Service<P>,
-    P: Provider,
+    S: Service,
 {
     // Temporarily ignore the events
     fn select_action(
@@ -115,10 +103,9 @@ where
 }
 
 /// Implement the ActionSelector struct
-impl<S, P> ActionSelector<S, P>
+impl<S> ActionSelector<S>
 where
-    S: Service<P>,
-    P: Provider,
+    S: Service,
 {
     /// Create a new instance of the ActionSelector struct.
     pub fn new(actions_map: ActionMap, service: S, model: Box<dyn Model>) -> Self {
@@ -126,7 +113,6 @@ where
             actions_map,
             service,
             model,
-            _phantom: PhantomData,
         }
     }
 
