@@ -1,6 +1,23 @@
+use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
-use super::{message::Message, provider::Provider, service::ServiceContext, tool::ToolDefinition};
+use crate::ai::errors::CompletionError;
+use crate::ai::{message::Message, services::ServiceContext, tool::ToolDefinition};
+
+/// Trait for completion models.
+#[async_trait]
+pub trait CompletionModel: Send + Sync {
+    /// Completes a prompt with the provider.
+    async fn completion(&self, request: &CompletionRequest)
+    -> Result<ModelChoice, CompletionError>;
+}
+
+/// Result of a model choice.
+pub enum ModelChoice {
+    Message(String),
+    // ToolCall(name, id, params)
+    ToolCall(String, String, serde_json::Value),
+}
 
 /// Chat completion request schema
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -55,9 +72,9 @@ impl CompletionRequestBuilder {
 
     /// Creates a `CompletionRequestBuilder` from a `ServiceContext`.
     /// Convinient for building requests inside a service.
-    pub fn from_ctx<P: Provider>(ctx: &ServiceContext<P>) -> Self {
+    pub fn from_ctx<P: CompletionModel>(ctx: &ServiceContext<P>) -> Self {
         Self::new()
-            .model(ctx.model.clone())
+            .model(ctx.model_name.clone())
             .system_prompt(ctx.system_prompt.clone())
             .tools(ctx.tools.iter_defs().cloned().collect())
             .temperature(ctx.temperature)
