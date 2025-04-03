@@ -1,10 +1,10 @@
 use crate::interface::{Plugin, PluginCategory, PluginInfo};
 use amico::ai::{
-    completion::CompletionRequestBuilder,
     errors::ServiceError,
     message::Message,
-    provider::{ModelChoice, Provider},
-    service::ServiceContext,
+    models::CompletionRequestBuilder,
+    models::{CompletionModel, ModelChoice},
+    services::ServiceContext,
 };
 use async_trait::async_trait;
 
@@ -29,18 +29,18 @@ fn debug_history(history: &[Message]) -> String {
     messages
 }
 
-pub struct InMemoryService<P>
+pub struct InMemoryService<M>
 where
-    P: Provider,
+    M: CompletionModel,
 {
     /// The context config for the service
-    pub ctx: ServiceContext<P>,
+    pub ctx: ServiceContext<M>,
 
     /// In-memory Chat history storage
     pub history: Vec<Message>,
 }
 
-impl<P: Provider> Plugin for InMemoryService<P> {
+impl<M: CompletionModel> Plugin for InMemoryService<M> {
     fn info(&self) -> &'static PluginInfo {
         &PluginInfo {
             name: "StdInMemoryService",
@@ -50,13 +50,13 @@ impl<P: Provider> Plugin for InMemoryService<P> {
 }
 
 #[async_trait]
-impl<P> amico::ai::service::Service for InMemoryService<P>
+impl<M> amico::ai::services::CompletionService for InMemoryService<M>
 where
-    P: Provider,
+    M: CompletionModel,
 {
-    type Provider = P;
+    type Model = M;
 
-    fn from(context: ServiceContext<P>) -> Self
+    fn from(context: ServiceContext<M>) -> Self
     where
         Self: Sized,
     {
@@ -66,11 +66,11 @@ where
         }
     }
 
-    fn ctx(&self) -> &ServiceContext<P> {
+    fn ctx(&self) -> &ServiceContext<M> {
         &self.ctx
     }
 
-    fn mut_ctx(&mut self) -> &mut ServiceContext<P> {
+    fn mut_ctx(&mut self) -> &mut ServiceContext<M> {
         &mut self.ctx
     }
 
@@ -88,7 +88,7 @@ where
                 .build();
 
             // Call the LLM API wrapper with the current prompt and chat history.
-            match self.ctx.provider.completion(&request).await {
+            match self.ctx.completion_model.completion(&request).await {
                 // When a plain message is received, update the chat history and return the response.
                 Ok(ModelChoice::Message(msg)) => {
                     tracing::debug!("Received message response: {}", msg);

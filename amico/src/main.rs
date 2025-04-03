@@ -1,4 +1,4 @@
-use amico::ai::service::{Service, ServiceBuilder};
+use amico::ai::services::{CompletionService, ServiceBuilder};
 use amico::resource::Resource;
 use amico::task::Task;
 use amico_mods::interface::Plugin;

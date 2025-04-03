@@ -1,14 +1,13 @@
 use amico::ai::{
-    completion::CompletionRequest,
     errors::{CompletionError, CreationError},
     message::Message,
-    provider::{ModelChoice, Provider},
+    models::{CompletionModel, CompletionRequest, ModelChoice},
     tool::ToolDefinition,
 };
 use async_trait::async_trait;
 use lazy_static::lazy_static;
 use rig::{
-    completion::{self as rc, CompletionModel},
+    completion::{self as rc, CompletionModel as RigCompletionModel},
     message as rm,
     providers::openai,
     OneOrMany,
@@ -110,7 +109,7 @@ impl RigProvider {
 }
 
 #[async_trait]
-impl Provider for RigProvider {
+impl CompletionModel for RigProvider {
     #[doc = " Completes a prompt with the provider."]
     async fn completion(&self, req: &CompletionRequest) -> Result<ModelChoice, CompletionError> {
         let Self(client) = self;

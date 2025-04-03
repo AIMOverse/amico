@@ -1,5 +1,5 @@
 use crate::interface::{Plugin, PluginCategory, PluginInfo};
-use amico::ai::service::Service;
+use amico::ai::services::CompletionService;
 use amico::core::action_map::ActionMap;
 use amico::core::model::Model;
 use amico_core::entities::Event;
@@ -10,7 +10,7 @@ use futures::executor::block_on;
 /// A Standard Implementation of the ActionSelector Plugin.
 pub struct ActionSelector<S>
 where
-    S: Service,
+    S: CompletionService,
 {
     // Actions
     pub actions_map: ActionMap,
@@ -21,7 +21,7 @@ where
 // Implement the Plugin trait for the ActionSelector struct
 impl<S> Plugin for ActionSelector<S>
 where
-    S: Service,
+    S: CompletionService,
 {
     fn info(&self) -> &'static PluginInfo {
         &PluginInfo {
@@ -34,7 +34,7 @@ where
 // Implement the ActionSelector trait for the ActionSelector struct
 impl<S> amico_core::traits::ActionSelector for ActionSelector<S>
 where
-    S: Service,
+    S: CompletionService,
 {
     // Temporarily ignore the events
     fn select_action(
@@ -105,7 +105,7 @@ where
 /// Implement the ActionSelector struct
 impl<S> ActionSelector<S>
 where
-    S: Service,
+    S: CompletionService,
 {
     /// Create a new instance of the ActionSelector struct.
     pub fn new(actions_map: ActionMap, service: S, model: Box<dyn Model>) -> Self {
