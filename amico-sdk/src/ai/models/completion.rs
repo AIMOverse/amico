@@ -1,15 +1,17 @@
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
-use crate::ai::errors::CompletionError;
+use crate::ai::errors::CompletionModelError;
 use crate::ai::{message::Message, services::ServiceContext, tool::ToolDefinition};
 
 /// Trait for completion models.
 #[async_trait]
 pub trait CompletionModel: Send + Sync {
     /// Completes a prompt with the provider.
-    async fn completion(&self, request: &CompletionRequest)
-    -> Result<ModelChoice, CompletionError>;
+    async fn completion(
+        &self,
+        request: &CompletionRequest,
+    ) -> Result<ModelChoice, CompletionModelError>;
 }
 
 /// Result of a model choice.

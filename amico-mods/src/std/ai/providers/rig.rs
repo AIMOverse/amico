@@ -1,5 +1,5 @@
 use amico::ai::{
-    errors::{CompletionError, CreationError},
+    errors::{CompletionModelError, CreationError},
     message::Message,
     models::{CompletionModel, CompletionRequest, ModelChoice},
     tool::ToolDefinition,
@@ -111,11 +111,14 @@ impl RigProvider {
 #[async_trait]
 impl CompletionModel for RigProvider {
     #[doc = " Completes a prompt with the provider."]
-    async fn completion(&self, req: &CompletionRequest) -> Result<ModelChoice, CompletionError> {
+    async fn completion(
+        &self,
+        req: &CompletionRequest,
+    ) -> Result<ModelChoice, CompletionModelError> {
         let Self(client) = self;
 
         if !self.model_available(&req.model) {
-            return Err(CompletionError::ModelUnavailable(req.model.clone()));
+            return Err(CompletionModelError::ModelUnavailable(req.model.clone()));
         }
 
         let model = client.completion_model(&req.model);
@@ -132,7 +135,7 @@ impl CompletionModel for RigProvider {
             Ok(res) => Ok(from_rig_response(res.choice)),
             Err(err) => {
                 tracing::error!("API error: {}", err);
-                Err(CompletionError::ApiError)
+                Err(CompletionModelError::ApiError)
             }
         }
     }

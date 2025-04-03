@@ -11,7 +11,7 @@ pub enum CreationError {
 
 /// Errors during completion of chatting
 #[derive(Debug, thiserror::Error)]
-pub enum CompletionError {
+pub enum CompletionModelError {
     #[error("API error")]
     ApiError,
 
@@ -43,8 +43,8 @@ pub enum ToolCallError {
 /// Errors during service call
 #[derive(Debug, thiserror::Error)]
 pub enum ServiceError {
-    #[error("Provider error")]
-    ProviderError(#[from] CompletionError),
+    #[error("Completion model error")]
+    CompletionModelError(#[from] CompletionModelError),
 
     #[error("Unexpected response: {0}")]
     UnexpectedResponse(String),

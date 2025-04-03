@@ -136,7 +136,7 @@ where
                 // Handle potential errors from the API call.
                 Err(err) => {
                     tracing::error!("Provider error: {}", err);
-                    return Err(ServiceError::ProviderError(err));
+                    return Err(ServiceError::CompletionModelError(err));
                 }
             }
         }

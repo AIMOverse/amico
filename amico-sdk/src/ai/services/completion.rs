@@ -130,7 +130,7 @@ where
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::ai::errors::CompletionError;
+    use crate::ai::errors::CompletionModelError;
     use crate::ai::models::ModelChoice;
     use crate::ai::models::{CompletionRequest, CompletionRequestBuilder};
 
@@ -147,7 +147,7 @@ mod test {
         async fn completion(
             &self,
             _req: &CompletionRequest,
-        ) -> Result<ModelChoice, CompletionError> {
+        ) -> Result<ModelChoice, CompletionModelError> {
             Ok(ModelChoice::Message("test".to_string()))
         }
     }
