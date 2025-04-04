@@ -1,11 +1,11 @@
 use async_trait::async_trait;
 
-use crate::ai::service::Service;
+use crate::ai::services::CompletionService;
 
 /// A context that provides access to the service.
 pub trait TaskContext {
     /// Get the service.
-    fn service(&self) -> &impl Service
+    fn service(&self) -> &impl CompletionService
     where
         Self: Sized;
 }

@@ -1,4 +1,4 @@
-use amico::{ai::service::Service, task::Task};
+use amico::{ai::services::CompletionService, task::Task};
 use async_trait::async_trait;
 use colored::Colorize;
 use std::io::{self, Write};

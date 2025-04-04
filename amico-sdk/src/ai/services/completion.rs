@@ -1,95 +1,89 @@
 use async_trait::async_trait;
 
-use super::{
-    provider::Provider,
+use crate::ai::errors::ServiceError;
+use crate::ai::{
+    models::CompletionModel,
     tool::{Tool, ToolSet},
 };
-use crate::ai::errors::ServiceError;
 
 /// A Service executes a certain AI task, such as generating text.
 /// using a series of model provider calls.
 ///
 /// A service should contain a context that is used to configure the service.
 #[async_trait]
-pub trait Service: Send + Sync {
+pub trait CompletionService: Send + Sync {
     /// The LLM API provider type the service uses
-    type Provider: Provider;
+    type Model: CompletionModel;
 
     /// A service should be built from a context
-    fn from(context: ServiceContext<Self::Provider>) -> Self
+    fn from(context: ServiceContext<Self::Model>) -> Self
     where
         Self: Sized;
-
-    /// Gets the context of the service
-    fn ctx(&self) -> &ServiceContext<Self::Provider>;
-
-    /// Gets a mutable reference to the context of the service
-    fn mut_ctx(&mut self) -> &mut ServiceContext<Self::Provider>;
 
     /// Generates text based on a prompt.
     async fn generate_text(&mut self, prompt: String) -> Result<String, ServiceError>;
 }
 
 /// The context of a Service.
-pub struct ServiceContext<P>
+pub struct ServiceContext<M>
 where
-    P: Provider,
+    M: CompletionModel,
 {
     pub system_prompt: String,
-    pub provider: P,
-    pub model: String,
+    pub completion_model: M,
+    pub model_name: String,
     pub temperature: f64,
     pub max_tokens: u64,
     pub tools: ToolSet,
 }
 
-impl<P> ServiceContext<P>
+impl<M> ServiceContext<M>
 where
-    P: Provider,
+    M: CompletionModel,
 {
     /// Updates the context with a function.
     pub fn update<F>(&mut self, update: F)
     where
-        F: Fn(&mut ServiceContext<P>),
+        F: Fn(&mut ServiceContext<M>),
     {
         update(self);
     }
 }
 
 /// A ServiceBuilder allows to configure a Service before it is used.
-pub struct ServiceBuilder<P>
+pub struct ServiceBuilder<M>
 where
-    P: Provider,
+    M: CompletionModel,
 {
     /// Temporarily stores tools in a vector.
     /// These are moved into the ServiceContext when the builder is built.
     tool_list: Vec<Tool>,
     system_prompt: String,
-    provider: P,
-    model: String,
+    completion_model: M,
+    model_name: String,
     temperature: f64,
     max_tokens: u64,
 }
 
-impl<P> ServiceBuilder<P>
+impl<M> ServiceBuilder<M>
 where
-    P: Provider,
+    M: CompletionModel,
 {
     /// Creates a new `ServiceBuilder` with default values.
-    pub fn new(provider: P) -> Self {
+    pub fn new(completion_model: M) -> Self {
         Self {
             tool_list: Vec::new(),
             system_prompt: String::new(),
-            provider,
-            model: String::new(),
+            completion_model,
+            model_name: String::new(),
             temperature: 0.2, // Default value
             max_tokens: 1000, // Default value
         }
     }
 
     /// Sets the model for the Service.
-    pub fn model(mut self, model: String) -> Self {
-        self.model = model;
+    pub fn model(mut self, model_name: String) -> Self {
+        self.model_name = model_name;
         self
     }
 
@@ -120,11 +114,11 @@ where
     /// Build the Service.
     pub fn build<S>(self) -> S
     where
-        S: Service<Provider = P>,
+        S: CompletionService<Model = M>,
     {
         S::from(ServiceContext {
-            provider: self.provider,
-            model: self.model,
+            completion_model: self.completion_model,
+            model_name: self.model_name,
             system_prompt: self.system_prompt,
             temperature: self.temperature,
             max_tokens: self.max_tokens,
@@ -136,42 +130,34 @@ where
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::ai::completion::{CompletionRequest, CompletionRequestBuilder};
-    use crate::ai::errors::CompletionError;
-    use crate::ai::provider::ModelChoice;
+    use crate::ai::errors::CompletionModelError;
+    use crate::ai::models::ModelChoice;
+    use crate::ai::models::{CompletionRequest, CompletionRequestBuilder};
 
     // Structs for testing
 
-    struct TestProvider;
+    struct TestCompletionModel;
 
     struct TestService {
-        ctx: ServiceContext<TestProvider>,
+        ctx: ServiceContext<TestCompletionModel>,
     }
 
     #[async_trait]
-    impl Provider for TestProvider {
+    impl CompletionModel for TestCompletionModel {
         async fn completion(
             &self,
             _req: &CompletionRequest,
-        ) -> Result<ModelChoice, CompletionError> {
+        ) -> Result<ModelChoice, CompletionModelError> {
             Ok(ModelChoice::Message("test".to_string()))
         }
     }
 
     #[async_trait]
-    impl Service for TestService {
-        type Provider = TestProvider;
+    impl CompletionService for TestService {
+        type Model = TestCompletionModel;
 
-        fn from(context: ServiceContext<TestProvider>) -> Self {
+        fn from(context: ServiceContext<TestCompletionModel>) -> Self {
             TestService { ctx: context }
-        }
-
-        fn ctx(&self) -> &ServiceContext<TestProvider> {
-            &self.ctx
-        }
-
-        fn mut_ctx(&mut self) -> &mut ServiceContext<TestProvider> {
-            &mut self.ctx
         }
 
         async fn generate_text(&mut self, prompt: String) -> Result<String, ServiceError> {
@@ -182,7 +168,7 @@ mod test {
 
             // Perform the completion
             self.ctx
-                .provider
+                .completion_model
                 .completion(&request)
                 .await
                 .map(|choice| match choice {
@@ -190,7 +176,7 @@ mod test {
                     _ => {
                         return Err(ServiceError::UnexpectedResponse(
                             "Expected a message, got a tool call".to_string(),
-                        ))
+                        ));
                     }
                 })
                 .unwrap()
@@ -199,7 +185,7 @@ mod test {
 
     /// Builds a test service
     fn build_test_service() -> TestService {
-        ServiceBuilder::new(TestProvider)
+        ServiceBuilder::new(TestCompletionModel)
             .model("test".to_string())
             .system_prompt("test".to_string())
             .temperature(0.2)
@@ -209,13 +195,10 @@ mod test {
 
     #[tokio::test]
     async fn test_build_service() {
-        let service = build_test_service();
+        let mut service = build_test_service();
 
-        // Ensure the service is dynamically compatible
-        let mut service: Box<dyn Service<Provider = TestProvider>> = Box::new(service);
-
-        assert_eq!(service.ctx().system_prompt, "test".to_string());
-        assert_eq!(service.ctx().model, "test".to_string());
+        assert_eq!(service.ctx.system_prompt, "test".to_string());
+        assert_eq!(service.ctx.model_name, "test".to_string());
 
         let response = service.generate_text("test".to_string()).await.unwrap();
         assert_eq!(response, "test".to_string());
@@ -223,23 +206,28 @@ mod test {
 
     #[test]
     fn test_update_context() {
-        let service = build_test_service();
+        let mut service = build_test_service();
 
-        // Ensure the service is dynamically compatible
-        let mut service: Box<dyn Service<Provider = TestProvider>> = Box::new(service);
-
-        service.mut_ctx().update(|ctx| {
+        service.ctx.update(|ctx| {
             ctx.system_prompt = "new test".to_string();
-            ctx.model = "new test".to_string();
+            ctx.model_name = "new test".to_string();
             ctx.temperature = 0.3;
             ctx.max_tokens = 200;
             ctx.tools = ToolSet::from(vec![]);
         });
 
-        assert_eq!(service.ctx().system_prompt, "new test".to_string());
-        assert_eq!(service.ctx().model, "new test".to_string());
-        assert_eq!(service.ctx().temperature, 0.3);
-        assert_eq!(service.ctx().max_tokens, 200);
-        assert_eq!(service.ctx().tools.tools.len(), 0);
+        assert_eq!(service.ctx.system_prompt, "new test".to_string());
+        assert_eq!(service.ctx.model_name, "new test".to_string());
+        assert_eq!(service.ctx.temperature, 0.3);
+        assert_eq!(service.ctx.max_tokens, 200);
+        assert_eq!(service.ctx.tools.tools.len(), 0);
+    }
+
+    #[test]
+    fn test_service_dyn_compatibility() {
+        let service = build_test_service();
+
+        // Ensure the service is dynamically compatible
+        let _: Box<dyn CompletionService<Model = TestCompletionModel>> = Box::new(service);
     }
 }

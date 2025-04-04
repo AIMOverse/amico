@@ -1,4 +1,4 @@
-use amico::{ai::service::Service, task::Task};
+use amico::{ai::services::CompletionService, task::Task};
 use amico_hal::{
     interface::audio::{AudioPlayer, AudioRecorder},
     os::common::audio::{AudioDriver, AudioPlaybackError, AudioRecordingError},
