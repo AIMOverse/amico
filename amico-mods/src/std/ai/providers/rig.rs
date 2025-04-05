@@ -1,30 +1,21 @@
+use std::fmt::Debug;
+
 use amico::ai::{
-    errors::{CompletionModelError, CreationError},
+    errors::CompletionModelError,
     message::Message,
     models::{CompletionModel, CompletionRequest, ModelChoice},
     tool::ToolDefinition,
 };
 use async_trait::async_trait;
-use lazy_static::lazy_static;
 use rig::{
-    completion::{self as rc, CompletionModel as RigCompletionModel},
-    message as rm,
-    providers::openai,
-    OneOrMany,
+    completion::{self as rc, CompletionModel as _},
+    message as rm, providers as rp, OneOrMany,
 };
 
 use crate::interface::{Plugin, PluginCategory, PluginInfo};
 
-lazy_static! {
-    /// List of available OpenAI models
-    pub static ref OPENAI_MODELS: Vec<&'static str> = vec![
-        openai::GPT_4,
-        openai::GPT_4O,
-        openai::GPT_4O_MINI,
-        openai::GPT_4_TURBO,
-        openai::GPT_35_TURBO,
-    ];
-}
+/// Re-export providers from rig-core
+pub use rig::providers;
 
 // Implement type convertions
 
@@ -55,9 +46,9 @@ fn into_rig_message(message: &Message) -> rc::Message {
     }
 }
 
-/// Convert `rig`'s `ModelChoice` into `sdk`'s `ModelChoice`
-fn from_rig_response(response: OneOrMany<rm::AssistantContent>) -> ModelChoice {
-    match response.first() {
+/// Convert `rig`'s `CompletionResponse` into `amico`'s `ModelChoice`
+fn into_amico_choice<T>(response: rc::CompletionResponse<T>) -> ModelChoice {
+    match response.choice.first() {
         rm::AssistantContent::ToolCall(tool_call) => ModelChoice::ToolCall(
             tool_call.function.name,
             tool_call.id,
@@ -67,7 +58,12 @@ fn from_rig_response(response: OneOrMany<rm::AssistantContent>) -> ModelChoice {
     }
 }
 
-/// Convert `sdk`'s `Tool` into `rig`'s `ToolDefinition`
+/// Convert `rig`'s `CompletionError` into `amico`'s `CompletionModelError`
+fn into_amico_err(error: rc::CompletionError) -> CompletionModelError {
+    CompletionModelError::ProviderError(error.to_string())
+}
+
+/// Convert `amico`'s `Tool` into `rig`'s `ToolDefinition`
 fn into_rig_tool_def(def: &ToolDefinition) -> rig::completion::ToolDefinition {
     rig::completion::ToolDefinition {
         name: def.name.clone(),
@@ -76,7 +72,8 @@ fn into_rig_tool_def(def: &ToolDefinition) -> rig::completion::ToolDefinition {
     }
 }
 
-fn into_rig_request(request: CompletionRequest) -> rc::CompletionRequest {
+/// Convert `amico`'s `CompletionRequest` into `rig`'s
+fn into_rig_request(request: &CompletionRequest) -> rc::CompletionRequest {
     rc::CompletionRequest {
         chat_history: request.chat_history.iter().map(into_rig_message).collect(),
         prompt: rm::Message::User {
@@ -91,20 +88,77 @@ fn into_rig_request(request: CompletionRequest) -> rc::CompletionRequest {
     }
 }
 
+/// The uniform completion wrapper for all rig providers
+async fn provider_completion(
+    provider: &RigProvider,
+    model_name: &str,
+    request: rc::CompletionRequest,
+) -> Result<ModelChoice, CompletionModelError> {
+    match provider {
+        RigProvider::Anthropic(client) => client
+            .completion_model(model_name)
+            .completion(request)
+            .await
+            .map(into_amico_choice)
+            .map_err(into_amico_err),
+        RigProvider::Deepseek(client) => client
+            .completion_model(model_name)
+            .completion(request)
+            .await
+            .map(into_amico_choice)
+            .map_err(into_amico_err),
+        RigProvider::Gemini(client) => client
+            .completion_model(model_name)
+            .completion(request)
+            .await
+            .map(into_amico_choice)
+            .map_err(into_amico_err),
+        RigProvider::Openai(client) => client
+            .completion_model(model_name)
+            .completion(request)
+            .await
+            .map(into_amico_choice)
+            .map_err(into_amico_err),
+    }
+}
+
 /// OpenAI provider using `rig-core`
-pub struct RigProvider(openai::Client);
+pub enum RigProvider {
+    Anthropic(rp::anthropic::Client),
+    Deepseek(rp::deepseek::Client),
+    Gemini(rp::gemini::Client),
+    Openai(rp::openai::Client),
+}
+
+impl Debug for RigProvider {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&format!(
+            "{}",
+            match self {
+                Self::Anthropic(_) => "anthropic",
+                Self::Deepseek(_) => "deepseek",
+                Self::Gemini(_) => "gemini",
+                Self::Openai(_) => "openai",
+            }
+        ))
+    }
+}
 
 impl RigProvider {
-    pub fn new(base_url: &str, api_key: &str) -> Result<Self, CreationError>
-    where
-        Self: Sized,
-    {
-        Ok(RigProvider(openai::Client::from_url(api_key, base_url)))
+    pub fn anthropic(client: rp::anthropic::Client) -> Self {
+        Self::Anthropic(client)
     }
 
-    pub fn model_available(&self, model: &str) -> bool {
-        // Check if the model name is available
-        OPENAI_MODELS.contains(&model)
+    pub fn deepseek(client: rp::deepseek::Client) -> Self {
+        Self::Deepseek(client)
+    }
+
+    pub fn gemini(client: rp::gemini::Client) -> Self {
+        Self::Gemini(client)
+    }
+
+    pub fn openai(client: rp::openai::Client) -> Self {
+        Self::Openai(client)
     }
 }
 
@@ -115,29 +169,7 @@ impl CompletionModel for RigProvider {
         &self,
         req: &CompletionRequest,
     ) -> Result<ModelChoice, CompletionModelError> {
-        let Self(client) = self;
-
-        if !self.model_available(&req.model) {
-            return Err(CompletionModelError::ModelUnavailable(req.model.clone()));
-        }
-
-        let model = client.completion_model(&req.model);
-
-        // Build the rig completion request
-        let request = into_rig_request(req.clone());
-
-        // Perform request to the AI model API
-        let response = model.completion(request).await;
-        tracing::debug!("OpenAI response from rig: {:?}", response);
-
-        // Convert the rig completion response to a ModelChoice
-        match response {
-            Ok(res) => Ok(from_rig_response(res.choice)),
-            Err(err) => {
-                tracing::error!("API error: {}", err);
-                Err(CompletionModelError::ApiError)
-            }
-        }
+        provider_completion(self, &req.model, into_rig_request(req)).await
     }
 }
 

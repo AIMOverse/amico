@@ -1,3 +1,1 @@
-mod rig;
-
-pub use rig::*;
+pub mod rig;

@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, future::Future, sync::Arc};
+use std::{collections::HashMap, fmt::Debug, future::Future, sync::Arc};
 
 use crate::ai::errors::ToolCallError;
 
@@ -129,6 +129,18 @@ impl ToolBuilder {
 #[derive(Default)]
 pub struct ToolSet {
     pub tools: HashMap<String, Tool>,
+}
+
+impl Debug for ToolSet {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&format!(
+            "{:?}",
+            self.tools
+                .iter()
+                .map(|(name, _)| format!("- {} \n", name))
+                .collect::<Vec<_>>()
+        ))
+    }
 }
 
 impl From<Vec<Tool>> for ToolSet {

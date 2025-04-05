@@ -11,7 +11,7 @@ use crate::ai::{
 ///
 /// A service should contain a context that is used to configure the service.
 #[async_trait]
-pub trait CompletionService: Send + Sync {
+pub trait CompletionService {
     /// The LLM API provider type the service uses
     type Model: CompletionModel;
 
@@ -25,6 +25,7 @@ pub trait CompletionService: Send + Sync {
 }
 
 /// The context of a Service.
+#[derive(Debug)]
 pub struct ServiceContext<M>
 where
     M: CompletionModel,
