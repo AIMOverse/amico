@@ -3,8 +3,6 @@ use async_trait::async_trait;
 /// An AI task uses a service to perform some work.
 #[async_trait]
 pub trait Task {
-    /// The context type used by the task.
-
     /// The error type returned by the task.
     type Error: std::error::Error;
 

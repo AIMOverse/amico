@@ -136,8 +136,8 @@ impl Debug for ToolSet {
         f.write_str(&format!(
             "{:?}",
             self.tools
-                .iter()
-                .map(|(name, _)| format!("- {} \n", name))
+                .keys()
+                .map(|name| format!("- {} \n", name))
                 .collect::<Vec<_>>()
         ))
     }
