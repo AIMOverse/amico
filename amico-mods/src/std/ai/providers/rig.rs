@@ -63,12 +63,12 @@ pub enum RigProvider {
 impl Debug for RigProvider {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(&format!(
-            "{}",
+            "RigProvider::{}",
             match self {
-                Self::Anthropic(_) => "anthropic",
-                Self::Deepseek(_) => "deepseek",
-                Self::Gemini(_) => "gemini",
-                Self::Openai(_) => "openai",
+                Self::Anthropic(_) => "Anthropic",
+                Self::Deepseek(_) => "Deepseek",
+                Self::Gemini(_) => "Gemini",
+                Self::Openai(_) => "Openai",
             }
         ))
     }
