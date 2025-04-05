@@ -3,13 +3,23 @@ use async_trait::async_trait;
 use colored::Colorize;
 use std::io::{self, Write};
 
-use crate::std::ai::{providers::RigProvider, services::InMemoryService};
-
-use super::context::ChatbotContext;
-
 /// A task that runs a chatbot in the CLI.
 #[derive(Debug)]
-pub struct CliTask;
+pub struct CliTask<S>
+where
+    S: CompletionService + Send,
+{
+    service: S,
+}
+
+impl<S> CliTask<S>
+where
+    S: CompletionService + Send,
+{
+    pub fn new(service: S) -> Self {
+        Self { service }
+    }
+}
 
 /// Errors that may occur during chatbot task
 #[derive(Debug, thiserror::Error)]
@@ -20,11 +30,13 @@ fn print_message_separator() {
 }
 
 #[async_trait]
-impl Task for CliTask {
-    type Context = ChatbotContext<InMemoryService<RigProvider>>;
+impl<S> Task for CliTask<S>
+where
+    S: CompletionService + Send,
+{
     type Error = CliTaskError;
 
-    async fn before_run(&mut self, _context: &mut Self::Context) -> Result<(), Self::Error> {
+    async fn before_run(&mut self) -> Result<(), Self::Error> {
         // Print global prompt
         println!();
         println!(
@@ -36,12 +48,12 @@ impl Task for CliTask {
         Ok(())
     }
 
-    async fn after_run(&mut self, _context: &mut Self::Context) -> Result<(), Self::Error> {
+    async fn after_run(&mut self) -> Result<(), Self::Error> {
         println!("{}", "Exiting chatbot. Goodbye!".green());
         Ok(())
     }
 
-    async fn run(&mut self, context: &mut Self::Context) -> Result<(), Self::Error> {
+    async fn run(&mut self) -> Result<(), Self::Error> {
         loop {
             println!("Enter your message");
             print!("> ");
@@ -59,7 +71,7 @@ impl Task for CliTask {
             print_message_separator();
 
             // Get response from AI service
-            let response = match context.service.generate_text(input.to_string()).await {
+            let response = match self.service.generate_text(input.to_string()).await {
                 Ok(response) => response,
                 Err(err) => {
                     eprintln!("Error generating text: {err}");

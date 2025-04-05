@@ -7,18 +7,16 @@ use async_trait::async_trait;
 use colored::Colorize;
 use std::io::{self, Write};
 
-use crate::std::ai::{
-    providers::RigProvider,
-    services::InMemoryService,
-    tasks::chatbot::speech::{speech_to_text, text_to_speech},
-};
+use crate::std::ai::tasks::chatbot::speech::{speech_to_text, text_to_speech};
 
-use super::{
-    context::ChatbotContext,
-    speech::{SttError, TtsError},
-};
+use super::speech::{SttError, TtsError};
 
-pub struct AudioChatTask;
+pub struct AudioChatTask<S>
+where
+    S: CompletionService + Send,
+{
+    pub service: S,
+}
 
 fn print_message_separator() {
     println!("--------------------");
@@ -43,11 +41,13 @@ pub enum AudioChatTaskError {
 }
 
 #[async_trait]
-impl Task for AudioChatTask {
-    type Context = ChatbotContext<InMemoryService<RigProvider>>;
+impl<S> Task for AudioChatTask<S>
+where
+    S: CompletionService + Send,
+{
     type Error = AudioChatTaskError;
 
-    async fn before_run(&mut self, _context: &mut Self::Context) -> Result<(), Self::Error> {
+    async fn before_run(&mut self) -> Result<(), Self::Error> {
         // Print global prompt
         println!();
         println!(
@@ -58,12 +58,12 @@ impl Task for AudioChatTask {
         Ok(())
     }
 
-    async fn after_run(&mut self, _context: &mut Self::Context) -> Result<(), Self::Error> {
+    async fn after_run(&mut self) -> Result<(), Self::Error> {
         println!("{}", "Exiting chatbot. Goodbye!".green());
         Ok(())
     }
 
-    async fn run(&mut self, context: &mut Self::Context) -> Result<(), Self::Error> {
+    async fn run(&mut self) -> Result<(), Self::Error> {
         loop {
             println!("Press enter then say something...");
             println!("(or type 'quit' to exit)");
@@ -92,7 +92,7 @@ impl Task for AudioChatTask {
             print_message_separator();
 
             // Get response from AI service
-            match context.service.generate_text(stt_res.to_string()).await {
+            match self.service.generate_text(stt_res.to_string()).await {
                 Ok(response) => {
                     println!("{}", "[Amico]".yellow());
                     println!("{}", response.green());

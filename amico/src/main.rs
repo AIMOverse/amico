@@ -2,10 +2,9 @@ use amico::ai::services::ServiceBuilder;
 use amico::resource::Resource;
 use amico::task::Task;
 use amico_mods::interface::Plugin;
-use amico_mods::std::ai::providers::RigProvider;
+use amico_mods::std::ai::providers::rig::{providers, RigProvider};
 use amico_mods::std::ai::services::InMemoryService;
 use amico_mods::std::ai::tasks::chatbot::cli::CliTask;
-use amico_mods::std::ai::tasks::chatbot::context::ChatbotContext;
 use amico_mods::web3::solana::balance::BalanceSensor;
 use amico_mods::web3::solana::resources::SolanaClientResource;
 use amico_mods::web3::solana::trade::TradeEffector;
@@ -97,10 +96,10 @@ async fn main() {
     );
 
     // Create the Provider
-    let provider = RigProvider::new(&base_url, &openai_api_key).unwrap_or_else(|err| {
-        eprintln!("Error creating provider: {err}");
-        process::exit(1);
-    });
+    let provider = RigProvider::openai(providers::openai::Client::from_url(
+        &openai_api_key,
+        &base_url,
+    ));
 
     // Create the Service
     let service = ServiceBuilder::new(provider)
@@ -124,27 +123,22 @@ async fn main() {
     println!("Tools enabled:\n{}", service.ctx.tools.describe());
 
     // Create a task
-    let mut chatbot_ctx = ChatbotContext { service };
-    let mut task = CliTask;
+    let mut task = CliTask::new(service);
 
     // Run the task in execution order. If encounter error, re-run the task.
-    task.before_run(&mut chatbot_ctx)
-        .await
-        .unwrap_or_else(|err| {
-            eprintln!("Error during {task:?}.before_run");
-            tracing::error!("{err}");
-        });
+    task.before_run().await.unwrap_or_else(|err| {
+        eprintln!("Error during {task:?}.before_run");
+        tracing::error!("{err}");
+    });
 
-    while let Err(e) = task.run(&mut chatbot_ctx).await {
+    while let Err(e) = task.run().await {
         eprintln!("Error running task. Re-running");
         tracing::error!("Error running task: {:?}", e);
         continue;
     }
 
-    task.after_run(&mut chatbot_ctx)
-        .await
-        .unwrap_or_else(|err| {
-            eprintln!("Error during {task:?}.after_run");
-            tracing::error!("{err}");
-        });
+    task.after_run().await.unwrap_or_else(|err| {
+        eprintln!("Error during {task:?}.after_run");
+        tracing::error!("{err}");
+    });
 }

@@ -12,8 +12,8 @@ pub enum CreationError {
 /// Errors during completion of chatting
 #[derive(Debug, thiserror::Error)]
 pub enum CompletionModelError {
-    #[error("API error")]
-    ApiError,
+    #[error("Provider error: {0}")]
+    ProviderError(String),
 
     #[error("Model {0} is unavailable")]
     ModelUnavailable(String),

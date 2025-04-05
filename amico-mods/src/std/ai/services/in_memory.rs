@@ -29,6 +29,7 @@ fn debug_history(history: &[Message]) -> String {
     messages
 }
 
+#[derive(Debug)]
 pub struct InMemoryService<M>
 where
     M: CompletionModel,
