@@ -2,7 +2,7 @@
 name = "amico-wasm"
 version = "0.0.1"
 edition = "2024"
-description = "The WASM library of the Amico AI Agent Framework"
+description = "The WASM bindings of the Amico AI Agent Framework"
 repository = "https://github.com/AIMOverse/amico"
 license = "MIT"
 
@@ -15,12 +15,14 @@ default = ["console_error_panic_hook"]
 [dependencies]
 wasm-bindgen = "0.2.100"
 amico-sdk = { path = "../amico-sdk" }
+amico-mods = { path = "../amico-mods" }
 
 # The `console_error_panic_hook` crate provides better debugging of panics by
 # logging them with `console.error`. This is great for development, but requires
 # all the `std::fmt` and `std::panicking` infrastructure, so isn't great for
 # code size when deploying.
 console_error_panic_hook = { version = "0.1.7", optional = true }
+wasm-bindgen-futures = "0.4.50"
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.50"
