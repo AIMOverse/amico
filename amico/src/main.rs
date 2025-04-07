@@ -12,13 +12,10 @@ use amico_mods::web3::wallet::Wallet;
 use colored::Colorize;
 use helpers::solana_rpc_url;
 use prompt::AMICO_SYSTEM_PROMPT;
-use solana_sdk::signer::Signer;
 use std::process;
-use tools::{balance_sensor_tool, trade_effector_tool};
 
 mod helpers;
 mod prompt;
-mod tools;
 
 const DEFAULT_OPENAI_BASE_URL: &str = "https://api.openai.com/v1";
 
@@ -85,7 +82,7 @@ async fn main() {
     // Create BalanceSensor instance
     let balance_sensor = Resource::new(
         "balance_sensor".to_string(),
-        BalanceSensor::new(client.clone()),
+        BalanceSensor::new(client.clone(), wallet.clone()),
     );
 
     // Create TradeEffector instance
@@ -106,11 +103,9 @@ async fn main() {
         .system_prompt(AMICO_SYSTEM_PROMPT.to_string())
         .temperature(0.2)
         .max_tokens(1000)
-        .tool(balance_sensor_tool(
-            balance_sensor.clone(),
-            &wallet.value().solana_keypair().pubkey(),
-        ))
-        .tool(trade_effector_tool(trade_effector.clone()))
+        .tool(balance_sensor.value().agent_wallet_balance_tool())
+        .tool(balance_sensor.value().account_balance_tool())
+        .tool(trade_effector.value().tool())
         .build::<InMemoryService<RigProvider>>();
 
     println!();
