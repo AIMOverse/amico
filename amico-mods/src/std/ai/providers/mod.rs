@@ -1,3 +1,2 @@
-mod rig;
-
-pub use rig::*;
+pub mod rig;
+mod rig_helpers;
