@@ -1,5 +1,8 @@
 //! WASM bindings for Amico
 
+#[cfg(test)]
+mod tests;
+
 use amico::{
     ai::{
         services::{CompletionService, ServiceBuilder},
@@ -115,6 +118,7 @@ impl WasmProvider {
 }
 
 /// WASM wrapper for Solana Client.
+#[derive(Clone)]
 #[wasm_bindgen]
 pub struct WasmSolanaClient {
     pub(crate) client: SolanaClientResource,
@@ -143,6 +147,7 @@ impl WasmSolanaClient {
 }
 
 /// WASM wrapper for `BalanceSensor`.
+#[derive(Clone)]
 #[wasm_bindgen]
 pub struct WasmBalanceSensor {
     pub(crate) sensor: Resource<BalanceSensor>,
@@ -196,6 +201,7 @@ impl WasmBalanceSensor {
 }
 
 /// WASM wrapper for `TradeEffector`.
+#[derive(Clone)]
 #[wasm_bindgen]
 pub struct WasmTradeEffector {
     pub(crate) effector: Resource<TradeEffector>,
@@ -237,6 +243,7 @@ impl WasmTradeEffector {
 }
 
 /// WASM wrapper for `Wallet`.
+#[derive(Clone)]
 #[wasm_bindgen]
 pub struct WasmWallet {
     pub(crate) wallet: Resource<Wallet>,
@@ -271,5 +278,15 @@ impl WasmWallet {
         Ok(Self {
             wallet: Resource::new("wallet".to_string(), wallet),
         })
+    }
+
+    /// Returns the mnemonic phrase of the wallet.
+    ///
+    /// # Returns
+    ///
+    /// The mnemonic phrase.
+    #[wasm_bindgen]
+    pub fn phrase(&self) -> String {
+        self.wallet.value().phrase().to_string()
     }
 }
