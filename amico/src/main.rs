@@ -6,13 +6,12 @@ use amico_mods::std::ai::providers::rig::{providers, RigProvider};
 use amico_mods::std::ai::services::InMemoryService;
 use amico_mods::std::ai::tasks::chatbot::cli::CliTask;
 use amico_mods::web3::solana::balance::BalanceSensor;
-use amico_mods::web3::solana::resources::SolanaClientResource;
+use amico_mods::web3::solana::resources::{SolanaClient, SolanaClientResource};
 use amico_mods::web3::solana::trade::TradeEffector;
 use amico_mods::web3::wallet::Wallet;
 use colored::Colorize;
 use helpers::solana_rpc_url;
 use prompt::AMICO_SYSTEM_PROMPT;
-use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::signer::Signer;
 use std::process;
 use tools::{balance_sensor_tool, trade_effector_tool};
@@ -80,7 +79,7 @@ async fn main() {
     // Create Client resource
     let client = SolanaClientResource::new(
         "Client resource".to_string(),
-        RpcClient::new(solana_rpc_url("devnet")),
+        SolanaClient::new(solana_rpc_url("devnet").as_str()),
     );
 
     // Create BalanceSensor instance

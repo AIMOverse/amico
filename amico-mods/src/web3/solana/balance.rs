@@ -55,7 +55,12 @@ impl Sensor for BalanceSensor {
     /// Returns:
     ///    * `Result<BalanceSensorResult, BalanceSensorError>` - The result of the sensor.
     async fn sense(&self, args: Self::Args) -> Result<Self::Output, Self::Error> {
-        let lamports = self.client.value().get_balance(&args.pubkey).await?;
+        let lamports = self
+            .client
+            .value()
+            .rpc_client()
+            .get_balance(&args.pubkey)
+            .await?;
         Ok(BalanceSensorResult { lamports })
     }
 }
