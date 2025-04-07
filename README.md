@@ -13,6 +13,7 @@ See our [Document Site](https://www.amico.dev) for more information.
 3. **`amico-sdk`**: Interfaces and workflows for the AI Agent and Interaction Layers.
 4. **`amico-mods`**: Pluggable implementation modules.
 5. **`amico-hal`**: Hardware Abstraction Layer.
+6. **`amico-wasm`**: WASM library for the Amico AI Agent Framework.
 
 ## Development Plans
 
