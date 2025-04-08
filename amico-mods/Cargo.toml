@@ -8,24 +8,43 @@ license = "MIT"
 
 # Control which (static) plugins should be enabled using feature flags
 [features]
-# By default, the standard set of plugins is enabled
+# By default, the standard set of plugins and core plugins are enabled
 # Temporarily set to full for development
 default = ["full"]
 
 # The standard set of plugins
-std = ["rig-core"]
+std-full = ["std-providers", "std-services", "std-tasks"]
+std-providers = ["std-providers-rig"]
+std-providers-rig = ["rig-core"]
+std-services = ["std-services-in-memory"]
+std-services-in-memory = []
+std-tasks = ["std-cli-chatbot", "std-audio-chatbot"]
+std-cli-chatbot = []
+std-audio-chatbot = ["dep:amico-hal", "amico-hal/os-common"]
+
+# Core plugins
+std-core = ["futures", "amico-core", "amico-sdk/core"]
 
 # Web3 features and tools
 web3 = ["tiny-bip39"]
 web3-solana = ["web3", "solana-sdk", "solana-client"]
 web3-ethereum = ["web3", "alloy"]
 
+# WASM
+wasm = []
+
 # Full features
-full = ["std", "web3", "web3-solana", "web3-ethereum"]
+full = ["std-full", "std-core", "web3", "web3-solana", "web3-ethereum"]
 
 [dependencies]
+amico-sdk = { path = "../amico-sdk" }
+amico-hal = { path = "../amico-hal", optional = true }
+amico-core = { path = "../amico-core", optional = true }
 
+# Core
+futures = { version = "0.3.31", optional = true }
 
+# Wasm
 # Plugin-specific dependencies
 
 # Std
@@ -51,14 +70,10 @@ reqwest = { version = "0.12.15", features = [
     "rustls-tls",
     "multipart",
 ] }
-amico-core = { path = "../amico-core" }
-amico-sdk = { path = "../amico-sdk" }
-amico-hal = { path = "../amico-hal" }
 async-trait = "0.1.86"
 lazy_static = "1.5.0"
 serde = "1.0.217"
 serde_json = "1.0.138"
-futures = "0.3.31"
 tracing = "0.1.41"
 
 # Testing dependencies
