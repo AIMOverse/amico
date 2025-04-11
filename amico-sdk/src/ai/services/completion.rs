@@ -100,6 +100,12 @@ where
         self
     }
 
+    /// Add a list of tools to the Service.
+    pub fn tools(mut self, tools: Vec<Tool>) -> Self {
+        self.tool_list.extend(tools);
+        self
+    }
+
     /// Sets the temperature for the Service.
     pub fn temperature(mut self, temperature: f64) -> Self {
         self.temperature = temperature;
@@ -134,6 +140,7 @@ mod test {
     use crate::ai::errors::CompletionModelError;
     use crate::ai::models::ModelChoice;
     use crate::ai::models::{CompletionRequest, CompletionRequestBuilder};
+    use crate::ai::tool::ToolBuilder;
 
     // Structs for testing
 
@@ -191,7 +198,23 @@ mod test {
             .system_prompt("test".to_string())
             .temperature(0.2)
             .max_tokens(100)
+            // Test adding tools
+            .tool(build_test_tool(1))
+            .tool(build_test_tool(2))
+            // Test adding a list of tools
+            .tools(vec![build_test_tool(3), build_test_tool(4)])
+            // Test adding tools after a list of tools are added
+            .tool(build_test_tool(5))
             .build::<TestService>()
+    }
+
+    /// Builds a test tool
+    fn build_test_tool(id: i32) -> Tool {
+        ToolBuilder::new()
+            .name(&format!("test_{}", id))
+            .description("test")
+            .parameters(serde_json::json!({}))
+            .build(|_args| Ok(serde_json::json!({"message": "ok"})))
     }
 
     #[tokio::test]
@@ -200,6 +223,9 @@ mod test {
 
         assert_eq!(service.ctx.system_prompt, "test".to_string());
         assert_eq!(service.ctx.model_name, "test".to_string());
+        assert_eq!(service.ctx.temperature, 0.2);
+        assert_eq!(service.ctx.max_tokens, 100);
+        assert_eq!(service.ctx.tools.tools.len(), 5);
 
         let response = service.generate_text("test".to_string()).await.unwrap();
         assert_eq!(response, "test".to_string());
