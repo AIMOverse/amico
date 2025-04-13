@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use mcp_core::{
     client::{Client, ClientBuilder, SecureValue},
     transport::{ClientSseTransport, ClientSseTransportBuilder},
+    types::{ClientCapabilities, Implementation},
 };
 
 use crate::resource::Resource;
@@ -178,14 +179,34 @@ impl McpClientBuilder {
         client_builder.build()
     }
 
-    /// Build the client and open it.
+    /// Build the client, open it and initialize it with default capabilities.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The name of the client implementation.
+    /// * `version` - The version of the client implementation.
     ///
     /// # Returns
     ///
     /// A new `McpClient`.
-    pub async fn build_and_open(self) -> anyhow::Result<McpClient> {
+    pub async fn build_and_initialize(
+        self,
+        name: String,
+        version: String,
+    ) -> anyhow::Result<McpClient> {
         let client = self.build();
+
+        // Open the client
         client.open().await?;
+
+        // Initialize the client
+        let _init_res = client
+            .initialize(
+                Implementation { name, version },
+                ClientCapabilities::default(),
+            )
+            .await?;
+
         Ok(client)
     }
 }

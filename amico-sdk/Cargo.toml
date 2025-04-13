@@ -34,3 +34,4 @@ anyhow = "1.0.97"
 
 [dev-dependencies]
 tokio = { version = "1.43.0", features = ["rt", "macros", "time"] }
+schemars = "0.8.22"
