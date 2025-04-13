@@ -17,9 +17,9 @@ See our [Document Site](https://www.amico.dev) for more information.
 
 ## Development Plans
 
-- **Model Context Protocol (MCP) Integration**: Improves environmental awareness and control.
-- **Agent Networking**: Supports peer-to-peer networking using Web3 technologies.
-- **WASM Support**: Supports WASM-based AI Agent runtime.
+- **Agent Networking**: Supports peer-to-peer networking using decentralized messaging networks.
+- **Agent NFT Integration**: Enables agents to be represented as NFTs on blockchains.
+- **Verifiable Memory Layer**: Enables agents to store memory locally with vector embeddings and verify their memory on blockchains.
 
 ## Architecture Overview
 
