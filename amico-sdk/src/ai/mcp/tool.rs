@@ -1,4 +1,9 @@
 //! Re-export MCP tool components from `rig-core`
 
-pub use rig::tool::McpTool;
-pub use rig::tool::McpToolError;
+use super::McpTransport;
+
+/// MCP tool
+pub type McpTool = rig::tool::McpTool<McpTransport>;
+
+/// MCP tool error
+pub type McpToolError = rig::tool::McpToolError;
