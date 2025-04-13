@@ -1,10 +1,14 @@
 use async_trait::async_trait;
 
 use crate::ai::errors::ServiceError;
+use crate::ai::mcp::McpClient;
 use crate::ai::{
     models::CompletionModel,
     tool::{Tool, ToolSet},
 };
+
+#[cfg(feature = "mcp-client")]
+use crate::ai::mcp::McpTool;
 
 /// A Service executes a certain AI task, such as generating text.
 /// using a series of model provider calls.
@@ -98,6 +102,30 @@ where
     pub fn tool(mut self, tool: Tool) -> Self {
         self.tool_list.push(tool);
         self
+    }
+
+    /// Add a MCP tool to the Service.
+    #[cfg(feature = "mcp-client")]
+    pub fn mcp_tool(mut self, mcp_tool: mcp_core::types::Tool, mcp_client: McpClient) -> Self {
+        self.tool_list
+            .push(McpTool::from_mcp_server(mcp_tool, mcp_client).into());
+        self
+    }
+
+    /// Add all MCP tools from a server to the Service.
+    #[cfg(feature = "mcp-client")]
+    pub async fn add_tools_from_server(mut self, mcp_client: McpClient) -> anyhow::Result<Self> {
+        mcp_client
+            .list_tools(None, None)
+            .await?
+            .tools
+            .iter()
+            .for_each(|tool| {
+                self.tool_list
+                    .push(McpTool::from_mcp_server(tool.to_owned(), mcp_client.clone()).into());
+            });
+
+        Ok(self)
     }
 
     /// Sets the temperature for the Service.
