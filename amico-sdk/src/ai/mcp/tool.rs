@@ -31,20 +31,20 @@ impl McpTool {
     }
 }
 
-impl Into<Tool> for McpTool {
+impl From<McpTool> for Tool {
     /// Convert the MCP tool to a `Tool` instance
-    fn into(self) -> Tool {
+    fn from(val: McpTool) -> Self {
         // Wrap mcp_tool in an Arc to share ownership across async calls
-        let mcp_tool = Arc::new(self.mcp_tool);
+        let mcp_tool = Arc::new(val.mcp_tool);
 
         ToolBuilder::new()
-            .name(&self.name)
-            .description(&self.description.unwrap_or("".to_string()))
-            .parameters(self.params)
+            .name(&val.name)
+            .description(&val.description.unwrap_or("".to_string()))
+            .parameters(val.params)
             .build_async(move |args| {
                 let args = args.clone();
                 let args_str = args.to_string();
-                let name = self.name.clone();
+                let name = val.name.clone();
                 let mcp_tool = mcp_tool.clone(); // Clone the Arc, not the inner value
 
                 async move {
