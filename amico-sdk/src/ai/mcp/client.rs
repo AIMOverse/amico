@@ -177,4 +177,15 @@ impl McpClientBuilder {
 
         client_builder.build()
     }
+
+    /// Build the client and open it.
+    ///
+    /// # Returns
+    ///
+    /// A new `McpClient`.
+    pub async fn build_and_open(self) -> anyhow::Result<McpClient> {
+        let client = self.build();
+        client.open().await?;
+        Ok(client)
+    }
 }
