@@ -1,9 +1,65 @@
 //! Re-export MCP tool components from `rig-core`
 
-use super::McpTransport;
+use rig::tool::ToolDyn;
+use std::str::FromStr;
+use std::sync::Arc;
+
+use crate::ai::{
+    errors::ToolCallError,
+    tool::{Tool, ToolBuilder},
+};
+
+use super::{McpClient, McpTransport};
 
 /// MCP tool
-pub type McpTool = rig::tool::McpTool<McpTransport>;
+pub struct McpTool {
+    name: String,
+    description: Option<String>,
+    params: serde_json::Value,
+    mcp_tool: rig::tool::McpTool<McpTransport>,
+}
 
-/// MCP tool error
-pub type McpToolError = rig::tool::McpToolError;
+impl McpTool {
+    /// Build the MCP tool instance from MCP Client.
+    pub fn from_mcp_server(definition: mcp_core::types::Tool, client: McpClient) -> Self {
+        Self {
+            name: definition.name.clone(),
+            description: definition.description.clone(),
+            params: definition.input_schema.clone(),
+            mcp_tool: rig::tool::McpTool::from_mcp_server(definition, client),
+        }
+    }
+}
+
+impl Into<Tool> for McpTool {
+    /// Convert the MCP tool to a `Tool` instance
+    fn into(self) -> Tool {
+        // Wrap mcp_tool in an Arc to share ownership across async calls
+        let mcp_tool = Arc::new(self.mcp_tool);
+
+        ToolBuilder::new()
+            .name(&self.name)
+            .description(&self.description.unwrap_or("".to_string()))
+            .parameters(self.params)
+            .build_async(move |args| {
+                let args = args.clone();
+                let args_str = args.to_string();
+                let name = self.name.clone();
+                let mcp_tool = mcp_tool.clone(); // Clone the Arc, not the inner value
+
+                async move {
+                    mcp_tool
+                        .call(args_str)
+                        .await
+                        .map(|res| {
+                            serde_json::Value::from_str(&res).unwrap_or(serde_json::json!(res))
+                        })
+                        .map_err(|err| ToolCallError::ExecutionError {
+                            tool_name: name,
+                            params: args,
+                            reason: err.to_string(),
+                        })
+                }
+            })
+    }
+}
