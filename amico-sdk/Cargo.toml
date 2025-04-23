@@ -11,7 +11,7 @@ name = "amico"
 path = "src/lib.rs"
 
 [features]
-default = ["mcp-client"]
+default = ["mcp-client", "a2a"]
 mcp-client = [
     "dep:rig-core",
     "rig-core/mcp",
@@ -19,6 +19,7 @@ mcp-client = [
     "mcp-core/sse",
     "mcp-core-macros",
 ]
+a2a = []
 
 [dependencies]
 async-trait = "0.1.86"
@@ -35,3 +36,4 @@ anyhow = "1.0.97"
 [dev-dependencies]
 tokio = { version = "1.43.0", features = ["rt", "macros", "time"] }
 schemars = "0.8.22"
+solana-sdk = "2.2.2"
