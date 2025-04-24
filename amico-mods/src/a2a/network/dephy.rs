@@ -40,54 +40,51 @@ impl DephyNetwork {
         Self { client, wallet }
     }
 
-    pub async fn spawn_listener(self_arc: Arc<Self>) {
-        // Spawn the event subscriber
-        tokio::spawn(async move {
-            let client = self_arc.client.clone();
-            let pubkey = self_arc
-                .wallet
-                .value()
-                .solana_keypair()
-                .pubkey()
-                .to_string();
+    pub async fn spawn_listener(
+        self_arc: Arc<Self>,
+        channel: std::sync::mpsc::Sender<String>,
+    ) -> Result<(), DephyError> {
+        let client = self_arc.client.clone();
+        let pubkey = self_arc
+            .wallet
+            .value()
+            .solana_keypair()
+            .pubkey()
+            .to_string();
 
-            let filter = Filter::new()
-                .kind(Kind::Custom(1573))
-                .since(Timestamp::now())
-                .custom_tag(SESSION_TAG, [SESSION_ID])
-                .custom_tag(MENTION_TAG, [pubkey.as_str()]);
+        let filter = Filter::new()
+            .kind(Kind::Custom(1573))
+            .since(Timestamp::now())
+            .custom_tag(SESSION_TAG, [SESSION_ID])
+            .custom_tag(MENTION_TAG, [pubkey.as_str()]);
 
-            // Subscribe to the filter
-            if let Err(e) = client.subscribe(vec![filter], None).await {
-                tracing::error!("Failed to subscribe to filter: {}", e);
-                return;
-            }
+        // Subscribe to the filter
+        client.subscribe(vec![filter], None).await?;
 
-            // Handle notifications
-            if let Err(e) = client
-                .handle_notifications(|notification| async {
-                    match notification {
-                        RelayPoolNotification::Event { event, .. } => {
-                            tracing::info!("Received cipher text {}", event.content);
-                            let keypair = self_arc.wallet.value().solana_keypair();
-                            // Decrypt
-                            if let Ok(plaintext) = crypto::decrypt_message(&event.content, keypair)
-                            {
-                                tracing::info!("Decrypted message {}", plaintext);
-                                self_arc.on_message(plaintext).await;
-                            } else {
-                                tracing::info!("Failed to decrypt message");
-                            }
+        // Handle notifications
+        client
+            .handle_notifications(|notification| async {
+                match notification {
+                    RelayPoolNotification::Event { event, .. } => {
+                        tracing::info!("Received cipher text {}", event.content);
+                        let keypair = self_arc.wallet.value().solana_keypair();
+                        // Decrypt
+                        if let Ok(plaintext) = crypto::decrypt_message(&event.content, keypair) {
+                            tracing::info!("Decrypted message {}", plaintext);
+                            let _ = channel.send(plaintext).inspect_err(|err| {
+                                tracing::error!("Failed to send message to channel: {}", err)
+                            });
+                        } else {
+                            tracing::info!("Failed to decrypt message");
                         }
-                        _ => {} // Ignore other notification types
                     }
-                    Ok(false) // Keep listening
-                })
-                .await
-            {
-                tracing::error!("Failed to handle notifications: {e}");
-            }
-        });
+                    _ => {} // Ignore other notification types
+                }
+                Ok(false) // Keep listening
+            })
+            .await?;
+
+        Ok(())
     }
 }
 
@@ -126,5 +123,53 @@ impl Network for DephyNetwork {
 
     async fn on_message(&self, message: Self::Message) {
         tracing::info!("Received message: {message}");
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use nostr::key::Keys;
+
+    use super::*;
+
+    // This test should be executed by hand. Ignored by default.
+    #[ignore]
+    #[tokio::test(flavor = "multi_thread")]
+    async fn test_network_pubsub() {
+        // Setup two network clients
+        let publisher = Resource::new("wallet1".to_string(), Wallet::new().unwrap());
+        let subscriber = Resource::new("wallet2".to_string(), Wallet::new().unwrap());
+
+        // Create two DephyNetwork instances
+        let publisher_network = DephyNetwork::new(Keys::generate(), publisher.clone());
+        let subscriber_network = DephyNetwork::new(Keys::generate(), subscriber.clone());
+
+        // Connect both networks
+        publisher_network.connect().await.unwrap();
+        subscriber_network.connect().await.unwrap();
+
+        // Create a channel
+        let (tx, rx) = std::sync::mpsc::channel();
+
+        // Spawn listeners
+        let subscriber_arc = Arc::new(subscriber_network);
+        tokio::spawn(async move {
+            DephyNetwork::spawn_listener(subscriber_arc, tx)
+                .await
+                .unwrap();
+        });
+
+        // Publish a message
+        publisher_network
+            .publish(
+                subscriber.value().solana_keypair().pubkey(),
+                "test".to_string(),
+            )
+            .await
+            .unwrap();
+
+        // Wait for the message
+        let received_message = rx.recv().unwrap();
+        assert_eq!(received_message, "test");
     }
 }
