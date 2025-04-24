@@ -21,7 +21,9 @@ pub trait Network {
     ) -> Result<(), Self::Error>;
 
     /// Subscribe to the network.
-    async fn subscribe(&self) -> Result<(), Self::Error>;
+    ///
+    /// This function is called when a message is received.
+    async fn on_message(&self, message: Self::Message);
 }
 
 #[cfg(test)]
@@ -55,9 +57,8 @@ mod tests {
             Ok(())
         }
 
-        async fn subscribe(&self) -> Result<(), Self::Error> {
-            println!("Subscribing to network");
-            Ok(())
+        async fn on_message(&self, message: Self::Message) {
+            println!("Got message: {message}");
         }
     }
 
@@ -75,6 +76,6 @@ mod tests {
         let pubkey = keypair.pubkey();
         network.connect().await.unwrap();
         network.publish(pubkey, "test".to_string()).await.unwrap();
-        network.subscribe().await.unwrap();
+        network.on_message("test".to_string()).await;
     }
 }
