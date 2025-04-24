@@ -1,3 +1,5 @@
+use std::pin::Pin;
+
 use async_trait::async_trait;
 
 /// A trait for agent-to-agent (A2A) network communication.
@@ -20,10 +22,16 @@ pub trait Network {
         message: Self::Message,
     ) -> Result<(), Self::Error>;
 
-    /// Subscribe to the network.
-    ///
-    /// This function is called when a message is received.
-    async fn on_message(&self, message: Self::Message);
+    /// Spawn an event handler and subscribe to the network.
+    async fn subscribe(
+        &self,
+        on_message: Box<
+            dyn Fn(Self::Message) -> Pin<Box<dyn Future<Output = ()> + Send + 'static>>
+                + Send
+                + Sync
+                + 'static,
+        >,
+    ) -> Result<(), Self::Error>;
 }
 
 #[cfg(test)]
@@ -57,8 +65,18 @@ mod tests {
             Ok(())
         }
 
-        async fn on_message(&self, message: Self::Message) {
-            println!("Got message: {message}");
+        async fn subscribe(
+            &self,
+            on_message: Box<
+                dyn Fn(Self::Message) -> Pin<Box<dyn Future<Output = ()> + Send + 'static>>
+                    + Send
+                    + Sync
+                    + 'static,
+            >,
+        ) -> Result<(), Self::Error> {
+            println!("Subscribing to network");
+            on_message("test".to_string()).await;
+            Ok(())
         }
     }
 
@@ -76,6 +94,9 @@ mod tests {
         let pubkey = keypair.pubkey();
         network.connect().await.unwrap();
         network.publish(pubkey, "test".to_string()).await.unwrap();
-        network.on_message("test".to_string()).await;
+        network
+            .subscribe(Box::new(|_message| Box::pin(async {})))
+            .await
+            .unwrap();
     }
 }

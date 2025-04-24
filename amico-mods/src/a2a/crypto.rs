@@ -71,3 +71,19 @@ pub fn decrypt_message(ciphertext: &str, keypair: &Keypair) -> Result<String, Cr
     let plaintext = String::from_utf8(plaintext_bytes).map_err(CryptoError::UTF8DecodeError)?;
     Ok(plaintext)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use solana_sdk::signer::Signer;
+
+    #[test]
+    fn test_encrypt_decrypt() {
+        let keypair = Keypair::new();
+        let pubkey = keypair.pubkey();
+        let message = "test";
+        let encrypted = encrypt_message(message, &pubkey).unwrap();
+        let decrypted = decrypt_message(&encrypted, &keypair).unwrap();
+        assert_eq!(decrypted, message);
+    }
+}
