@@ -12,6 +12,8 @@ use solana_sdk::signer::Signer;
 use crate::a2a::crypto;
 use crate::web3::wallet::Wallet;
 
+use super::{error::NetworkError, interface::A2aNetwork};
+
 #[derive(Clone)]
 pub struct DephyNetwork {
     client: nostr_sdk::Client,
@@ -21,18 +23,6 @@ pub struct DephyNetwork {
 const MENTION_TAG: SingleLetterTag = SingleLetterTag::lowercase(nostr::Alphabet::P);
 const SESSION_TAG: SingleLetterTag = SingleLetterTag::lowercase(nostr::Alphabet::S);
 const SESSION_ID: &str = "amico_dephy_session";
-
-#[derive(thiserror::Error, Debug)]
-pub enum DephyError {
-    #[error("NoStr client error: {0}")]
-    NostrClientError(#[from] nostr_sdk::client::Error),
-
-    #[error("Crypto error: {0}")]
-    CryptoError(#[from] crate::a2a::crypto::CryptoError),
-
-    #[error("NoStr tag error: {0}")]
-    TagError(#[from] nostr::event::tag::Error),
-}
 
 impl DephyNetwork {
     /// Create a new DephyNetwork instance
@@ -47,7 +37,7 @@ impl DephyNetwork {
 impl Network for DephyNetwork {
     type Message = String;
     type Address = solana_sdk::pubkey::Pubkey;
-    type Error = DephyError;
+    type Error = NetworkError;
 
     async fn connect(&self) -> Result<(), Self::Error> {
         self.client.add_relay("wss://dev-relay.dephy.dev").await?;
@@ -127,6 +117,13 @@ impl Network for DephyNetwork {
         });
 
         Ok(())
+    }
+}
+
+// Convert Dephy Network to A2A Network
+impl From<DephyNetwork> for A2aNetwork {
+    fn from(value: DephyNetwork) -> Self {
+        Self::new(value)
     }
 }
 
