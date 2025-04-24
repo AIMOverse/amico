@@ -64,7 +64,7 @@ pub fn decrypt_message(ciphertext: &str, keypair: &Keypair) -> Result<String, Cr
 
     // Decode and decrypt the ciphertext
     let decoded = STANDARD
-        .decode(&ciphertext)
+        .decode(ciphertext)
         .map_err(CryptoError::Base64DecodeError)?;
     let plaintext_bytes = sealedbox::open(&decoded, &my_curve_pk, &my_curve_sk)
         .map_err(|_| CryptoError::SealedBoxOpenError)?;
