@@ -26,6 +26,9 @@ a2a-dephy = [
     "tokio/rt",
 ]
 
+# Agent of Everything features
+aoe = []
+
 # Web3 features and tools
 web3 = ["tiny-bip39"]
 web3-solana = ["web3", "solana-sdk", "solana-client"]
