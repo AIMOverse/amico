@@ -109,14 +109,14 @@ async fn main() {
         .max_tokens(1000)
         .tool(balance_sensor_tool(
             balance_sensor.clone(),
-            &wallet.value().solana_keypair().pubkey(),
+            &wallet.value().solana().pubkey(),
         ))
         .tool(trade_effector_tool(trade_effector.clone()))
         .build::<InMemoryService<RigProvider>>();
 
     println!();
     println!("Agent wallet addresses:");
-    wallet.value().print_all_pubkeys();
+    wallet.value().pubkey_list();
 
     println!();
     println!("Using service plugin: {}", service.info().name);

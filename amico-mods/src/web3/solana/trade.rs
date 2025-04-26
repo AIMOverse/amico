@@ -38,7 +38,7 @@ impl Effector for TradeEffector {
     async fn effect(&self, args: Self::Args) -> Result<Self::Output, Self::Error> {
         swap(
             self.client.value(),
-            self.wallet.value().solana_keypair(),
+            self.wallet.value().solana(),
             &args.input_mint,
             &args.output_mint,
             &args.amount,
