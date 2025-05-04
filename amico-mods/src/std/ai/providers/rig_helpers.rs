@@ -61,11 +61,28 @@ pub fn into_rig_tool_def(def: &ToolDefinition) -> rig::completion::ToolDefinitio
 
 /// Convert `amico`'s `CompletionRequest` into `rig`'s
 pub fn into_rig_request(request: &CompletionRequest) -> rc::CompletionRequest {
+    // Documented in `rig-core`:
+    // The very last message will always be the prompt (hense why there is *always* one)
+
+    /// Convert chat history vec + prompt into `OneOrMany<Message>`
+    fn convert_messages(list: Vec<rm::Message>, prompt: String) -> OneOrMany<rm::Message> {
+        let prompt_message = rm::Message::User {
+            content: OneOrMany::one(rm::UserContent::text(prompt)),
+        };
+        if let Ok(mut result) = OneOrMany::many(list) {
+            result.push(prompt_message);
+            result
+        } else {
+            // List is empty.
+            return OneOrMany::one(prompt_message);
+        }
+    }
+
     rc::CompletionRequest {
-        chat_history: request.chat_history.iter().map(into_rig_message).collect(),
-        prompt: rm::Message::User {
-            content: OneOrMany::one(rm::UserContent::text(request.prompt.clone())),
-        },
+        chat_history: convert_messages(
+            request.chat_history.iter().map(into_rig_message).collect(),
+            request.prompt.to_string(),
+        ),
         preamble: request.system_prompt.clone(),
         temperature: request.temperature,
         max_tokens: request.max_tokens,
