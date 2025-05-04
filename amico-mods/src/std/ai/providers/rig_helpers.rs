@@ -74,7 +74,7 @@ pub fn into_rig_request(request: &CompletionRequest) -> rc::CompletionRequest {
             result
         } else {
             // List is empty.
-            return OneOrMany::one(prompt_message);
+            OneOrMany::one(prompt_message)
         }
     }
 
