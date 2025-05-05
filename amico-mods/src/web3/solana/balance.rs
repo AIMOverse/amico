@@ -45,7 +45,7 @@ impl BalanceSensor {
     /// in the future release.
     pub fn agent_wallet_balance_tool(&self) -> Tool {
         // `Pubkey` implements the `Copy` trait, so we can just copy it
-        let pubkey = self.wallet.value().solana_keypair().pubkey();
+        let pubkey = self.wallet.value().solana().pubkey();
         let sensor = self.clone();
 
         ToolBuilder::new()

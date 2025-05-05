@@ -13,8 +13,8 @@ fn test_create_load_wallet() {
 
     assert_eq!(wallet.phrase(), loaded_wallet.phrase());
     assert_eq!(
-        *wallet.wallet.value().solana_keypair(),
-        *loaded_wallet.wallet.value().solana_keypair()
+        *wallet.wallet.value().solana(),
+        *loaded_wallet.wallet.value().solana()
     );
 }
 
