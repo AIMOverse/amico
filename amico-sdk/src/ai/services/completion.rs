@@ -1,14 +1,13 @@
 use async_trait::async_trait;
 
 use crate::ai::errors::ServiceError;
-use crate::ai::mcp::McpClient;
 use crate::ai::{
     models::CompletionModel,
     tool::{Tool, ToolSet},
 };
 
 #[cfg(feature = "mcp-client")]
-use crate::ai::mcp::McpTool;
+use crate::ai::mcp::{McpClient, McpTool};
 
 /// A Service executes a certain AI task, such as generating text.
 /// using a series of model provider calls.
