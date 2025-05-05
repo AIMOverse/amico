@@ -110,7 +110,7 @@ async fn main() {
 
     println!();
     println!("Agent wallet addresses:");
-    wallet.value().print_all_pubkeys();
+    wallet.value().pubkey_list();
 
     println!();
     println!("Using service plugin: {}", service.info().name);

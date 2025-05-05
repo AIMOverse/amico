@@ -25,6 +25,23 @@ std-audio-chatbot = ["dep:amico-hal", "amico-hal/os-common"]
 # Core plugins
 std-core = ["futures", "amico-core", "amico-sdk/core"]
 
+# A2A features
+a2a = ["amico-sdk/a2a", "sodiumoxide", "base64"]
+a2a-dephy = [
+    "a2a",
+    "nostr-sdk",
+    "nostr",
+    "web3-solana",
+    "dep:tokio",
+    "tokio/rt",
+]
+
+# Agent of Everything features
+aoe = ["amico-sdk/aoe"]
+aoe-mqtt = ["aoe"]
+aoe-http = ["aoe"]
+aoe-bt = ["aoe"]
+
 # Web3 features and tools
 web3 = ["tiny-bip39"]
 web3-solana = ["web3", "solana-sdk", "solana-client"]
@@ -34,34 +51,40 @@ web3-ethereum = ["web3", "alloy"]
 wasm = []
 
 # Full features
-full = ["std-full", "std-core", "web3", "web3-solana", "web3-ethereum"]
+full = ["std-full", "std-core", "a2a-dephy", "web3-solana", "web3-ethereum"]
 
 [dependencies]
-amico-sdk = { path = "../amico-sdk" }
-amico-hal = { path = "../amico-hal", optional = true }
-amico-core = { path = "../amico-core", optional = true }
+amico-sdk = { path = "../amico-sdk", default-features = false }
+amico-hal = { path = "../amico-hal", default-features = false, optional = true }
+amico-core = { path = "../amico-core", default-features = false, optional = true }
+
+# Plugin-specific dependencies
 
 # Core
 futures = { version = "0.3.31", optional = true }
+tokio = { version = "1.44.2", optional = true }
 
-# Wasm
-# Plugin-specific dependencies
-
-# Std
-rig-core = { version = "0.11.0", optional = true }
-
-# Web3
+# Web3 Common
 tiny-bip39 = { version = "2.0.0", optional = true }
+
 # Solana
 solana-sdk = { version = "2.2.1", optional = true }
 solana-client = { version = "2.2.3", optional = true }
+
 # Ethereum
-alloy = { version = "0.13.0", features = [
+alloy = { version = "0.15.8", features = [
     "full",
     "signer-mnemonic",
 ], optional = true }
 
+# a2a
+nostr-sdk = { version = "0.38.0", optional = true }
+nostr = { version = "0.38.0", optional = true }
+sodiumoxide = { version = "0.2", optional = true }
+base64 = { version = "0.22", optional = true }
+
 # Common dependencies
+async-trait = "0.1.88"
 thiserror = "2.0.12"
 ecdsa = "0.16.9"
 colored = "3.0.0"
@@ -70,7 +93,6 @@ reqwest = { version = "0.12.15", features = [
     "rustls-tls",
     "multipart",
 ] }
-async-trait = "0.1.86"
 lazy_static = "1.5.0"
 serde = "1.0.217"
 serde_json = "1.0.138"

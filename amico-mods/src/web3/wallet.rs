@@ -1,44 +1,62 @@
-use alloy::signers::{
-    k256::Secp256k1,
-    local::{LocalSigner, LocalSignerError},
-};
 use amico::resource::Resource;
 use bip39::{Language, Mnemonic, MnemonicType, Seed};
 
-// Ethereum
-
 #[cfg(feature = "web3-ethereum")]
-use alloy::signers::local::{
-    coins_bip39::English as AlloyEnglish, MnemonicBuilder as AlloyMnemonicBuilder,
-};
-
-#[cfg(feature = "web3-ethereum")]
-use ecdsa::SigningKey;
-
-/// The signer type for Ethereum wallets
-#[cfg(feature = "web3-ethereum")]
-pub type EthereumSigner = LocalSigner<SigningKey<Secp256k1>>;
-
-// Solana
+use super::ethereum::wallet::{EthereumWallet, EthereumWalletError};
 
 #[cfg(feature = "web3-solana")]
-use solana_sdk::{
-    signature::Keypair,
-    signer::{SeedDerivable, Signer},
-};
+use super::solana::wallet::{SolanaWallet, SolanaWalletError};
+
+/// A trait for components of a wallet, such as Solana keypairs and Ethereum signers.
+///
+/// Any new block chain wallet integration should implement this trait.
+///
+/// This trait should be dyn-compatible for dynamic loading features in the future.
+pub trait WalletComponent {
+    /// The signer type for the wallet component.
+    type Signer;
+
+    /// Creates a new wallet component from a mnemonic phrase.
+    fn from_mnemonic(mnemonic: &Mnemonic) -> Result<Self, WalletError>
+    where
+        Self: Sized;
+
+    /// Returns the public key for the wallet component.
+    fn pubkey(&self) -> String;
+
+    /// Returns the signer for the wallet component.
+    fn get(&self) -> &Self::Signer;
+}
+
+/// Error type for wallet operations.
+#[derive(Debug, thiserror::Error)]
+pub enum WalletError {
+    #[error("IO error: {0}")]
+    StdIo(#[from] std::io::Error),
+
+    #[error("Mnemonic error: {0}")]
+    Mnemonic(#[from] bip39::ErrorKind),
+
+    #[cfg(feature = "web3-ethereum")]
+    #[error("Ethereum signer error: {0}")]
+    Ethereum(#[from] EthereumWalletError),
+
+    #[cfg(feature = "web3-solana")]
+    #[error("Solana keypair error: {0}")]
+    Solana(#[from] SolanaWalletError),
+}
 
 /// A wallet containing a mnemonic phrase and optional Ethereum and Solana signers.
 ///
 /// Wallets should not be cloned, as they contain sensitive information.
-#[derive(Debug)]
 pub struct Wallet {
     mnemonic: Mnemonic,
 
     #[cfg(feature = "web3-solana")]
-    solana_keypair: Keypair,
+    solana: SolanaWallet,
 
     #[cfg(feature = "web3-ethereum")]
-    ethereum_wallet: EthereumSigner,
+    ethereum: EthereumWallet,
 }
 
 impl Wallet {
@@ -67,19 +85,19 @@ impl Wallet {
     /// and [`new`][Wallet::new]
     pub fn from_mnemonic(mnemonic: Mnemonic) -> Result<Self, WalletError> {
         #[cfg(feature = "web3-solana")]
-        let solana_keypair = Self::load_solana_keypair(&mnemonic)?;
+        let solana_keypair = SolanaWallet::from_mnemonic(&mnemonic)?;
 
         #[cfg(feature = "web3-ethereum")]
-        let ethereum_wallet = Self::load_ethereum_wallet(&mnemonic)?;
+        let ethereum_wallet = EthereumWallet::from_mnemonic(&mnemonic)?;
 
         Ok(Self {
             mnemonic,
 
             #[cfg(feature = "web3-solana")]
-            solana_keypair,
+            solana: solana_keypair,
 
             #[cfg(feature = "web3-ethereum")]
-            ethereum_wallet,
+            ethereum: ethereum_wallet,
         })
     }
 
@@ -120,68 +138,28 @@ impl Wallet {
 
     /// Returns the Solana keypair for the wallet.
     #[cfg(feature = "web3-solana")]
-    pub fn solana_keypair(&self) -> &Keypair {
-        &self.solana_keypair
+    pub fn solana(&self) -> &<SolanaWallet as WalletComponent>::Signer {
+        self.solana.get()
     }
 
     /// Returns the Ethereum wallet for the wallet.
     #[cfg(feature = "web3-ethereum")]
-    pub fn ethereum_wallet(&self) -> &EthereumSigner {
-        &self.ethereum_wallet
+    pub fn ethereum(&self) -> &<EthereumWallet as WalletComponent>::Signer {
+        self.ethereum.get()
     }
 
-    /// Loads a Solana keypair from the mnemonic phrase.
-    #[cfg(feature = "web3-solana")]
-    pub fn load_solana_keypair(mnemonic: &Mnemonic) -> Result<Keypair, WalletError> {
-        let seed = Seed::new(mnemonic, "");
-        let keypair =
-            Keypair::from_seed(seed.as_bytes()).map_err(WalletError::SolanaKeyPairError)?;
-        Ok(keypair)
-    }
-
-    /// Loads an Ethereum wallet from the mnemonic phrase.
-    #[cfg(feature = "web3-ethereum")]
-    pub fn load_ethereum_wallet(mnemonic: &Mnemonic) -> Result<EthereumSigner, WalletError> {
-        let phrase = mnemonic.phrase();
-        let signer = AlloyMnemonicBuilder::<AlloyEnglish>::default()
-            .phrase(phrase)
-            .build()
-            .map_err(WalletError::EthereumSignerError)?;
-        Ok(signer)
-    }
-
-    /// Prints the public keys for both Solana and Ethereum.
-    pub fn print_all_pubkeys(&self) {
+    /// Returns the public keys for both Solana and Ethereum.
+    pub fn pubkey_list(&self) -> String {
+        let mut pubkeys = Vec::new();
         #[cfg(feature = "web3-solana")]
-        {
-            let keypair = self.solana_keypair();
-            println!("- Solana: {}", keypair.pubkey());
-        }
+        pubkeys.push(format!("- Solana: {}", self.solana.pubkey()));
 
         #[cfg(feature = "web3-ethereum")]
-        {
-            let wallet = self.ethereum_wallet();
-            println!("- Ethereum: {}", wallet.address());
-        }
+        pubkeys.push(format!("- Ethereum: {}", self.ethereum.pubkey()));
+
+        // Return the public keys in a list
+        pubkeys.join("\n")
     }
-}
-
-/// Error type for wallet operations.
-#[derive(Debug, thiserror::Error)]
-pub enum WalletError {
-    #[error("IO error: {0}")]
-    IoError(#[from] std::io::Error),
-
-    #[error("Mnemonic error: {0}")]
-    MnemonicError(#[from] bip39::ErrorKind),
-
-    #[cfg(feature = "web3-ethereum")]
-    #[error("Ethereum signer error: {0}")]
-    EthereumSignerError(#[from] LocalSignerError),
-
-    #[cfg(feature = "web3-solana")]
-    #[error("Solana keypair error: {0}")]
-    SolanaKeyPairError(Box<dyn std::error::Error>),
 }
 
 #[cfg(test)]
@@ -189,6 +167,7 @@ mod tests {
     use super::*;
 
     use amico::resource::Resource;
+    use solana_sdk::signer::Signer;
     use std::fs;
     use std::path::Path;
     use tempfile::tempdir;
@@ -280,51 +259,19 @@ mod tests {
         // Test IO error
         let nonexistent_path = "/nonexistent/path/wallet.txt";
         let result = Wallet::load(nonexistent_path);
-        assert!(matches!(result, Err(WalletError::IoError(_))));
+        assert!(matches!(result, Err(WalletError::StdIo(_))));
 
         // Test mnemonic error
         let invalid_phrase = "invalid mnemonic phrase";
         let result = Wallet::from_phrase(invalid_phrase);
-        assert!(matches!(result, Err(WalletError::MnemonicError(_))));
-    }
-
-    #[cfg(feature = "web3-solana")]
-    #[test]
-    fn test_solana_keypair() {
-        let wallet = Wallet::new().expect("Failed to create new wallet");
-
-        // Check that the Solana keypair is generated
-        let keypair = wallet.solana_keypair();
-        assert!(!keypair.pubkey().to_string().is_empty());
-
-        // Test loading a keypair from a mnemonic
-        let mnemonic = Mnemonic::new(MnemonicType::Words12, Language::English);
-        let keypair =
-            Wallet::load_solana_keypair(&mnemonic).expect("Failed to load Solana keypair");
-        assert!(!keypair.pubkey().to_string().is_empty());
-    }
-
-    #[cfg(feature = "web3-ethereum")]
-    #[test]
-    fn test_ethereum_wallet() {
-        let wallet = Wallet::new().expect("Failed to create new wallet");
-
-        // Check that the Ethereum wallet is generated
-        let eth_wallet = wallet.ethereum_wallet();
-        assert!(!eth_wallet.address().to_string().is_empty());
-
-        // Test loading an Ethereum wallet from a mnemonic
-        let mnemonic = Mnemonic::new(MnemonicType::Words12, Language::English);
-        let eth_wallet =
-            Wallet::load_ethereum_wallet(&mnemonic).expect("Failed to load Ethereum wallet");
-        assert!(!eth_wallet.address().to_string().is_empty());
+        assert!(matches!(result, Err(WalletError::Mnemonic(_))));
     }
 
     #[test]
     fn test_print_all_pubkeys() {
         // This is a simple test to ensure the method doesn't panic
         let wallet = Wallet::new().expect("Failed to create new wallet");
-        wallet.print_all_pubkeys();
+        println!("{}", wallet.pubkey_list());
         // No assertion needed, just checking that it doesn't panic
     }
 
@@ -347,21 +294,13 @@ mod tests {
         // Test that we can access wallet functionality through the resource
         #[cfg(feature = "web3-solana")]
         {
-            let solana_pubkey = wallet_resource
-                .value()
-                .solana_keypair()
-                .pubkey()
-                .to_string();
+            let solana_pubkey = wallet_resource.value().solana().pubkey().to_string();
             assert!(!solana_pubkey.is_empty());
         }
 
         #[cfg(feature = "web3-ethereum")]
         {
-            let eth_address = wallet_resource
-                .value()
-                .ethereum_wallet()
-                .address()
-                .to_string();
+            let eth_address = wallet_resource.value().ethereum().address().to_string();
             assert!(!eth_address.is_empty());
         }
     }
