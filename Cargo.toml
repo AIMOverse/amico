@@ -1,5 +1,5 @@
 [workspace]
-members = ["amico", "amico-*"]
+members = ["amico", "amico-*", "code-gen/auto-trait"]
 resolver = "2"
 
 [workspace.dependencies]
