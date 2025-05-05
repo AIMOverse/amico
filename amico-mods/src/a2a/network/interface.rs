@@ -1,19 +1,19 @@
 use std::sync::Arc;
 
-use amico::a2a::network::Network;
+use amico::a2a::network::NetworkDyn;
 use solana_sdk::pubkey::Pubkey;
 
 use super::error::NetworkError;
 
 pub struct A2aNetwork {
-    pub network: Arc<dyn Network<Message = String, Address = Pubkey, Error = NetworkError>>,
+    pub network: Arc<dyn NetworkDyn<Message = String, Address = Pubkey, Error = NetworkError>>,
 }
 
 impl A2aNetwork {
     /// Create a new A2aNetwork instance
     pub fn new<N>(network: N) -> Self
     where
-        N: Network<Message = String, Address = Pubkey, Error = NetworkError> + 'static,
+        N: NetworkDyn<Message = String, Address = Pubkey, Error = NetworkError> + 'static,
     {
         Self {
             network: Arc::new(network),

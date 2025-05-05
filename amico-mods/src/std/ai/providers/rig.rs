@@ -2,7 +2,6 @@ use amico::ai::{
     errors::CompletionModelError,
     models::{CompletionModel, CompletionRequest, ModelChoice},
 };
-use async_trait::async_trait;
 use rig::{
     completion::{self as rc, CompletionModel as _},
     providers as rp,
@@ -92,7 +91,6 @@ impl RigProvider {
     }
 }
 
-#[async_trait]
 impl CompletionModel for RigProvider {
     #[doc = " Completes a prompt with the provider."]
     async fn completion(

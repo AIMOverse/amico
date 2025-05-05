@@ -14,7 +14,6 @@ use crate::ai::mcp::McpTool;
 /// using a series of model provider calls.
 ///
 /// A service should contain a context that is used to configure the service.
-#[async_trait]
 pub trait CompletionService {
     /// The LLM API provider type the service uses
     type Model: CompletionModel;
@@ -25,7 +24,38 @@ pub trait CompletionService {
         Self: Sized;
 
     /// Generates text based on a prompt.
-    async fn generate_text(&mut self, prompt: String) -> Result<String, ServiceError>;
+    fn generate_text(
+        &mut self,
+        prompt: String,
+    ) -> impl Future<Output = Result<String, ServiceError>> + Send
+    where
+        Self: Sized;
+}
+
+#[async_trait]
+pub trait CompletionServiceDyn {
+    /// Generates text based on a prompt.
+    async fn generate_text_dyn(&mut self, prompt: String) -> Result<String, ServiceError>;
+}
+
+#[async_trait(?Send)]
+pub trait CompletionServiceLocal {
+    /// Generates text based on a prompt.
+    async fn generate_text_local(&mut self, prompt: String) -> Result<String, ServiceError>;
+}
+
+#[async_trait]
+impl<T: CompletionService + Send> CompletionServiceDyn for T {
+    async fn generate_text_dyn(&mut self, prompt: String) -> Result<String, ServiceError> {
+        self.generate_text(prompt).await
+    }
+}
+
+#[async_trait(?Send)]
+impl<T: CompletionService> CompletionServiceLocal for T {
+    async fn generate_text_local(&mut self, prompt: String) -> Result<String, ServiceError> {
+        self.generate_text(prompt).await
+    }
 }
 
 /// The context of a Service.
@@ -178,7 +208,6 @@ mod test {
         ctx: ServiceContext<TestCompletionModel>,
     }
 
-    #[async_trait]
     impl CompletionModel for TestCompletionModel {
         async fn completion(
             &self,
@@ -188,7 +217,6 @@ mod test {
         }
     }
 
-    #[async_trait]
     impl CompletionService for TestService {
         type Model = TestCompletionModel;
 
@@ -283,6 +311,6 @@ mod test {
         let service = build_test_service();
 
         // Ensure the service is dynamically compatible
-        let _: Box<dyn CompletionService<Model = TestCompletionModel>> = Box::new(service);
+        let _: Box<dyn CompletionServiceDyn> = Box::new(service);
     }
 }
