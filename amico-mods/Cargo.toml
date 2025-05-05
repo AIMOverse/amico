@@ -62,10 +62,10 @@ amico-core = { path = "../amico-core", default-features = false, optional = true
 
 # Core
 futures = { version = "0.3.31", optional = true }
-tokio = { version = "1.44.2", optional = true }
+tokio = { workspace = true, optional = true }
 
 # Std
-rig-core = { version = "0.12.0", optional = true }
+rig-core = { workspace = true, optional = true }
 
 # Web3 Common
 tiny-bip39 = { version = "2.0.0", optional = true }
@@ -87,8 +87,8 @@ sodiumoxide = { version = "0.2", optional = true }
 base64 = { version = "0.22", optional = true }
 
 # Common dependencies
-async-trait = "0.1.88"
-thiserror = "2.0.12"
+async-trait = { workspace = true }
+thiserror = { workspace = true }
 ecdsa = "0.16.9"
 colored = "3.0.0"
 reqwest = { version = "0.12.15", features = [
@@ -97,9 +97,9 @@ reqwest = { version = "0.12.15", features = [
     "multipart",
 ] }
 lazy_static = "1.5.0"
-serde = "1.0.217"
-serde_json = "1.0.138"
-tracing = "0.1.41"
+serde = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true }
 
 # Testing dependencies
 [dev-dependencies]

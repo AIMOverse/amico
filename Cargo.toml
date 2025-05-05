@@ -1,3 +1,12 @@
 [workspace]
 members = ["amico", "amico-*"]
 resolver = "2"
+
+[workspace.dependencies]
+thiserror = "2.0.12"
+serde = "1.0.219"
+serde_json = "1.0.140"
+async-trait = "0.1.88"
+tokio = "1.44.2"
+rig-core = "0.12.0"
+tracing = "0.1.41"

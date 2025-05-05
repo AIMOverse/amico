@@ -7,11 +7,11 @@ repository = "https://github.com/AIMOverse/amico"
 license = "MIT"
 
 [dependencies]
-tokio = { version = "1.44.2", features = ["full"] }
+tokio = { workspace = true, features = ["full"] }
 amico-sdk = { path = "../amico-sdk" }
 amico-mods = { path = "../amico-mods" }
-serde_json = "1.0.140"
-tracing = "0.1.41"
+serde_json = { workspace = true }
+tracing = { workspace = true }
 tracing-subscriber = "0.3.19"
 solana-sdk = "2.2.2"
 colored = "3.0.0"
