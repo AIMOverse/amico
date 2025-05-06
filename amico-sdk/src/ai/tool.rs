@@ -42,19 +42,23 @@ impl Tool {
     }
 }
 
+/// Sync tool call function
+pub type SyncToolCall = Arc<dyn Fn(serde_json::Value) -> ToolResult + Send + Sync>;
+
+/// Async tool call function
+pub type AsyncToolCall = Arc<
+    dyn Fn(serde_json::Value) -> Pin<Box<dyn Future<Output = ToolResult> + Send + 'static>>
+        + Send
+        + Sync,
+>;
+
 /// Type of the tool call function
 #[derive(Clone)]
 pub enum ToolCallFn {
     /// Synchronous tool call function
-    Sync(Arc<dyn Fn(serde_json::Value) -> ToolResult + Send + Sync>),
+    Sync(SyncToolCall),
     /// Asynchronous tool call function
-    Async(
-        Arc<
-            dyn Fn(serde_json::Value) -> Pin<Box<dyn Future<Output = ToolResult> + Send + 'static>>
-                + Send
-                + Sync,
-        >,
-    ),
+    Async(AsyncToolCall),
 }
 
 /// Builder for `Tool`

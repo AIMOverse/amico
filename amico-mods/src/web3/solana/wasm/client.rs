@@ -6,7 +6,7 @@ pub struct SolanaClient(RpcClient);
 
 impl SolanaClient {
     pub fn new(rpc_url: &str) -> Self {
-        return Self(RpcClient::new(rpc_url));
+        Self(RpcClient::new(rpc_url))
     }
 
     pub fn rpc_client(&self) -> &RpcClient {
