@@ -1,6 +1,5 @@
 use std::process;
 use std::sync::mpsc::channel;
-use std::sync::Arc;
 
 use amico::ai::services::{CompletionServiceDyn, ServiceBuilder};
 use amico::resource::Resource;
@@ -20,7 +19,6 @@ use engine::events::UserContent;
 use evenio::prelude::*;
 use helpers::solana_rpc_url;
 use prompt::AMICO_SYSTEM_PROMPT;
-use tokio::sync::Mutex;
 
 mod engine;
 mod helpers;
@@ -133,14 +131,14 @@ async fn main() {
 
     world.insert(interaction, StdioEventSource);
     world.insert(interaction, StdioOutputAction);
-    world.insert(ai_layer, AiService(Arc::new(Mutex::new(service))));
+    world.insert(ai_layer, AiService::new(service));
 
     world.add_handler(
         move |r: Receiver<UserContent>,
               it_fetcher: Fetcher<&StdioOutputAction>,
               ai_fetcher: Fetcher<&AiService>| {
             let output = it_fetcher.get(interaction).unwrap();
-            let service = ai_fetcher.get(ai_layer).unwrap().0.clone();
+            let service = ai_fetcher.get(ai_layer).unwrap().get();
             let UserContent(text) = r.event;
             let text = text.to_string();
 
