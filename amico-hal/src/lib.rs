@@ -3,5 +3,5 @@ pub mod interface;
 #[cfg(feature = "os-common")]
 pub mod os;
 
-#[cfg(target_arch = "wasm32")]
+#[cfg(feature = "wasm")]
 pub mod wasm;

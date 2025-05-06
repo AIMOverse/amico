@@ -1,20 +1,18 @@
 use async_trait::async_trait;
 
 use crate::ai::errors::ServiceError;
-use crate::ai::mcp::McpClient;
 use crate::ai::{
     models::CompletionModel,
     tool::{Tool, ToolSet},
 };
 
 #[cfg(feature = "mcp-client")]
-use crate::ai::mcp::McpTool;
+use crate::ai::mcp::{McpClient, McpTool};
 
 /// A Service executes a certain AI task, such as generating text.
 /// using a series of model provider calls.
 ///
 /// A service should contain a context that is used to configure the service.
-#[async_trait]
 pub trait CompletionService {
     /// The LLM API provider type the service uses
     type Model: CompletionModel;
@@ -25,7 +23,38 @@ pub trait CompletionService {
         Self: Sized;
 
     /// Generates text based on a prompt.
-    async fn generate_text(&mut self, prompt: String) -> Result<String, ServiceError>;
+    fn generate_text(
+        &mut self,
+        prompt: String,
+    ) -> impl Future<Output = Result<String, ServiceError>> + Send
+    where
+        Self: Sized;
+}
+
+#[async_trait]
+pub trait CompletionServiceDyn {
+    /// Generates text based on a prompt.
+    async fn generate_text_dyn(&mut self, prompt: String) -> Result<String, ServiceError>;
+}
+
+#[async_trait(?Send)]
+pub trait CompletionServiceLocal {
+    /// Generates text based on a prompt.
+    async fn generate_text_local(&mut self, prompt: String) -> Result<String, ServiceError>;
+}
+
+#[async_trait]
+impl<T: CompletionService + Send> CompletionServiceDyn for T {
+    async fn generate_text_dyn(&mut self, prompt: String) -> Result<String, ServiceError> {
+        self.generate_text(prompt).await
+    }
+}
+
+#[async_trait(?Send)]
+impl<T: CompletionService> CompletionServiceLocal for T {
+    async fn generate_text_local(&mut self, prompt: String) -> Result<String, ServiceError> {
+        self.generate_text(prompt).await
+    }
 }
 
 /// The context of a Service.
@@ -104,6 +133,12 @@ where
         self
     }
 
+    /// Add a list of tools to the Service.
+    pub fn tools(mut self, tools: Vec<Tool>) -> Self {
+        self.tool_list.extend(tools);
+        self
+    }
+
     /// Add a MCP tool to the Service.
     #[cfg(feature = "mcp-client")]
     pub fn mcp_tool(mut self, mcp_tool: mcp_core::types::Tool, mcp_client: McpClient) -> Self {
@@ -162,6 +197,7 @@ mod test {
     use crate::ai::errors::CompletionModelError;
     use crate::ai::models::ModelChoice;
     use crate::ai::models::{CompletionRequest, CompletionRequestBuilder};
+    use crate::ai::tool::ToolBuilder;
 
     // Structs for testing
 
@@ -171,7 +207,6 @@ mod test {
         ctx: ServiceContext<TestCompletionModel>,
     }
 
-    #[async_trait]
     impl CompletionModel for TestCompletionModel {
         async fn completion(
             &self,
@@ -181,7 +216,6 @@ mod test {
         }
     }
 
-    #[async_trait]
     impl CompletionService for TestService {
         type Model = TestCompletionModel;
 
@@ -219,7 +253,23 @@ mod test {
             .system_prompt("test".to_string())
             .temperature(0.2)
             .max_tokens(100)
+            // Test adding tools
+            .tool(build_test_tool(1))
+            .tool(build_test_tool(2))
+            // Test adding a list of tools
+            .tools(vec![build_test_tool(3), build_test_tool(4)])
+            // Test adding tools after a list of tools are added
+            .tool(build_test_tool(5))
             .build::<TestService>()
+    }
+
+    /// Builds a test tool
+    fn build_test_tool(id: i32) -> Tool {
+        ToolBuilder::new()
+            .name(&format!("test_{}", id))
+            .description("test")
+            .parameters(serde_json::json!({}))
+            .build(|_args| Ok(serde_json::json!({"message": "ok"})))
     }
 
     #[tokio::test]
@@ -228,6 +278,9 @@ mod test {
 
         assert_eq!(service.ctx.system_prompt, "test".to_string());
         assert_eq!(service.ctx.model_name, "test".to_string());
+        assert_eq!(service.ctx.temperature, 0.2);
+        assert_eq!(service.ctx.max_tokens, 100);
+        assert_eq!(service.ctx.tools.tools.len(), 5);
 
         let response = service.generate_text("test".to_string()).await.unwrap();
         assert_eq!(response, "test".to_string());
@@ -257,6 +310,6 @@ mod test {
         let service = build_test_service();
 
         // Ensure the service is dynamically compatible
-        let _: Box<dyn CompletionService<Model = TestCompletionModel>> = Box::new(service);
+        let _: Box<dyn CompletionServiceDyn> = Box::new(service);
     }
 }

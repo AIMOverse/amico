@@ -1,7 +1,6 @@
 use std::{future::Future, pin::Pin};
 
 use amico::{a2a::network::Network, resource::Resource};
-use async_trait::async_trait;
 use nostr::{
     event::{EventBuilder, Kind, Tag},
     types::{Filter, SingleLetterTag, Timestamp},
@@ -33,7 +32,6 @@ impl DephyNetwork {
     }
 }
 
-#[async_trait]
 impl Network for DephyNetwork {
     type Message = String;
     type Address = solana_sdk::pubkey::Pubkey;

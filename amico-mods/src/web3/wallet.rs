@@ -150,7 +150,8 @@ impl Wallet {
 
     /// Returns the public keys for both Solana and Ethereum.
     pub fn pubkey_list(&self) -> String {
-        let mut pubkeys = Vec::new();
+        let mut pubkeys: Vec<String> = Vec::new();
+
         #[cfg(feature = "web3-solana")]
         pubkeys.push(format!("- Solana: {}", self.solana.pubkey()));
 

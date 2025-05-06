@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, fmt::Debug, future::Future, sync::Arc};
+use std::{collections::HashMap, fmt::Debug, future::Future, pin::Pin, sync::Arc};
 
 use crate::ai::errors::ToolCallError;
 
@@ -37,26 +37,28 @@ impl Tool {
     pub async fn call(&self, args: serde_json::Value) -> ToolResult {
         match &self.tool_call {
             ToolCallFn::Sync(f) => (f)(args),
-            ToolCallFn::Async(f) => {
-                (f)(args.clone())
-                    .await
-                    .map_err(|err| ToolCallError::ExecutionError {
-                        tool_name: self.definition.name.clone(),
-                        params: args.clone(),
-                        reason: err.to_string(),
-                    })?
-            }
+            ToolCallFn::Async(f) => (f)(args.clone()).await,
         }
     }
 }
+
+/// Sync tool call function
+pub type SyncToolCall = Arc<dyn Fn(serde_json::Value) -> ToolResult + Send + Sync>;
+
+/// Async tool call function
+pub type AsyncToolCall = Arc<
+    dyn Fn(serde_json::Value) -> Pin<Box<dyn Future<Output = ToolResult> + Send + 'static>>
+        + Send
+        + Sync,
+>;
 
 /// Type of the tool call function
 #[derive(Clone)]
 pub enum ToolCallFn {
     /// Synchronous tool call function
-    Sync(Arc<dyn Fn(serde_json::Value) -> ToolResult + Send + Sync>),
+    Sync(SyncToolCall),
     /// Asynchronous tool call function
-    Async(Arc<dyn Fn(serde_json::Value) -> tokio::task::JoinHandle<ToolResult> + Send + Sync>),
+    Async(AsyncToolCall),
 }
 
 /// Builder for `Tool`
@@ -120,7 +122,7 @@ impl ToolBuilder {
                 description: self.description,
                 parameters: self.parameters,
             },
-            tool_call: ToolCallFn::Async(Arc::new(move |args| tokio::task::spawn(tool_call(args)))),
+            tool_call: ToolCallFn::Async(Arc::new(move |args| Box::pin(tool_call(args)))),
         }
     }
 }

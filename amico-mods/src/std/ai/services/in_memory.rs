@@ -6,7 +6,6 @@ use amico::ai::{
     models::{CompletionModel, ModelChoice},
     services::ServiceContext,
 };
-use async_trait::async_trait;
 
 /// Convert a message history to a human-readable brief list for debugging
 fn debug_history(history: &[Message]) -> String {
@@ -30,10 +29,7 @@ fn debug_history(history: &[Message]) -> String {
 }
 
 #[derive(Debug)]
-pub struct InMemoryService<M>
-where
-    M: CompletionModel,
-{
+pub struct InMemoryService<M: CompletionModel + Send> {
     /// The context config for the service
     pub ctx: ServiceContext<M>,
 
@@ -41,7 +37,7 @@ where
     pub history: Vec<Message>,
 }
 
-impl<M: CompletionModel> Plugin for InMemoryService<M> {
+impl<M: CompletionModel + Send> Plugin for InMemoryService<M> {
     fn info(&self) -> &'static PluginInfo {
         &PluginInfo {
             name: "StdInMemoryService",
@@ -50,17 +46,10 @@ impl<M: CompletionModel> Plugin for InMemoryService<M> {
     }
 }
 
-#[async_trait]
-impl<M> amico::ai::services::CompletionService for InMemoryService<M>
-where
-    M: CompletionModel,
-{
+impl<M: CompletionModel + Send> amico::ai::services::CompletionService for InMemoryService<M> {
     type Model = M;
 
-    fn from(context: ServiceContext<M>) -> Self
-    where
-        Self: Sized,
-    {
+    fn from(context: ServiceContext<M>) -> Self {
         Self {
             ctx: context,
             history: Vec::new(),

@@ -5,13 +5,48 @@ use crate::ai::errors::CompletionModelError;
 use crate::ai::{message::Message, services::ServiceContext, tool::ToolDefinition};
 
 /// Trait for completion models.
-#[async_trait]
-pub trait CompletionModel: Send + Sync {
+pub trait CompletionModel {
     /// Completes a prompt with the provider.
-    async fn completion(
+    fn completion(
+        &self,
+        request: &CompletionRequest,
+    ) -> impl Future<Output = Result<ModelChoice, CompletionModelError>> + Send;
+}
+
+#[async_trait]
+pub trait CompletionModelDyn {
+    async fn completion_dyn(
         &self,
         request: &CompletionRequest,
     ) -> Result<ModelChoice, CompletionModelError>;
+}
+
+#[async_trait(?Send)]
+pub trait CompletionModelLocal {
+    async fn completion_local(
+        &self,
+        request: &CompletionRequest,
+    ) -> Result<ModelChoice, CompletionModelError>;
+}
+
+#[async_trait]
+impl<T: CompletionModel + Sync> CompletionModelDyn for T {
+    async fn completion_dyn(
+        &self,
+        request: &CompletionRequest,
+    ) -> Result<ModelChoice, CompletionModelError> {
+        self.completion(request).await
+    }
+}
+
+#[async_trait(?Send)]
+impl<T: CompletionModel> CompletionModelLocal for T {
+    async fn completion_local(
+        &self,
+        request: &CompletionRequest,
+    ) -> Result<ModelChoice, CompletionModelError> {
+        self.completion(request).await
+    }
 }
 
 /// Result of a model choice.

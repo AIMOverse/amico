@@ -2,36 +2,128 @@ use std::pin::Pin;
 
 use async_trait::async_trait;
 
+/// The message handler clusure type
+pub type MessageHandler<M> =
+    Box<dyn Fn(M) -> Pin<Box<dyn Future<Output = ()> + Send + 'static>> + Send + Sync + 'static>;
+
 /// A trait for agent-to-agent (A2A) network communication.
 ///
 /// This trait defines the network model (pubsub model)
 /// and the interface for A2A network communication.
-#[async_trait]
 pub trait Network {
     type Message;
     type Address;
     type Error;
 
     /// Connect to the network.
-    async fn connect(&self) -> Result<(), Self::Error>;
+    fn connect(&self) -> impl Future<Output = Result<(), Self::Error>> + Send;
 
     /// Publish a message to a specific receiver.
-    async fn publish(
+    fn publish(
+        &self,
+        receiver: Self::Address,
+        message: Self::Message,
+    ) -> impl Future<Output = Result<(), Self::Error>> + Send;
+
+    /// Spawn an event handler and subscribe to the network.
+    fn subscribe(
+        &self,
+        on_message: MessageHandler<Self::Message>,
+    ) -> impl Future<Output = Result<(), Self::Error>> + Send;
+}
+
+// Dynamic and local traits
+
+#[async_trait]
+pub trait NetworkDyn {
+    type Message;
+    type Address;
+    type Error;
+
+    async fn connect_dyn(&self) -> Result<(), Self::Error>;
+    async fn publish_dyn(
         &self,
         receiver: Self::Address,
         message: Self::Message,
     ) -> Result<(), Self::Error>;
-
-    /// Spawn an event handler and subscribe to the network.
-    async fn subscribe(
+    async fn subscribe_dyn(
         &self,
-        on_message: Box<
-            dyn Fn(Self::Message) -> Pin<Box<dyn Future<Output = ()> + Send + 'static>>
-                + Send
-                + Sync
-                + 'static,
-        >,
+        on_message: MessageHandler<Self::Message>,
     ) -> Result<(), Self::Error>;
+}
+
+#[async_trait(?Send)]
+pub trait NetworkLocal {
+    type Message;
+    type Address;
+    type Error;
+
+    async fn connect_local(&self) -> Result<(), Self::Error>;
+    async fn publish_local(
+        &self,
+        receiver: Self::Address,
+        message: Self::Message,
+    ) -> Result<(), Self::Error>;
+    async fn subscribe_local(
+        &self,
+        on_message: MessageHandler<Self::Message>,
+    ) -> Result<(), Self::Error>;
+}
+
+// Implement dyn and local traits for all types
+
+#[async_trait]
+impl<T: Network + Sync> NetworkDyn for T
+where
+    T::Address: Send,
+    T::Message: Send,
+{
+    type Address = T::Address;
+    type Message = T::Message;
+    type Error = T::Error;
+
+    async fn connect_dyn(&self) -> Result<(), Self::Error> {
+        self.connect().await
+    }
+    async fn publish_dyn(
+        &self,
+        receiver: Self::Address,
+        message: Self::Message,
+    ) -> Result<(), Self::Error> {
+        self.publish(receiver, message).await
+    }
+
+    async fn subscribe_dyn(
+        &self,
+        on_message: MessageHandler<Self::Message>,
+    ) -> Result<(), Self::Error> {
+        self.subscribe(on_message).await
+    }
+}
+
+#[async_trait(?Send)]
+impl<T: Network> NetworkLocal for T {
+    type Address = T::Address;
+    type Message = T::Message;
+    type Error = T::Error;
+
+    async fn connect_local(&self) -> Result<(), Self::Error> {
+        self.connect().await
+    }
+    async fn publish_local(
+        &self,
+        receiver: Self::Address,
+        message: Self::Message,
+    ) -> Result<(), Self::Error> {
+        self.publish(receiver, message).await
+    }
+
+    async fn subscribe_local(
+        &self,
+        on_message: MessageHandler<Self::Message>,
+    ) -> Result<(), Self::Error> {
+        self.subscribe(on_message).await
+    }
 }
 
 #[cfg(test)]
@@ -45,7 +137,6 @@ mod tests {
 
     struct TestNetwork;
 
-    #[async_trait]
     impl Network for TestNetwork {
         type Message = String;
         type Address = Pubkey;
@@ -82,14 +173,15 @@ mod tests {
 
     #[test]
     fn test_network_dyn_compatible() {
-        let _: Box<dyn Network<Message = String, Address = Pubkey, Error = TestError>> =
+        let _: Box<dyn NetworkDyn<Message = String, Address = Pubkey, Error = TestError>> =
+            Box::new(TestNetwork);
+        let _: Box<dyn NetworkLocal<Message = String, Address = Pubkey, Error = TestError>> =
             Box::new(TestNetwork);
     }
 
     #[tokio::test]
     async fn test_network_methods() {
-        let network: Box<dyn Network<Message = String, Address = Pubkey, Error = TestError>> =
-            Box::new(TestNetwork);
+        let network = TestNetwork;
         let keypair = Keypair::new();
         let pubkey = keypair.pubkey();
         network.connect().await.unwrap();
