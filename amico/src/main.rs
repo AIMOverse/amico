@@ -1,19 +1,28 @@
-use amico::ai::services::ServiceBuilder;
+use std::process;
+use std::sync::mpsc::channel;
+use std::sync::Arc;
+
+use amico::ai::services::{CompletionServiceDyn, ServiceBuilder};
 use amico::resource::Resource;
-use amico::task::Task;
 use amico_mods::interface::Plugin;
 use amico_mods::std::ai::providers::rig::{providers, RigProvider};
 use amico_mods::std::ai::services::InMemoryService;
-use amico_mods::std::ai::tasks::chatbot::cli::CliTask;
 use amico_mods::web3::solana::std::balance::BalanceSensor;
 use amico_mods::web3::solana::std::client::{SolanaClient, SolanaClientResource};
 use amico_mods::web3::solana::std::trade::TradeEffector;
 use amico_mods::web3::wallet::Wallet;
 use colored::Colorize;
+use engine::actions::StdioOutputAction;
+use engine::agent::EcsAgent;
+use engine::components::AiService;
+use engine::event_source::StdioEventSource;
+use engine::events::UserContent;
+use evenio::prelude::*;
 use helpers::solana_rpc_url;
 use prompt::AMICO_SYSTEM_PROMPT;
-use std::process;
+use tokio::sync::Mutex;
 
+mod engine;
 mod helpers;
 mod prompt;
 
@@ -21,8 +30,8 @@ const DEFAULT_OPENAI_BASE_URL: &str = "https://api.openai.com/v1";
 
 fn print_demo_hint() {
     println!("{}", "This is only a PROTOTYPE VERSION of Amico.".yellow());
-    println!("Check out our docs for more information:");
-    println!("https://www.amico.dev");
+    println!("Check out our docs for more information: https://amico.dev");
+    print!("{}", "https://amico.dev".blue());
     println!();
 }
 
@@ -116,23 +125,46 @@ async fn main() {
     println!("Using service plugin: {}", service.info().name);
     println!("Tools enabled:\n{}", service.ctx.tools.describe());
 
-    // Create a task
-    let mut task = CliTask::new(service);
+    // Initialize ECS
+    let mut world = World::new();
 
-    // Run the task in execution order. If encounter error, re-run the task.
-    task.before_run().await.unwrap_or_else(|err| {
-        eprintln!("Error during {task:?}.before_run");
-        tracing::error!("{err}");
-    });
+    let interaction = world.spawn();
+    let ai = world.spawn();
 
-    while let Err(e) = task.run().await {
-        eprintln!("Error running task. Re-running");
-        tracing::error!("Error running task: {:?}", e);
-        continue;
+    world.insert(interaction, StdioEventSource);
+    world.insert(interaction, StdioOutputAction);
+    world.insert(ai, AiService(Arc::new(Mutex::new(service))));
+
+    world.add_handler(
+        move |r: Receiver<UserContent>,
+              it_fetcher: Fetcher<&StdioOutputAction>,
+              ai_fetcher: Fetcher<&AiService>| {
+            let output = it_fetcher.get(interaction).unwrap();
+            let service = ai_fetcher.get(ai).unwrap().0.clone();
+            let UserContent(text) = r.event;
+            let text = text.to_string();
+
+            // Spawning an async task in tokio to run `generate_text`.
+            // We can't await a JoinHandle in sync block, so use a channel instead.
+            let (tx, rx) = channel::<String>();
+            tokio::spawn(async move {
+                let response = service
+                    .lock()
+                    .await
+                    .generate_text_dyn(text)
+                    .await
+                    .unwrap_or_else(|err| format!("Service error: {:?}", err.to_string()));
+
+                tx.send(response).unwrap();
+            });
+
+            let response = rx.recv().unwrap();
+            output.print_message(response);
+        },
+    );
+
+    let agent = EcsAgent::new(&mut world, interaction);
+    if let Err(e) = agent.run().await {
+        tracing::error!("{e}");
     }
-
-    task.after_run().await.unwrap_or_else(|err| {
-        eprintln!("Error during {task:?}.after_run");
-        tracing::error!("{err}");
-    });
 }
