@@ -100,7 +100,7 @@ See our [Document Site](https://www.amico.dev) for more information.
 
 ## License
 
-Amico is released under the [MIT License](https://raw.githubusercontent.com/AIMOverse/amico/main/LICENSE).
+Amico is released under the [MIT License](https://github.com/AIMOverse/amico/blob/main/LICENSE-MIT) **OR** the [Apache-2.0 License](https://github.com/AIMOverse/amico/blob/main/LICENSE-Apache-2.0).
 
 ## Contributing
 
