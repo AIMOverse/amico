@@ -11,11 +11,10 @@ use amico_mods::web3::solana::std::client::{SolanaClient, SolanaClientResource};
 use amico_mods::web3::solana::std::trade::TradeEffector;
 use amico_mods::web3::wallet::Wallet;
 use colored::Colorize;
-use engine::actions::StdioOutputAction;
-use engine::agent::EcsAgent;
+use engine::agent::Agent;
 use engine::components::AiService;
-use engine::event_source::StdioEventSource;
 use engine::events::UserContent;
+use engine::interaction::Stdio;
 use evenio::prelude::*;
 use helpers::solana_rpc_url;
 use prompt::AMICO_SYSTEM_PROMPT;
@@ -45,23 +44,23 @@ async fn main() {
 
     // Read `OPENAI_API_KEY` from environment variable
     let openai_api_key = std::env::var("OPENAI_API_KEY")
-        .inspect(|_| println!("Found OPENAI_API_KEY"))
+        .inspect(|_| println!("{}", "✔ Found OPENAI_API_KEY".green()))
         .unwrap_or_else(|_| {
-            eprintln!("Error: OPENAI_API_KEY is not set");
+            eprintln!("{}", "Error: OPENAI_API_KEY is not set".red());
             process::exit(1);
         });
 
     // Read base url configuration
     let base_url = std::env::var("OPENAI_BASE_URL")
-        .inspect(|_| println!("Found OPENAI_BASE_URL"))
+        .inspect(|_| println!("{}", "✔ Found OPENAI_BASE_URL".green()))
         .unwrap_or_else(|_| {
-            println!("Using default OPENAI_BASE_URL ({DEFAULT_OPENAI_BASE_URL})");
+            println!("{}", "✔ Using default OPENAI_BASE_URL".green());
             DEFAULT_OPENAI_BASE_URL.to_string()
         });
 
     // Read Helius API key
     if std::env::var("HELIUS_API_KEY").is_ok() {
-        println!("Found HELIUS_API_KEY");
+        println!("{}", "✔ Found HELIUS_API_KEY".green());
     } else {
         println!("{}", "WARNING: Helius API key not found.".yellow());
         println!("We recommend you to use Helius API for on-chain actions.");
@@ -72,7 +71,7 @@ async fn main() {
 
     // Load agent wallet
     let wallet = Wallet::load_or_save_new("agent_wallet.txt")
-        .inspect(|_| println!("Loaded agent wallet"))
+        .inspect(|_| println!("{}", "✔ Loaded agent wallet".green()))
         .unwrap_or_else(|err| {
             eprintln!("Error loading wallet: {err}");
             process::exit(1);
@@ -129,15 +128,14 @@ async fn main() {
     let interaction = world.spawn();
     let ai_layer = world.spawn();
 
-    world.insert(interaction, StdioEventSource);
-    world.insert(interaction, StdioOutputAction);
+    world.insert(interaction, Stdio::new());
     world.insert(ai_layer, AiService::new(service));
 
     world.add_handler(
         move |r: Receiver<UserContent>,
-              it_fetcher: Fetcher<&StdioOutputAction>,
+              it_fetcher: Fetcher<&Stdio>,
               ai_fetcher: Fetcher<&AiService>| {
-            let output = it_fetcher.get(interaction).unwrap();
+            let stdio = it_fetcher.get(interaction).unwrap();
             let service = ai_fetcher.get(ai_layer).unwrap().get();
             let UserContent(text) = r.event;
             let text = text.to_string();
@@ -157,11 +155,11 @@ async fn main() {
             });
 
             let response = rx.recv().unwrap();
-            output.print_message(response);
+            stdio.print_message(response);
         },
     );
 
-    let agent = EcsAgent::new(&mut world, interaction);
+    let agent = Agent::new(&mut world, interaction);
     if let Err(e) = agent.run().await {
         tracing::error!("{e}");
     }

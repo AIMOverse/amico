@@ -2,15 +2,15 @@ use anyhow::{anyhow, Result};
 use evenio::prelude::*;
 use tokio::sync::mpsc::channel;
 
-use super::{event_source::StdioEventSource, events::UserContent};
+use super::{events::UserContent, interaction::Stdio};
 
 /// Send events from event generators to ECS World.
-pub struct EcsAgent<'world> {
+pub struct Agent<'world> {
     world: &'world mut World,
     interaction: EntityId,
 }
 
-impl<'world> EcsAgent<'world> {
+impl<'world> Agent<'world> {
     pub fn new<'a>(world: &'a mut World, interaction: EntityId) -> Self
     where
         'a: 'world,
@@ -23,10 +23,10 @@ impl<'world> EcsAgent<'world> {
 
         let stdio_event_source = self
             .world
-            .get::<StdioEventSource>(self.interaction)
+            .get::<Stdio>(self.interaction)
             .ok_or(anyhow!("Failed to find StdioEventSource Component"))?;
 
-        let handle = stdio_event_source.spawn(move |e| {
+        let handle = stdio_event_source.spawn_event_source(move |e| {
             tx.blocking_send(e).unwrap();
         });
 
