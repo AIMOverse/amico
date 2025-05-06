@@ -4,7 +4,7 @@ version = "0.0.2"
 edition = "2024"
 description = "The SDK of the Amico AI Agent Framework"
 repository = "https://github.com/AIMOverse/amico"
-license = "MIT"
+license = "MIT OR Apache-2.0"
 
 [lib]
 name = "amico"
