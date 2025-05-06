@@ -1053,17 +1053,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "amico-auto-trait"
-version = "0.0.1"
-dependencies = [
- "async-trait",
- "proc-macro2",
- "quote",
- "syn 2.0.101",
- "tokio",
-]
-
-[[package]]
 name = "amico-core"
 version = "0.0.1"
 dependencies = [
