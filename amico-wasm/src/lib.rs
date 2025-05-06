@@ -3,6 +3,8 @@
 #[cfg(test)]
 mod tests;
 
+mod js_provider;
+
 use amico::{
     ai::{
         services::{CompletionService, ServiceBuilder},
@@ -15,14 +17,7 @@ use amico_mods::{
         providers::rig::{RigProvider, providers},
         services::InMemoryService,
     },
-    web3::{
-        solana::{
-            balance::BalanceSensor,
-            resources::{SolanaClient, SolanaClientResource},
-            trade::TradeEffector,
-        },
-        wallet::Wallet,
-    },
+    web3::wallet::Wallet,
 };
 use wasm_bindgen::prelude::*;
 
@@ -113,131 +108,6 @@ impl WasmProvider {
     pub fn new(base_url: &str, api_key: &str) -> Self {
         Self {
             provider: RigProvider::openai(providers::openai::Client::from_url(api_key, base_url)),
-        }
-    }
-}
-
-/// WASM wrapper for Solana Client.
-#[derive(Clone)]
-#[wasm_bindgen]
-pub struct WasmSolanaClient {
-    pub(crate) client: SolanaClientResource,
-}
-
-#[wasm_bindgen]
-impl WasmSolanaClient {
-    /// Creates a new `WasmClient`.
-    ///
-    /// # Arguments
-    ///
-    /// * `rpc_url` - The RPC URL for the client.
-    ///
-    /// # Returns
-    ///
-    /// A new `WasmClient`.
-    #[wasm_bindgen(constructor)]
-    pub fn new(rpc_url: &str) -> Self {
-        Self {
-            client: SolanaClientResource::new(
-                "Solana RPC client".to_string(),
-                SolanaClient::new(rpc_url),
-            ),
-        }
-    }
-}
-
-/// WASM wrapper for `BalanceSensor`.
-#[derive(Clone)]
-#[wasm_bindgen]
-pub struct WasmBalanceSensor {
-    pub(crate) sensor: Resource<BalanceSensor>,
-}
-
-#[wasm_bindgen]
-impl WasmBalanceSensor {
-    /// Creates a new `WasmBalanceSensor`.
-    ///
-    /// # Arguments
-    ///
-    /// * `client` - The Solana client resource.
-    /// * `wallet` - The wallet resource.
-    ///
-    /// # Returns
-    ///
-    /// A new `WasmBalanceSensor`.
-    #[wasm_bindgen(constructor)]
-    pub fn new(client: WasmSolanaClient, wallet: WasmWallet) -> Self {
-        Self {
-            sensor: Resource::new(
-                "balance_sensor".to_string(),
-                BalanceSensor::new(client.client, wallet.wallet),
-            ),
-        }
-    }
-
-    /// Returns a tool for getting the balance of the agent's wallet.
-    ///
-    /// # Returns
-    ///
-    /// A `WasmTool` containing the balance sensor's agent wallet balance tool.
-    #[wasm_bindgen]
-    pub fn agent_wallet_balance_tool(&self) -> WasmTool {
-        WasmTool {
-            tool: self.sensor.value().agent_wallet_balance_tool(),
-        }
-    }
-
-    /// Returns a tool for getting the balance of a specific account.
-    ///
-    /// # Returns
-    ///
-    /// A `WasmTool` containing the balance sensor's account balance tool.
-    #[wasm_bindgen]
-    pub fn account_balance_tool(&self) -> WasmTool {
-        WasmTool {
-            tool: self.sensor.value().account_balance_tool(),
-        }
-    }
-}
-
-/// WASM wrapper for `TradeEffector`.
-#[derive(Clone)]
-#[wasm_bindgen]
-pub struct WasmTradeEffector {
-    pub(crate) effector: Resource<TradeEffector>,
-}
-
-#[wasm_bindgen]
-impl WasmTradeEffector {
-    /// Creates a new `WasmTradeEffector`.
-    ///
-    /// # Arguments
-    ///
-    /// * `client` - The Solana client resource.
-    /// * `wallet` - The wallet resource.
-    ///
-    /// # Returns
-    ///
-    /// A new `WasmTradeEffector`.
-    #[wasm_bindgen(constructor)]
-    pub fn new(client: WasmSolanaClient, wallet: WasmWallet) -> Self {
-        Self {
-            effector: Resource::new(
-                "trade_effector".to_string(),
-                TradeEffector::new(client.client, wallet.wallet),
-            ),
-        }
-    }
-
-    /// Returns a tool for executing trades.
-    ///
-    /// # Returns
-    ///
-    /// A `WasmTool` containing the trade effector's tool.
-    #[wasm_bindgen]
-    pub fn tool(&self) -> WasmTool {
-        WasmTool {
-            tool: self.effector.value().tool(),
         }
     }
 }

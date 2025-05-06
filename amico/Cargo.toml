@@ -13,5 +13,5 @@ amico-mods = { path = "../amico-mods" }
 serde_json = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = "0.3.19"
-solana-sdk = "2.2.2"
+solana-sdk = "2.1.21"
 colored = "3.0.0"

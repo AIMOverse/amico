@@ -14,7 +14,7 @@ use solana_sdk::{native_token::LAMPORTS_PER_SOL, pubkey::Pubkey, signer::Signer}
 
 use crate::web3::wallet::WalletResource;
 
-use super::resources::SolanaClientResource;
+use super::client::SolanaClientResource;
 
 /// A sensor that gets the balance of a Solana account.
 #[derive(Clone)]

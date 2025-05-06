@@ -24,28 +24,8 @@ fn test_create_agent() {
     let provider = WasmProvider::new("https://api.openai.com", "sk-123");
 
     // Create the wallet
-    let wallet = WasmWallet::new().unwrap();
-
-    // Create the Solana client
-    let solana_client = WasmSolanaClient::new("https://api.devnet.solana.com");
-
-    // Create the balance sensor
-    let balance_sensor = WasmBalanceSensor::new(solana_client.clone(), wallet.clone());
-
-    // Create the trade effector
-    let trade_effector = WasmTradeEffector::new(solana_client.clone(), wallet.clone());
+    let _wallet = WasmWallet::new().unwrap();
 
     // Create the service
-    let _service = WasmStdService::new(
-        provider,
-        "gpt-4o",
-        "Amico",
-        0.2,
-        1000,
-        vec![
-            balance_sensor.agent_wallet_balance_tool(),
-            balance_sensor.account_balance_tool(),
-            trade_effector.tool(),
-        ],
-    );
+    let _service = WasmStdService::new(provider, "gpt-4o", "Amico", 0.2, 1000, vec![]);
 }

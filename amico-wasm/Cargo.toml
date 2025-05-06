@@ -16,7 +16,7 @@ default = ["console_error_panic_hook"]
 wasm-bindgen = "0.2.100"
 amico-sdk = { path = "../amico-sdk", default-features = false }
 amico-mods = { path = "../amico-mods", default-features = false, features = [
-    "web3",
+    "web3-solana-wasm",
 ] }
 
 # The `console_error_panic_hook` crate provides better debugging of panics by
@@ -26,6 +26,8 @@ amico-mods = { path = "../amico-mods", default-features = false, features = [
 console_error_panic_hook = { version = "0.1.7", optional = true }
 wasm-bindgen-futures = "0.4.50"
 js-sys = "0.3.77"
+getrandom = { version = "0.2", features = ["js"] }
+solana-sdk = { workspace = true }
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.50"

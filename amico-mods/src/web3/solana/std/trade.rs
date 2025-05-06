@@ -9,7 +9,7 @@ use async_trait::async_trait;
 
 use crate::web3::wallet::WalletResource;
 
-use super::{resources::SolanaClientResource, utils::swap::swap};
+use super::{client::SolanaClientResource, utils::swap::swap};
 
 /// A effector that trades solana tokens on Raydium
 #[derive(Clone)]
