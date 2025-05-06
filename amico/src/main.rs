@@ -30,8 +30,8 @@ const DEFAULT_OPENAI_BASE_URL: &str = "https://api.openai.com/v1";
 
 fn print_demo_hint() {
     println!("{}", "This is only a PROTOTYPE VERSION of Amico.".yellow());
-    println!("Check out our docs for more information: https://amico.dev");
-    print!("{}", "https://amico.dev".blue());
+    print!("Check out our docs for more information: ");
+    println!("{}", "https://amico.dev".blue());
     println!();
 }
 
@@ -119,7 +119,7 @@ async fn main() {
 
     println!();
     println!("Agent wallet addresses:");
-    wallet.value().pubkey_list();
+    println!("{}", wallet.value().pubkey_list());
 
     println!();
     println!("Using service plugin: {}", service.info().name);
@@ -129,18 +129,18 @@ async fn main() {
     let mut world = World::new();
 
     let interaction = world.spawn();
-    let ai = world.spawn();
+    let ai_layer = world.spawn();
 
     world.insert(interaction, StdioEventSource);
     world.insert(interaction, StdioOutputAction);
-    world.insert(ai, AiService(Arc::new(Mutex::new(service))));
+    world.insert(ai_layer, AiService(Arc::new(Mutex::new(service))));
 
     world.add_handler(
         move |r: Receiver<UserContent>,
               it_fetcher: Fetcher<&StdioOutputAction>,
               ai_fetcher: Fetcher<&AiService>| {
             let output = it_fetcher.get(interaction).unwrap();
-            let service = ai_fetcher.get(ai).unwrap().0.clone();
+            let service = ai_fetcher.get(ai_layer).unwrap().0.clone();
             let UserContent(text) = r.event;
             let text = text.to_string();
 
