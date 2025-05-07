@@ -15,3 +15,5 @@ tracing = { workspace = true }
 tracing-subscriber = "0.3.19"
 solana-sdk = "2.1.21"
 colored = "3.0.0"
+evenio = "0.6.0"
+anyhow = { workspace = true }

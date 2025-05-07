@@ -1044,7 +1044,9 @@ version = "0.0.1"
 dependencies = [
  "amico-mods",
  "amico-sdk",
+ "anyhow",
  "colored",
+ "evenio",
  "serde_json",
  "solana-sdk",
  "tokio",
@@ -3022,6 +3024,31 @@ checksum = "33d852cb9b869c2a9b3df2f71a3074817f01e1844f839a144f5fcef059a4eb5d"
 dependencies = [
  "libc",
  "windows-sys 0.59.0",
+]
+
+[[package]]
+name = "evenio"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ead7361e14542019e9f883d2022399ef419ac240085b29ed23715f7746094e78"
+dependencies = [
+ "ahash",
+ "bumpalo",
+ "evenio_macros",
+ "hashbrown 0.14.5",
+ "indexmap 2.8.0",
+ "slab",
+]
+
+[[package]]
+name = "evenio_macros"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5aa8c1192efdb4d5734fbdb3cbab6f018807c335eb52b01b3d1b964467cf0097"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.101",
 ]
 
 [[package]]
