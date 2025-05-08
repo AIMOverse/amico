@@ -63,6 +63,7 @@ pub trait Storage<N: Namespace> {
 }
 
 /// The data stored in the Storage in raw bytes
+#[derive(Clone, Debug, PartialEq)]
 pub struct RawData(Vec<u8>);
 
 impl<T: Into<Vec<u8>>> From<T> for RawData {
