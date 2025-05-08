@@ -1,5 +1,6 @@
 pub mod interface;
 pub mod plugin_manager;
+pub mod runtime;
 pub mod std;
 
 #[cfg(feature = "web3")]
