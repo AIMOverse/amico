@@ -4,8 +4,8 @@ pub enum StorageError {
     #[error("I/O error: {0}")]
     Io(#[from] std::io::Error),
 
-    #[error("Key not found: {0}")]
-    NotFound(String),
+    #[error("Namespace not found: {0}")]
+    NoNamespace(String),
 
     #[error("Serialization error: {0}")]
     Serde(#[from] serde_json::Error),
@@ -18,6 +18,15 @@ pub enum StorageError {
 /// Abstract key/value storage where `namespace` groups tables or
 /// directories, and each key maps to raw data.
 pub trait Storage {
+    /// Check if a namespace exists
+    fn exist(&self, namespace: &str) -> bool;
+
+    /// Create a namespace
+    fn create(&mut self, namespace: &str) -> Result<(), StorageError>;
+
+    /// Remove a namespace
+    fn remove(&mut self, namespace: &str) -> Result<(), StorageError>;
+
     /// Read raw bytes for `key` in `namespace`. Returns None if missing.
     fn get(&self, namespace: &str, key: &str) -> Result<Option<RawData>, StorageError>;
 
@@ -29,6 +38,17 @@ pub trait Storage {
 
     /// List all existing keys in `namespace`.
     fn list_keys(&self, namespace: &str) -> Result<Vec<String>, StorageError>;
+
+    // Automatically implemented methods
+
+    /// Create a namespace if not exist
+    fn exist_or_create(&mut self, namespace: &str) -> Result<(), StorageError> {
+        if !self.exist(namespace) {
+            self.create(namespace)?;
+        }
+
+        Ok(())
+    }
 }
 
 /// The data stored in the Storage in raw bytes
@@ -49,3 +69,6 @@ impl RawData {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {}
