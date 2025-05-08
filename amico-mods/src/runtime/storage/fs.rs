@@ -124,7 +124,11 @@ impl Storage<FsNamespace> for FsStorage {
         }
 
         // Create an empty file
-        let file = OpenOptions::new().write(true).create(true).open(&path)?;
+        let file = OpenOptions::new()
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(&path)?;
 
         // Close the file immediately
         drop(file);
@@ -155,7 +159,7 @@ impl Storage<FsNamespace> for FsStorage {
                 let path = entry.path();
 
                 // Only include .json files
-                if path.is_file() && path.extension().map_or(false, |ext| ext == "json") {
+                if path.is_file() && path.extension().is_some_and(|ext| ext == "json") {
                     if let Some(file_stem) = path.file_stem() {
                         if let Some(name) = file_stem.to_str() {
                             namespaces.push(name.to_string());
