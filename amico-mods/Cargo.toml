@@ -25,6 +25,9 @@ std-audio-chatbot = ["dep:amico-hal", "amico-hal/os-common"]
 # Core plugins
 std-core = ["futures", "amico-core", "amico-sdk/core"]
 
+# Runtime
+storage-fs = ["amico-core"]
+
 # A2A features
 a2a = ["amico-sdk/a2a", "sodiumoxide", "base64"]
 a2a-dephy = [
@@ -61,6 +64,7 @@ full = [
     "web3-solana-wasm",
     "web3-ethereum",
     "wasm",
+    "storage-fs",
 ]
 
 [dependencies]

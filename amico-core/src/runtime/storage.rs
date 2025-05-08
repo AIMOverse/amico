@@ -79,6 +79,11 @@ impl RawData {
             StorageError::FromBytes(format!("Converting raw data to UTF-8 String: {}", err))
         })
     }
+
+    /// Return the inner bytes of the raw data
+    pub fn to_bytes(self) -> Vec<u8> {
+        self.0
+    }
 }
 
 #[cfg(test)]
