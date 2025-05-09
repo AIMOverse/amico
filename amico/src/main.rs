@@ -136,8 +136,8 @@ async fn main() {
     let completion = CompletionSystem { ai_layer };
     let speech = SpeechSystem {
         env_layer,
-        user_mp3_path: ".amico/cache/user",
-        agent_mp3_path: ".amico/cache/agent",
+        user_mp3_path: ".amico/cache/user.mp3",
+        agent_mp3_path: ".amico/cache/agent.mp3",
     };
     let chatbot = ChatbotSystem {
         env_layer,
