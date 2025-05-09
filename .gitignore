@@ -1,8 +1,8 @@
 ### Secrets
 agent_wallet.txt
 
-### Audio cache
-cache
+### Amico runtime directory
+.amico
 
 ### VisualStudioCode template
 .vscode/*

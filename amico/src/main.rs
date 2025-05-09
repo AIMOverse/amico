@@ -1,7 +1,6 @@
 use std::process;
-use std::sync::mpsc::channel;
 
-use amico::ai::services::{CompletionServiceDyn, ServiceBuilder};
+use amico::ai::services::ServiceBuilder;
 use amico::resource::Resource;
 use amico_mods::interface::Plugin;
 use amico_mods::std::ai::providers::rig::{providers, RigProvider};
@@ -12,13 +11,14 @@ use amico_mods::web3::solana::std::trade::TradeEffector;
 use amico_mods::web3::wallet::Wallet;
 use colored::Colorize;
 use engine::agent::Agent;
-use engine::components::AiService;
-use engine::events::UserContent;
+use engine::components::{AiService, Recorder};
 use engine::interaction::Stdio;
+use engine::systems::{ChatbotSystem, CompletionSystem, SpeechSystem};
 use evenio::prelude::*;
 use helpers::solana_rpc_url;
 use prompt::AMICO_SYSTEM_PROMPT;
 
+mod audio;
 mod engine;
 mod helpers;
 mod prompt;
@@ -125,41 +125,30 @@ async fn main() {
     // Initialize ECS
     let mut world = World::new();
 
-    let interaction = world.spawn();
+    let itr_layer = world.spawn();
     let ai_layer = world.spawn();
+    let env_layer = world.spawn();
 
-    world.insert(interaction, Stdio::new());
+    world.insert(itr_layer, Stdio::new());
     world.insert(ai_layer, AiService::new(service));
+    world.insert(env_layer, Recorder::new());
 
-    world.add_handler(
-        move |r: Receiver<UserContent>,
-              it_fetcher: Fetcher<&Stdio>,
-              ai_fetcher: Fetcher<&AiService>| {
-            let stdio = it_fetcher.get(interaction).unwrap();
-            let service = ai_fetcher.get(ai_layer).unwrap().get();
-            let UserContent(text) = r.event;
-            let text = text.to_string();
+    let completion = CompletionSystem { ai_layer };
+    let speech = SpeechSystem {
+        env_layer,
+        user_mp3_path: ".amico/cache/user.mp3",
+        agent_mp3_path: ".amico/cache/agent.mp3",
+    };
+    let chatbot = ChatbotSystem {
+        env_layer,
+        itr_layer,
+    };
 
-            // Spawning an async task in tokio to run `generate_text`.
-            // We can't await a JoinHandle in sync block, so use a channel instead.
-            let (tx, rx) = channel::<String>();
-            tokio::spawn(async move {
-                let response = service
-                    .lock()
-                    .await
-                    .generate_text_dyn(text)
-                    .await
-                    .unwrap_or_else(|err| format!("Service error: {:?}", err.to_string()));
+    completion.register_to(&mut world);
+    speech.register_to(&mut world);
+    chatbot.register_to(&mut world);
 
-                tx.send(response).unwrap();
-            });
-
-            let response = rx.recv().unwrap();
-            stdio.print_message(response);
-        },
-    );
-
-    let agent = Agent::new(&mut world, interaction);
+    let agent = Agent::new(&mut world, itr_layer);
     if let Err(e) = agent.run().await {
         tracing::error!("{e}");
     }

@@ -7,8 +7,6 @@ use colored::Colorize;
 use evenio::prelude::*;
 use tokio::{sync::Mutex, task::JoinHandle};
 
-use super::events::UserContent;
-
 /// A signal for output thread to inform input thread the output
 /// task is complete.
 struct OutputComplete;
@@ -34,13 +32,14 @@ impl Stdio {
     }
 
     /// Spawn the user input event source.
-    pub fn spawn_event_source<F>(&self, on_event: F) -> JoinHandle<()>
+    pub fn spawn_event_source<F>(&self, on_input: F) -> JoinHandle<()>
     where
-        F: Fn(UserContent) + Send + 'static,
+        F: Fn(String) + Send + 'static,
     {
         let rx = self.rx.clone();
         tokio::task::spawn_blocking(move || {
             println!();
+            println!("{}", "Type \"s\" to speak to Amico, \"q\" to quit".blue());
             println!("{}", "I'm Amico, how can I assist you today?".green());
             print_message_separator();
 
@@ -53,14 +52,14 @@ impl Stdio {
                 io::stdin().read_line(&mut input).unwrap();
                 let input = input.trim();
 
-                if input.eq_ignore_ascii_case("quit") {
+                if input.eq_ignore_ascii_case("q") {
                     // Exit the run loop
                     break;
                 }
 
                 print_message_separator();
 
-                on_event(UserContent(input.to_string()));
+                on_input(input.to_string());
 
                 // Block until output completes
                 {
@@ -73,12 +72,25 @@ impl Stdio {
         })
     }
 
-    pub fn print_message(&self, message: String) {
+    pub fn print_message(&self, message: &str) {
         println!("{}", "[Amico]".yellow());
         println!("{}", message.green());
         print_message_separator();
 
         // Inform event source to prompt user for the next input
         self.tx.send(OutputComplete).unwrap();
+    }
+
+    pub fn handle_record_start(&self) {
+        println!("{}", "Recording started. Press any key to finish.".yellow());
+        self.tx.send(OutputComplete).unwrap();
+    }
+
+    pub fn handle_record_finish(&self) {
+        println!("{}", "Recording finished".yellow());
+    }
+
+    pub fn handle_playback_finish(&self) {
+        println!("{}", "Playback finished".yellow());
     }
 }

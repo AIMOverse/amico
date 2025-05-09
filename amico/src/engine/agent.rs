@@ -2,7 +2,9 @@ use anyhow::{anyhow, Result};
 use evenio::prelude::*;
 use tokio::sync::mpsc::channel;
 
-use super::{events::UserContent, interaction::Stdio};
+use crate::engine::events::UserInput;
+
+use super::interaction::Stdio;
 
 /// Send events from event generators to ECS World.
 pub struct Agent<'world> {
@@ -19,25 +21,27 @@ impl<'world> Agent<'world> {
     }
 
     pub async fn run(self) -> Result<()> {
-        let (tx, mut rx) = channel::<UserContent>(4);
+        let (tx, mut rx) = channel::<String>(4);
 
         let stdio_event_source = self
             .world
             .get::<Stdio>(self.interaction)
             .ok_or(anyhow!("Failed to find StdioEventSource Component"))?;
 
-        let handle = stdio_event_source.spawn_event_source(move |e| {
-            tx.blocking_send(e).unwrap();
+        let es_handle = stdio_event_source.spawn_event_source(move |content| {
+            tx.blocking_send(content).unwrap();
         });
 
-        while let Some(e) = rx.recv().await {
-            tracing::info!("Received user input event: {:?}", e);
-            self.world.send(e);
+        while let Some(content) = rx.recv().await {
+            tracing::info!("Received user input: {:?}", content);
+
+            // Send to the chatbot system
+            self.world.send(UserInput(content));
         }
 
         tracing::debug!("Channel closed");
 
-        handle.await.unwrap();
+        es_handle.await.unwrap();
 
         Ok(())
     }
