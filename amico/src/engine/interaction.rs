@@ -82,7 +82,8 @@ impl Stdio {
     }
 
     pub fn handle_record_start(&self) {
-        println!("{}", "Recording started.".yellow());
+        println!("{}", "Recording started. Press any key to finish.".yellow());
+        self.tx.send(OutputComplete).unwrap();
     }
 
     pub fn handle_record_finish(&self) {
