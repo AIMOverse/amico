@@ -11,13 +11,14 @@ use amico_mods::web3::solana::std::trade::TradeEffector;
 use amico_mods::web3::wallet::Wallet;
 use colored::Colorize;
 use engine::agent::Agent;
-use engine::components::AiService;
+use engine::components::{AiService, Recorder};
 use engine::interaction::Stdio;
-use engine::systems::ChatbotSystem;
+use engine::systems::{ChatbotSystem, CompletionSystem, SpeechSystem};
 use evenio::prelude::*;
 use helpers::solana_rpc_url;
 use prompt::AMICO_SYSTEM_PROMPT;
 
+mod audio;
 mod engine;
 mod helpers;
 mod prompt;
@@ -126,15 +127,25 @@ async fn main() {
 
     let itr_layer = world.spawn();
     let ai_layer = world.spawn();
+    let env_layer = world.spawn();
 
     world.insert(itr_layer, Stdio::new());
     world.insert(ai_layer, AiService::new(service));
+    world.insert(env_layer, Recorder::new());
 
+    let completion = CompletionSystem { ai_layer };
+    let speech = SpeechSystem {
+        env_layer,
+        user_mp3_path: ".amico/cache/user",
+        agent_mp3_path: ".amico/cache/agent",
+    };
     let chatbot = ChatbotSystem {
+        env_layer,
         itr_layer,
-        ai_layer,
     };
 
+    completion.register_to(&mut world);
+    speech.register_to(&mut world);
     chatbot.register_to(&mut world);
 
     let agent = Agent::new(&mut world, itr_layer);

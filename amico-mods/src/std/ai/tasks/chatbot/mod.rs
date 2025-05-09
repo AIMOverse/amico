@@ -2,7 +2,7 @@
 pub mod audio;
 
 #[cfg(feature = "std-audio-chatbot")]
-mod speech;
+pub mod speech;
 
 #[cfg(feature = "std-cli-chatbot")]
 pub mod cli;
