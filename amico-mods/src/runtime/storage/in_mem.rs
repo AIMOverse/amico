@@ -4,6 +4,7 @@ use amico_core::runtime::storage::{Namespace, RawData, Storage, StorageError};
 
 /// An in-memory storage implementation where each namespace is a collection of key-value pairs
 /// held in memory using a HashMap.
+#[derive(Default)]
 pub struct InMemStorage {
     /// Currently opened namespaces
     namespaces: HashMap<String, InMemNamespace>,

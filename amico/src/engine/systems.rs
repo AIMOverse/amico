@@ -34,7 +34,7 @@ impl ChatbotSystem {
                 let recorder = rcd_fetcher.get(env_layer).unwrap();
 
                 // If user typed "s" and the recorder is not recording, start the recorder.
-                if content.to_ascii_lowercase() == "s" && !recorder.is_recording() {
+                if content.eq_ignore_ascii_case("s") && !recorder.is_recording() {
                     sender.send(RecordStart);
                     stdio.handle_record_start();
                     return;
