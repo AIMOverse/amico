@@ -52,13 +52,13 @@ pub trait Storage<N: Namespace> {
 
     // Automatically implemented methods
 
-    /// Create a namespace if not exist
-    fn exist_or_create(&mut self, namespace: &str) -> Result<(), StorageError> {
+    /// Create and open a namespace if not exist
+    fn open_or_create(&mut self, namespace: &str) -> Result<&mut N, StorageError> {
         if !self.exist(namespace) {
             self.create(namespace)?;
         }
 
-        Ok(())
+        self.open(namespace)
     }
 }
 

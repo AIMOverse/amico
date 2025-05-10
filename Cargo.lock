@@ -1042,6 +1042,7 @@ dependencies = [
 name = "amico"
 version = "0.0.1"
 dependencies = [
+ "amico-core",
  "amico-mods",
  "amico-sdk",
  "anyhow",

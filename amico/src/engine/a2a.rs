@@ -1,25 +1,31 @@
-use std::{future::Future, str::FromStr};
+use std::{collections::HashMap, future::Future, str::FromStr, sync::Arc};
 
-use amico::ai::{
-    errors::ToolCallError,
-    tool::{Tool, ToolBuilder},
+use amico::{
+    ai::{
+        errors::ToolCallError,
+        tool::{Tool, ToolBuilder},
+    },
+    resource::Resource,
 };
+use amico_core::runtime::storage::{Namespace, Storage};
 use amico_mods::{
     a2a::network::{dephy::DephyNetwork, error::NetworkError, A2aNetwork},
+    runtime::storage::fs::FsStorage,
     web3::wallet::WalletResource,
 };
 use nostr::key::Keys;
-use serde_json::json;
+use serde_json::{json, to_value};
 use solana_sdk::pubkey::Pubkey;
-use tokio::task::JoinHandle;
+use tokio::{sync::Mutex, task::JoinHandle};
 
 #[derive(Clone)]
 pub struct A2aModule {
     network: A2aNetwork,
+    storage: Resource<Arc<Mutex<FsStorage>>>,
 }
 
 impl A2aModule {
-    pub fn new(wallet: WalletResource) -> Self {
+    pub fn new(wallet: WalletResource, storage: Resource<Arc<Mutex<FsStorage>>>) -> Self {
         // Setup wallet and keys
         let keys = Keys::generate();
 
@@ -28,6 +34,7 @@ impl A2aModule {
 
         Self {
             network: A2aNetwork::new(dephy_network),
+            storage,
         }
     }
 
@@ -110,6 +117,33 @@ impl A2aModule {
                     Ok(json!({
                         "result": "Message sent successfully"
                     }))
+                }
+            })
+    }
+
+    pub fn contact_list_tool(&self) -> Tool {
+        let storage = self.storage.value().clone();
+        ToolBuilder::new()
+            .name("contact_list")
+            .description("Get your contact address list of the Agent-to-agent network")
+            .parameters(json!({}))
+            .build_async(move |_| {
+                let storage = storage.clone();
+
+                async move {
+                    let mut list = HashMap::new();
+                    {
+                        let mut fs_store = storage.lock().await;
+                        let ns = fs_store.open_or_create("contact").unwrap();
+
+                        for key in ns.keys().unwrap() {
+                            let value = ns.get(&key).unwrap().unwrap().to_string().unwrap();
+                            list.insert(key, value);
+                        }
+                    }
+                    let value = to_value(list).unwrap();
+
+                    Ok(value)
                 }
             })
     }
