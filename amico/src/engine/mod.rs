@@ -1,3 +1,4 @@
+pub mod a2a;
 pub mod agent;
 pub mod components;
 pub mod events;

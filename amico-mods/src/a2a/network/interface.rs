@@ -5,19 +5,28 @@ use solana_sdk::pubkey::Pubkey;
 
 use super::error::NetworkError;
 
+#[derive(Clone)]
 pub struct A2aNetwork {
-    pub network: Arc<dyn NetworkDyn<Message = String, Address = Pubkey, Error = NetworkError>>,
+    pub network:
+        Arc<dyn NetworkDyn<Message = String, Address = Pubkey, Error = NetworkError> + Send + Sync>,
 }
 
 impl A2aNetwork {
     /// Create a new A2aNetwork instance
     pub fn new<N>(network: N) -> Self
     where
-        N: NetworkDyn<Message = String, Address = Pubkey, Error = NetworkError> + 'static,
+        N: NetworkDyn<Message = String, Address = Pubkey, Error = NetworkError>
+            + Send
+            + Sync
+            + 'static,
     {
         Self {
             network: Arc::new(network),
         }
+    }
+
+    pub async fn connect(&self) -> Result<(), NetworkError> {
+        self.network.connect_dyn().await
     }
 }
 

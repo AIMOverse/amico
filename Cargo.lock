@@ -1050,6 +1050,7 @@ dependencies = [
  "evenio",
  "hound",
  "lame",
+ "nostr",
  "rodio",
  "serde_json",
  "solana-sdk",
