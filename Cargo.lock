@@ -1042,6 +1042,7 @@ dependencies = [
 name = "amico"
 version = "0.0.1"
 dependencies = [
+ "amico-core",
  "amico-mods",
  "amico-sdk",
  "anyhow",
@@ -1050,6 +1051,7 @@ dependencies = [
  "evenio",
  "hound",
  "lame",
+ "nostr",
  "rodio",
  "serde_json",
  "solana-sdk",
