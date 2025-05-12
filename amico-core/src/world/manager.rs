@@ -81,3 +81,9 @@ impl WorldManager {
         }
     }
 }
+
+impl Default for WorldManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
