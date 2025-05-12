@@ -1,148 +1,141 @@
-use crate::entities::EventPool;
-use crate::traits::{ActionSelector, EventGenerator};
-use serde_json::{Map, Value};
-use std::sync::{
-    atomic::{AtomicBool, Ordering},
-    Arc, Mutex,
+use tokio::{
+    sync::mpsc::{channel, Receiver, Sender},
+    task::JoinSet,
 };
-use std::thread;
-use std::thread::JoinHandle;
-use std::time::Duration;
 
-/// The Core Agent program
-/// Defines the workflow of the agent
-pub struct Agent {
-    name: String,                      // The name of the agent
-    is_running: Arc<AtomicBool>,       // A flag to indicate if the agent is running
-    event_pool: Arc<Mutex<EventPool>>, // The pool of events
-    event_generator_factory: Arc<Box<dyn Fn() -> Box<dyn EventGenerator + Send> + Send + Sync>>, // The factory to create an event generator
-    action_selector_factory: Arc<Box<dyn Fn() -> Box<dyn ActionSelector + Send> + Send + Sync>>, // The factory to create an action selector
-    thread_handles: Mutex<Vec<JoinHandle<()>>>, // The handles of the threads
+use crate::{
+    ecs,
+    traits::Dispatcher,
+    types::{AgentInstruction, EventContent},
+};
+use crate::{traits::EventSource, types::AgentEvent};
+
+/// The behaviour to choose when event source thread finishes.
+///
+/// TODO: Replace this with `AgentInstruction` after the
+/// agent instruction feature is implemented.
+pub enum OnFinish {
+    // Do nothing when the event source thread finishes.
+    Continue,
+
+    // Stop the Agent workflow when the thread finishes.
+    Stop,
 }
 
-impl Agent {
-    /// Create a new agent
-    ///
-    /// ## Arguments
-    ///
-    /// * `event_generator_factory` - The factory to create an event generator.
-    /// * `action_selector_factory` - The factory to create an action selector.
-    ///
-    /// ## Returns
-    ///
-    /// * `Agent` - The new agent instance.
-    pub fn new(
-        event_generator_factory: Box<dyn Fn() -> Box<dyn EventGenerator + Send> + Send + Sync>,
-        action_selector_factory: Box<dyn Fn() -> Box<dyn ActionSelector + Send> + Send + Sync>,
-    ) -> Self {
+/// The core event-driven Agent program. Defines the workflow of the agent.
+///
+/// The `Agent` creates and manages an ECS `World`, manages
+/// `AgentEvent`s sent from `EventSource`s, and dispatches them.
+///
+/// ## Type parameters
+///
+/// - `D`: The Event `Dispatcher` type, representing the Agent's action selection strategy.
+pub struct Agent<D: Dispatcher> {
+    // The JoinSet to store EventSource thread join handles.
+    event_source_js: JoinSet<OnFinish>,
+
+    // The mpsc channel to receive agent events from event sources.
+    event_tx: Sender<AgentEvent>,
+    event_rx: Receiver<AgentEvent>,
+
+    // The ECS world.
+    world: ecs::World,
+
+    // The event dispatcher
+    dispatcher: D,
+}
+
+impl<D: Dispatcher> Agent<D> {
+    /// Create a new agent.
+    pub fn new(dispatcher: D) -> Self {
+        // Create an event channel.
+        // TODO: make the channel size configurable.
+        let (tx, rx) = channel(4);
+
+        // Build the Agnet.
         Self {
-            name: "Amico".to_string(),
-            is_running: Arc::new(AtomicBool::new(false)),
-            event_pool: Arc::new(Mutex::new(EventPool::new(
-                Duration::from_secs(10).as_secs() as i64,
-            ))),
-            event_generator_factory: Arc::new(event_generator_factory),
-            action_selector_factory: Arc::new(action_selector_factory),
-            thread_handles: Mutex::new(Vec::new()),
+            event_source_js: JoinSet::new(),
+            event_tx: tx,
+            event_rx: rx,
+            world: ecs::World::new(),
+            dispatcher,
         }
     }
 
-    /// The function to start the agent
-    /// This function starts the agent by creating threads for the event generator and action selector.
-    /// This function is called by the start function.
-    /// The threads are stored in the thread_handles list.
-    pub fn run(&self) {
-        // Set the flag to indicate that the agent is running
-        self.is_running.store(true, Ordering::SeqCst);
-        tracing::info!("Agent {} started.", self.name);
+    /// Spawn an event source for the agent.
+    ///
+    /// ## Spawns
+    ///
+    /// Spawns a new `tokio` thread for the event source.
+    ///
+    /// ## Panics
+    ///
+    /// Panics on `SendError`s.
+    pub fn spawn_event_source<S: EventSource + Send + 'static>(
+        &mut self,
+        event_source: S,
+        on_finish: OnFinish,
+    ) {
+        let js = &mut self.event_source_js;
 
-        // Clone the variables to be used in the Event Generator threads
-        let is_running = Arc::clone(&self.is_running);
-        let event_pool_for_eg = Arc::clone(&self.event_pool);
-        let event_generator_factory = Arc::clone(&self.event_generator_factory);
-
-        let generator_handle = thread::spawn(move || {
-            // The factory is called to create an event generator
-            let event_generator = event_generator_factory();
-
-            while is_running.load(Ordering::SeqCst) {
-                // The event generator is used to generate events
-                let new_events = event_generator
-                    .generate_event("example_source".to_string(), Value::Object(Map::new()));
-                // The new events are added to the events list
-                {
-                    tracing::info!("Extending {} events", new_events.len());
-                    // The events pool is locked
-                    let mut unlocked_event_pool = event_pool_for_eg.lock().unwrap();
-                    if let Err(e) = unlocked_event_pool.extend_events(new_events) {
-                        tracing::error!("Failed to extend events: {}", e);
+        // Spawn the thread.
+        let tx = self.event_tx.clone();
+        js.spawn(async move {
+            let tx = tx.clone();
+            event_source
+                .run(move |event| {
+                    let tx = tx.clone();
+                    async move {
+                        // TODO: Handle send errors.
+                        tx.send(event).await.unwrap();
                     }
-                    // The events pool is unlocked
-                }
-            }
+                })
+                .await
+                .unwrap();
+
+            // Yield the finish behaviour to the agent.
+            // See `Agent::run`.
+            on_finish
         });
-
-        // Clone the variables to be used in the Action Selector threads
-        let is_running_action = Arc::clone(&self.is_running);
-        let event_pool_for_as = Arc::clone(&self.event_pool);
-        let action_selector_factory = Arc::clone(&self.action_selector_factory);
-
-        let action_handle = thread::spawn(move || {
-            // The factory is called to create an action selector
-            let mut action_selector = action_selector_factory();
-
-            while is_running_action.load(Ordering::SeqCst) {
-                // The action selector is used to select an action
-                let events;
-                {
-                    // The event pool is locked and checked for events
-                    let mut event_pool_for_as = event_pool_for_as.lock().unwrap();
-                    events = event_pool_for_as.get_events();
-                    // The event pool list is unlocked
-                }
-                match action_selector.select_action(events) {
-                    Ok((action, event_ids)) => {
-                        tracing::info!("Removing {} events", event_ids.len());
-                        {
-                            // Lock the event pool
-                            let mut event_pool_for_as = event_pool_for_as.lock().unwrap();
-
-                            // Try to remove events from the pool
-                            if let Err(e) = event_pool_for_as.remove_events(event_ids) {
-                                tracing::error!("Failed to remove events: {}", e);
-                            }
-                        }
-                        // The event pool is unlocked here automatically when the lock goes out of scope
-                        // The action is executed
-                        if let Err(e) = action.execute() {
-                            tracing::error!("{}", e);
-                        }
-                    }
-                    Err(e) => {
-                        tracing::error!("{}", e);
-                    }
-                }
-            }
-        });
-
-        // Store the thread handles for later use
-        let mut handles = self.thread_handles.lock().unwrap();
-        handles.push(generator_handle);
-        handles.push(action_handle);
     }
 
-    /// The function to stop the agent
-    pub fn stop(&self) {
-        tracing::info!("Agent {} stopping.", self.name);
-        self.is_running.store(false, Ordering::SeqCst);
-    }
-
-    /// Wait for all threads to finish
-    pub fn join(&self) {
-        let mut handles = self.thread_handles.lock().unwrap();
-        for handle in handles.drain(..) {
-            let _ = handle.join();
+    /// The function to run the agent.
+    ///
+    /// `run` dispatches `AgentEvent`s into the ECS `World` and
+    /// awaits all event sources to finish.
+    pub async fn run(&mut self) {
+        // Listen for events sent by event sources.
+        while let Some(event) = self.event_rx.recv().await {
+            if let Some(EventContent::Instruction(instruction)) = event.content {
+                // Received an instruction
+                self.process_instruction(instruction);
+            } else {
+                // The event is not an instruction, dispatch the event to the `World`.
+                if let Err(err) = self.dispatcher.dispatch(&mut self.world, &event).await {
+                    // Just report the error here.
+                    tracing::error!("Error dispatching event {:?}: {}", event, err);
+                }
+            }
         }
-        tracing::info!("All threads have finished.");
+
+        // Waits for event sources to finish.
+        // If an event source choose to stop the agent workflow,
+        while let Some(res) = self.event_source_js.join_next().await {
+            match res {
+                Ok(OnFinish::Continue) => continue,
+                Ok(OnFinish::Stop) => return,
+                Err(err) => {
+                    tracing::error!("Event source JoinSet JoinError: {}", err);
+                    panic!("Event source JoinSet JoinError: {}", err);
+                }
+            }
+        }
+    }
+
+    /// Processes an `AgentInstruction`
+    ///
+    /// TODO: Implement the actual instruction logic here.
+    fn process_instruction(&mut self, instruction: AgentInstruction) {
+        tracing::info!("Processing agent instruction {:?}", instruction);
     }
 }

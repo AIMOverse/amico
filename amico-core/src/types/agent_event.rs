@@ -2,6 +2,8 @@ use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+use super::AgentInstruction;
+
 /// Struct representing an event the agent receives.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AgentEvent {
@@ -15,10 +17,19 @@ pub struct AgentEvent {
     pub source: &'static str,
 
     /// The parameters of the event, stored as a HashMap.
-    pub content: Option<Value>,
+    pub content: Option<EventContent>,
 
     /// The Expiry time of the event.
     pub expiry_time: Option<DateTime<Utc>>,
+}
+
+/// The content of an `AgentEvent`.
+///
+/// Either some content value, or an instruction for the agent.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum EventContent {
+    Content(Value),
+    Instruction(AgentInstruction),
 }
 
 impl AgentEvent {
@@ -37,7 +48,7 @@ impl AgentEvent {
     pub fn new(
         name: &'static str,
         source: &'static str,
-        content: Option<Value>,
+        content: Option<EventContent>,
         lifetime: Option<Duration>,
     ) -> Self {
         // Calculate expiry time
