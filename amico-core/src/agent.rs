@@ -39,7 +39,7 @@ pub struct Agent<D: Dispatcher> {
     event_rx: Receiver<AgentEvent>,
 
     // The ECS world manager.
-    wm: WorldManager,
+    pub wm: WorldManager,
 
     // The event dispatcher
     dispatcher: D,
