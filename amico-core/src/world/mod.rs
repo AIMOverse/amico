@@ -1,5 +1,5 @@
-mod handler;
+mod delegate;
 mod manager;
 
-pub use handler::*;
+pub use delegate::*;
 pub use manager::*;

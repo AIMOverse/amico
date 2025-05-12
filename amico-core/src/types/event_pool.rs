@@ -1,7 +1,8 @@
 use crate::errors::EventPoolError;
 use crate::types::AgentEvent;
-use chrono::{Duration, Utc};
+use chrono::Utc;
 use std::collections::HashMap;
+use std::time::Duration;
 
 /// Struct representing an event pool in the system.
 #[derive(Debug)]
@@ -16,12 +17,12 @@ pub struct EventPool {
     free_list: Vec<u32>,
 
     /// The default expiry time for events in seconds
-    default_expiry_time: i64,
+    default_expiry_time: u64,
 }
 
 impl EventPool {
     /// Creates a new EventPool.
-    pub fn new(default_expiry_time: i64) -> Self {
+    pub fn new(default_expiry_time: u64) -> Self {
         Self {
             events_map: HashMap::new(),
             next_id: 0,
@@ -65,7 +66,7 @@ impl EventPool {
     ///   otherwise returns an `EventPoolError`.
     pub fn extend_events(&mut self, events: Vec<AgentEvent>) -> Result<(), EventPoolError> {
         let now = Utc::now();
-        let default_expiry = now + Duration::seconds(self.default_expiry_time);
+        let default_expiry = now + Duration::from_secs(self.default_expiry_time);
 
         // Optimization: Pre-allocate capacity for the HashMap to reduce reallocations
         self.events_map.reserve(events.len());
@@ -137,7 +138,7 @@ mod tests {
                 "ExampleEvent2",
                 "ExampleSource2",
                 Default::default(),
-                Some(Duration::seconds(10)),
+                Some(Duration::from_secs(10)),
             ),
         ])?;
         assert_eq!(event_pool.get_events().len(), 2);

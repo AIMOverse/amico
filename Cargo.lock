@@ -1065,7 +1065,6 @@ name = "amico-core"
 version = "0.0.1"
 dependencies = [
  "anyhow",
- "async-trait",
  "chrono",
  "evenio",
  "serde",
@@ -1073,6 +1072,7 @@ dependencies = [
  "thiserror 2.0.12",
  "tokio",
  "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]

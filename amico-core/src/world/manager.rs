@@ -2,7 +2,7 @@ use evenio::prelude::Component;
 
 use crate::{ecs, traits::System};
 
-use super::HandlerRegistry;
+use super::{EventDelegate, HandlerRegistry};
 
 /// The ECS World manager.
 ///
@@ -73,5 +73,11 @@ impl WorldManager {
     /// Adds a component `C` to an entity.
     pub fn add_component<C: Component>(&mut self, entity: ecs::EntityId, component: C) {
         self.world.insert(entity, component);
+    }
+
+    pub(crate) fn event_delegate(&mut self) -> EventDelegate {
+        EventDelegate {
+            world: &mut self.world,
+        }
     }
 }

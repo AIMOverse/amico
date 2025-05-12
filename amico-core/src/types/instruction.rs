@@ -4,4 +4,7 @@ use serde::{Deserialize, Serialize};
 ///
 /// TODO: Implement the instruction feature.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum AgentInstruction {}
+pub enum AgentInstruction {
+    /// Signal to terminate the agent event loop
+    Terminate,
+}

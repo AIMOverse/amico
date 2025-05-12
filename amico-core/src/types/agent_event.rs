@@ -1,6 +1,10 @@
-use chrono::{DateTime, Duration, Utc};
-use serde::{Deserialize, Serialize};
+use std::time::Duration;
+
+use chrono::{DateTime, Utc};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::Value;
+
+use crate::errors::AgentEventError;
 
 use super::AgentInstruction;
 
@@ -60,6 +64,19 @@ impl AgentEvent {
             source,      // The source of the event
             content,     // The content of the event
             expiry_time, // The expiry time of the event
+        }
+    }
+
+    pub fn parse_content<T: DeserializeOwned>(&self) -> Result<T, AgentEventError> {
+        match &self.content {
+            Some(EventContent::Content(content)) => {
+                let content = content.clone();
+                serde_json::from_value::<T>(content).map_err(AgentEventError::SerdeJson)
+            }
+            Some(_) => Err(AgentEventError::ContentError(
+                "Content is an AgentInstruction",
+            )),
+            None => Err(AgentEventError::ContentError("Content is None")),
         }
     }
 }

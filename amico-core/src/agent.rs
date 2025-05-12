@@ -81,17 +81,42 @@ impl<D: Dispatcher> Agent<D> {
         // Spawn the thread.
         let tx = self.event_tx.clone();
         js.spawn(async move {
-            let tx = tx.clone();
+            let event_tx = tx.clone();
             event_source
                 .run(move |event| {
-                    let tx = tx.clone();
+                    tracing::debug!("On AgentEvent {:?}", event);
+                    let tx = event_tx.clone();
                     async move {
                         // TODO: Handle send errors.
-                        tx.send(event).await.unwrap();
+                        if let Err(err) = tx.send(event).await {
+                            tracing::warn!("Failed to send AgentEvent {}", err);
+                        }
                     }
                 })
                 .await
                 .unwrap();
+
+            tracing::debug!("Event source ended.");
+
+            // Send termination signal if needed
+            match &on_finish {
+                OnFinish::Stop => {
+                    // Send a termination instruction to signal the main loop to exit
+                    let terminate_event = AgentEvent::new(
+                        "Terminate",
+                        "EventSource",
+                        Some(EventContent::Instruction(AgentInstruction::Terminate)),
+                        None,
+                    );
+
+                    // Try to send the termination event, but don't panic if it fails
+                    // (channel might already be closed)
+                    if let Err(err) = tx.send(terminate_event).await {
+                        tracing::warn!("Failed to send termination event: {}", err);
+                    }
+                }
+                OnFinish::Continue => {}
+            }
 
             // Yield the finish behaviour to the agent.
             // See `Agent::run`.
@@ -106,17 +131,33 @@ impl<D: Dispatcher> Agent<D> {
     pub async fn run(&mut self) {
         // Listen for events sent by event sources.
         while let Some(event) = self.event_rx.recv().await {
+            tracing::debug!("Received AgentEvent {:?}", event);
+
             if let Some(EventContent::Instruction(instruction)) = event.content {
                 // Received an instruction
-                self.process_instruction(instruction);
+                tracing::debug!("Received instruction {:?}", instruction);
+                match instruction {
+                    // TODO: process other instructions
+                    AgentInstruction::Terminate => {
+                        tracing::info!("Terminating event loop due to Terminate instruction");
+                        break; // Exit the event loop immediately
+                    }
+                }
             } else {
                 // The event is not an instruction, dispatch the event to the `World`.
-                if let Err(err) = self.dispatcher.dispatch(&mut self.wm, &event).await {
+                tracing::debug!("Dispatching event {:?}", event);
+                if let Err(err) = self
+                    .dispatcher
+                    .dispatch(&event, self.wm.event_delegate())
+                    .await
+                {
                     // Just report the error here.
                     tracing::error!("Error dispatching event {:?}: {}", event, err);
                 }
             }
         }
+
+        tracing::info!("Exited event loop.");
 
         // Waits for event sources to finish.
         // If an event source choose to stop the agent workflow,
@@ -130,12 +171,5 @@ impl<D: Dispatcher> Agent<D> {
                 }
             }
         }
-    }
-
-    /// Processes an `AgentInstruction`
-    ///
-    /// TODO: Implement the actual instruction logic here.
-    fn process_instruction(&mut self, instruction: AgentInstruction) {
-        tracing::info!("Processing agent instruction {:?}", instruction);
     }
 }
