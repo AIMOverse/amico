@@ -1,6 +1,6 @@
-use crate::entities::Event;
 use crate::errors::ActionSelectorError;
 use crate::traits::Action;
+use crate::types::AgentEvent;
 
 /// Trait for selecting an action based on an event.
 pub trait ActionSelector {
@@ -12,6 +12,6 @@ pub trait ActionSelector {
     ///     and the IDs of the events that is going to be removed from event pool.
     fn select_action(
         &mut self,
-        events: Vec<Event>,
+        events: Vec<AgentEvent>,
     ) -> Result<(Box<dyn Action>, Vec<u32>), ActionSelectorError>;
 }
