@@ -2,8 +2,7 @@ use std::future::Future;
 
 use async_trait::async_trait;
 
-use crate::ecs;
-use crate::types::AgentEvent;
+use crate::{types::AgentEvent, world::WorldManager};
 
 /// `Dispatcher`s dispatches `AgentEvent`s into the ECS `World`.
 ///
@@ -17,7 +16,7 @@ pub trait Dispatcher {
     /// Dispatches an `AgentEvent` into the ECS `World`.
     fn dispatch(
         &mut self,
-        world: &mut ecs::World,
+        world: &mut WorldManager,
         agent_event: &AgentEvent,
     ) -> impl Future<Output = anyhow::Result<()>>;
 }
@@ -31,7 +30,7 @@ pub trait DispatcherLocal {
     /// Dispatches an `AgentEvent` into the ECS `World`.
     async fn dispatch_local(
         &mut self,
-        world: &mut ecs::World,
+        world: &mut WorldManager,
         agent_event: &AgentEvent,
     ) -> anyhow::Result<()>;
 }
@@ -40,7 +39,7 @@ pub trait DispatcherLocal {
 impl<T: Dispatcher> DispatcherLocal for T {
     async fn dispatch_local(
         &mut self,
-        world: &mut ecs::World,
+        world: &mut WorldManager,
         agent_event: &AgentEvent,
     ) -> anyhow::Result<()> {
         self.dispatch(world, agent_event).await

@@ -4,9 +4,9 @@ use tokio::{
 };
 
 use crate::{
-    ecs,
     traits::Dispatcher,
     types::{AgentInstruction, EventContent},
+    world::WorldManager,
 };
 use crate::{traits::EventSource, types::AgentEvent};
 
@@ -38,8 +38,8 @@ pub struct Agent<D: Dispatcher> {
     event_tx: Sender<AgentEvent>,
     event_rx: Receiver<AgentEvent>,
 
-    // The ECS world.
-    world: ecs::World,
+    // The ECS world manager.
+    wm: WorldManager,
 
     // The event dispatcher
     dispatcher: D,
@@ -57,7 +57,7 @@ impl<D: Dispatcher> Agent<D> {
             event_source_js: JoinSet::new(),
             event_tx: tx,
             event_rx: rx,
-            world: ecs::World::new(),
+            wm: WorldManager::new(),
             dispatcher,
         }
     }
@@ -111,7 +111,7 @@ impl<D: Dispatcher> Agent<D> {
                 self.process_instruction(instruction);
             } else {
                 // The event is not an instruction, dispatch the event to the `World`.
-                if let Err(err) = self.dispatcher.dispatch(&mut self.world, &event).await {
+                if let Err(err) = self.dispatcher.dispatch(&mut self.wm, &event).await {
                     // Just report the error here.
                     tracing::error!("Error dispatching event {:?}: {}", event, err);
                 }
