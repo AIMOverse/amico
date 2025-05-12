@@ -7,7 +7,6 @@ repository = "https://github.com/AIMOverse/amico"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-core-macros = { path = "./core-macros" }
 serde = { workspace = true, features = ["derive"] }
 thiserror = { workspace = true }
 toml = "0.8.19"

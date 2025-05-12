@@ -1,4 +1,3 @@
-use crate::config::{Config, CoreConfig};
 use crate::entities::EventPool;
 use crate::traits::{ActionSelector, EventGenerator};
 use log::{error, info};
@@ -9,6 +8,7 @@ use std::sync::{
 };
 use std::thread;
 use std::thread::JoinHandle;
+use std::time::Duration;
 
 /// The Core Agent program
 /// Defines the workflow of the agent
@@ -30,15 +30,15 @@ impl Agent {
     ///    Returns:
     ///   * `Agent` - The new agent instance.
     pub fn new(
-        config_path: &str,
         event_generator_factory: Box<dyn Fn() -> Box<dyn EventGenerator + Send> + Send + Sync>,
         action_selector_factory: Box<dyn Fn() -> Box<dyn ActionSelector + Send> + Send + Sync>,
     ) -> Self {
-        let config = Self::load_config(config_path);
         Self {
-            name: config.name,
+            name: "Amico".to_string(),
             is_running: Arc::new(AtomicBool::new(false)),
-            event_pool: Arc::new(Mutex::new(EventPool::new(config.event_config.expiry_time))),
+            event_pool: Arc::new(Mutex::new(EventPool::new(
+                Duration::from_secs(10).as_secs() as i64,
+            ))),
             event_generator_factory: Arc::new(event_generator_factory),
             action_selector_factory: Arc::new(action_selector_factory),
             thread_handles: Mutex::new(Vec::new()),
@@ -153,11 +153,5 @@ impl Agent {
             let _ = handle.join();
         }
         info!("All threads have finished.");
-    }
-
-    /// Load the configuration from the file
-    fn load_config(config_path: &str) -> CoreConfig {
-        let config_str = std::fs::read_to_string(config_path).unwrap();
-        CoreConfig::from_toml_str(&config_str).unwrap()
     }
 }

@@ -1065,7 +1065,6 @@ name = "amico-core"
 version = "0.0.1"
 dependencies = [
  "chrono",
- "core-macros",
  "env_logger",
  "log",
  "serde",
@@ -2432,16 +2431,6 @@ name = "core-foundation-sys"
 version = "0.8.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "773648b94d0e5d620f64f280777445740e61fe701025087ec8b57f45c791888b"
-
-[[package]]
-name = "core-macros"
-version = "0.0.2"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.101",
- "toml 0.8.20",
-]
 
 [[package]]
 name = "coreaudio-rs"
