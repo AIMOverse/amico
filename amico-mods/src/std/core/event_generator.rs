@@ -1,4 +1,4 @@
-use amico_core::entities::Event;
+use amico_core::types::{AgentEvent, EventContent};
 use serde_json::Value;
 use std::{thread, time::Duration};
 
@@ -7,14 +7,14 @@ use std::{thread, time::Duration};
 pub struct EventGenerator;
 
 impl amico_core::traits::EventGenerator for EventGenerator {
-    fn generate_event(&self, source: String, params: Value) -> Vec<Event> {
+    fn generate_event(&self, source: &'static str, params: Value) -> Vec<AgentEvent> {
         // TODO Implement the event generation logic here
         // Simulate some processing time
         thread::sleep(Duration::from_secs(30));
-        vec![Event::new(
-            "HalfMinuteEvent".to_string(),
+        vec![AgentEvent::new(
+            "HalfMinuteEvent",
             source,
-            params,
+            Some(EventContent::Content(params)),
             None,
         )]
     }

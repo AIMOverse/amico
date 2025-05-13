@@ -2,9 +2,9 @@ use crate::interface::{Plugin, PluginCategory, PluginInfo};
 use amico::ai::services::CompletionService;
 use amico::core::action_map::ActionMap;
 use amico::core::model::Model;
-use amico_core::entities::Event;
 use amico_core::errors::ActionSelectorError;
 use amico_core::traits::Action;
+use amico_core::types::AgentEvent;
 use futures::executor::block_on;
 
 /// A Standard Implementation of the ActionSelector Plugin.
@@ -39,7 +39,7 @@ where
     // Temporarily ignore the events
     fn select_action(
         &mut self,
-        events: Vec<Event>,
+        events: Vec<AgentEvent>,
     ) -> Result<(Box<dyn Action>, Vec<u32>), ActionSelectorError> {
         // Update the prompt
         let prompt = format!(

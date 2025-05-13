@@ -7,7 +7,11 @@ use amico::{
     },
     resource::Resource,
 };
-use amico_core::runtime::storage::{Namespace, Storage};
+use amico_core::{
+    runtime::storage::{Namespace, Storage},
+    traits::EventSource,
+    types::{AgentEvent, EventContent},
+};
 use amico_mods::{
     a2a::network::{dephy::DephyNetwork, error::NetworkError, A2aNetwork},
     runtime::storage::fs::FsStorage,
@@ -16,7 +20,9 @@ use amico_mods::{
 use nostr::key::Keys;
 use serde_json::{json, to_value};
 use solana_sdk::pubkey::Pubkey;
-use tokio::{sync::Mutex, task::JoinHandle};
+use tokio::sync::Mutex;
+
+use super::events::A2aMessageReceived;
 
 #[derive(Clone)]
 pub struct A2aModule {
@@ -40,22 +46,6 @@ impl A2aModule {
 
     pub async fn connect(&self) -> Result<(), NetworkError> {
         self.network.connect().await
-    }
-
-    pub fn spawn_event_source<F, Fut>(&self, on_event: F) -> JoinHandle<()>
-    where
-        F: Fn(String) -> Fut + Send + Sync + 'static,
-        Fut: Future<Output = ()> + Send + 'static,
-    {
-        let network = self.network.clone().network;
-        let on_event = Box::pin(on_event);
-        tokio::spawn(async move {
-            network
-                .subscribe_dyn(Box::new(move |message| Box::pin(on_event(message))))
-                .await
-                .inspect_err(|err| tracing::error!("{}", err))
-                .unwrap();
-        })
     }
 
     pub fn send_message_tool(&self) -> Tool {
@@ -146,5 +136,29 @@ impl A2aModule {
                     Ok(value)
                 }
             })
+    }
+}
+
+impl EventSource for A2aModule {
+    async fn run<F, Fut>(&self, on_event: F) -> anyhow::Result<()>
+    where
+        F: Fn(AgentEvent) -> Fut + Send + Sync + 'static,
+        Fut: Future<Output = ()> + Send + 'static,
+    {
+        self.network
+            .network
+            .subscribe_dyn(Box::new(move |message| {
+                Box::pin(on_event(AgentEvent::new(
+                    "A2aMessageReceived",
+                    "A2aModule",
+                    Some(EventContent::Content(
+                        serde_json::to_value(A2aMessageReceived(message)).unwrap(),
+                    )),
+                    None,
+                )))
+            }))
+            .await?;
+
+        Ok(())
     }
 }

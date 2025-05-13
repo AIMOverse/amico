@@ -1,4 +1,4 @@
-use crate::entities::Event;
+use crate::types::AgentEvent;
 use serde_json::Value;
 
 /// Trait for generating events.
@@ -14,5 +14,5 @@ pub trait EventGenerator {
     /// # Returns
     ///
     /// * `Vec<Event>` - A vector of Event instances that is going to be added into event pool.
-    fn generate_event(&self, source: String, params: Value) -> Vec<Event>;
+    fn generate_event(&self, source: &'static str, params: Value) -> Vec<AgentEvent>;
 }

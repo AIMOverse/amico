@@ -1,13 +1,14 @@
-use crate::entities::Event;
 use crate::errors::EventPoolError;
-use chrono::{Duration, Utc};
+use crate::types::AgentEvent;
+use chrono::Utc;
 use std::collections::HashMap;
+use std::time::Duration;
 
 /// Struct representing an event pool in the system.
 #[derive(Debug)]
 pub struct EventPool {
     /// Key is the Event ID, value is the Event itself.
-    events_map: HashMap<u32, Event>,
+    events_map: HashMap<u32, AgentEvent>,
 
     /// The next ID candidate if `free_list` is empty.
     next_id: u32,
@@ -16,12 +17,12 @@ pub struct EventPool {
     free_list: Vec<u32>,
 
     /// The default expiry time for events in seconds
-    default_expiry_time: i64,
+    default_expiry_time: u64,
 }
 
 impl EventPool {
     /// Creates a new EventPool.
-    pub fn new(default_expiry_time: i64) -> Self {
+    pub fn new(default_expiry_time: u64) -> Self {
         Self {
             events_map: HashMap::new(),
             next_id: 0,
@@ -32,7 +33,7 @@ impl EventPool {
 
     /// Updates the events map and retrieves all events that hasn't expired as a cloned vector and .
     /// (Depending on requirements, returning references or an iterator might be preferable.)
-    pub fn get_events(&mut self) -> Vec<Event> {
+    pub fn get_events(&mut self) -> Vec<AgentEvent> {
         let now = Utc::now();
 
         // Use drain_filter() to remove expired events and recycle IDs
@@ -63,9 +64,9 @@ impl EventPool {
     ///
     /// * `Result<(), EventPoolError>` - Returns `Ok(())` if all events are successfully inserted,
     ///   otherwise returns an `EventPoolError`.
-    pub fn extend_events(&mut self, events: Vec<Event>) -> Result<(), EventPoolError> {
+    pub fn extend_events(&mut self, events: Vec<AgentEvent>) -> Result<(), EventPoolError> {
         let now = Utc::now();
-        let default_expiry = now + Duration::seconds(self.default_expiry_time);
+        let default_expiry = now + Duration::from_secs(self.default_expiry_time);
 
         // Optimization: Pre-allocate capacity for the HashMap to reduce reallocations
         self.events_map.reserve(events.len());
@@ -119,5 +120,37 @@ impl EventPool {
         // Increment next_id for the next allocation.
         self.next_id += 1;
         Ok(id)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_event_pool() -> Result<(), EventPoolError> {
+        // Create a new EventPool
+        let mut event_pool = EventPool::new(5);
+        // Add two events to the event pool
+        event_pool.extend_events(vec![
+            AgentEvent::new("ExampleEvent", "ExampleSource", Default::default(), None),
+            AgentEvent::new(
+                "ExampleEvent2",
+                "ExampleSource2",
+                Default::default(),
+                Some(Duration::from_secs(10)),
+            ),
+        ])?;
+        assert_eq!(event_pool.get_events().len(), 2);
+
+        // Wait for 6 seconds
+        std::thread::sleep(std::time::Duration::from_secs(6));
+
+        assert_eq!(event_pool.get_events().len(), 1);
+
+        // remove the last event
+        event_pool.remove_events(vec![1])?;
+
+        Ok(())
     }
 }

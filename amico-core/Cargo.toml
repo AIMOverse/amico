@@ -7,11 +7,17 @@ repository = "https://github.com/AIMOverse/amico"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-core-macros = { path = "./core-macros" }
 serde = { workspace = true, features = ["derive"] }
 thiserror = { workspace = true }
-toml = "0.8.19"
-log = "0.4.25"
-env_logger = "0.11.6"
-chrono = { version = "0.4.39", features = ["serde"] }
+chrono = { workspace = true }
 serde_json = { workspace = true, features = ["std"] }
+tracing = { workspace = true }
+anyhow = { workspace = true }
+evenio = { workspace = true }
+
+# Check: For WASM support, only `sync`, `macros`, `io-util`, `rt` and `time` features are supported
+tokio = { workspace = true, features = ["rt", "sync"] }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["rt", "sync", "macros", "time"] }
+tracing-subscriber = "0.3.19"

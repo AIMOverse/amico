@@ -3,6 +3,7 @@ use std::sync::Arc;
 
 use amico::ai::services::ServiceBuilder;
 use amico::resource::Resource;
+use amico_core::{Agent, OnFinish};
 use amico_mods::interface::Plugin;
 use amico_mods::runtime::storage::fs::FsStorage;
 use amico_mods::std::ai::providers::rig::{providers, RigProvider};
@@ -13,11 +14,10 @@ use amico_mods::web3::solana::std::trade::TradeEffector;
 use amico_mods::web3::wallet::Wallet;
 use colored::Colorize;
 use engine::a2a::A2aModule;
-use engine::agent::Agent;
 use engine::components::{AiService, Recorder};
+use engine::dispatcher::MatchDispatcher;
 use engine::interaction::Stdio;
 use engine::systems::{ChatbotSystem, CompletionSystem, SpeechSystem};
-use evenio::prelude::*;
 use helpers::solana_rpc_url;
 use prompt::AMICO_SYSTEM_PROMPT;
 use tokio::sync::Mutex;
@@ -149,33 +149,29 @@ async fn main() {
     println!("Tools enabled:\n{}", service.ctx.tools.describe());
 
     // Initialize ECS
-    let mut world = World::new();
+    let mut agent = Agent::new(MatchDispatcher);
 
-    let itr_layer = world.spawn();
-    let ai_layer = world.spawn();
-    let env_layer = world.spawn();
+    let int_layer = agent.wm.int_layer();
+    let ai_layer = agent.wm.ai_layer();
+    let env_layer = agent.wm.env_layer();
 
-    world.insert(itr_layer, Stdio::new());
-    world.insert(ai_layer, AiService::new(service));
-    world.insert(env_layer, Recorder::new());
+    agent.wm.add_component(int_layer, Stdio::new());
+    agent.wm.add_component(ai_layer, AiService::new(service));
+    agent.wm.add_component(env_layer, Recorder::new());
 
-    let completion = CompletionSystem { ai_layer };
-    let speech = SpeechSystem {
+    agent.wm.register_system(CompletionSystem { ai_layer });
+    agent.wm.register_system(SpeechSystem {
         env_layer,
         user_mp3_path: ".amico/cache/user.mp3",
         agent_mp3_path: ".amico/cache/agent.mp3",
-    };
-    let chatbot = ChatbotSystem {
+    });
+    agent.wm.register_system(ChatbotSystem {
         env_layer,
-        itr_layer,
-    };
+        int_layer,
+    });
 
-    completion.register_to(&mut world);
-    speech.register_to(&mut world);
-    chatbot.register_to(&mut world);
+    agent.spawn_event_source(a2a, OnFinish::Continue);
+    agent.spawn_event_source(Stdio::new(), OnFinish::Stop);
 
-    let agent = Agent::new(&mut world, itr_layer, a2a);
-    if let Err(e) = agent.run().await {
-        tracing::error!("{e}");
-    }
+    agent.run().await;
 }
