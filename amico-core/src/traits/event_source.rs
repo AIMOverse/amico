@@ -17,5 +17,5 @@ pub trait EventSource {
     fn run<F, Fut>(&self, on_event: F) -> impl Future<Output = anyhow::Result<()>> + Send
     where
         F: Fn(AgentEvent) -> Fut + Send + Sync + 'static,
-        Fut: Future + Send + 'static;
+        Fut: Future<Output = ()> + Send + 'static;
 }

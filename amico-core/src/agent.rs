@@ -86,10 +86,16 @@ impl<D: Dispatcher> Agent<D> {
                 .run(move |event| {
                     tracing::debug!("On AgentEvent {:?}", event);
                     let tx = event_tx.clone();
+
+                    // Never enters this `async move` block
                     async move {
-                        // TODO: Handle send errors.
+                        let name = event.name;
+                        tracing::debug!("Sending Event to agent...");
+
                         if let Err(err) = tx.send(event).await {
                             tracing::warn!("Failed to send AgentEvent {}", err);
+                        } else {
+                            tracing::info!("Sent AgentEvent {}", name);
                         }
                     }
                 })
