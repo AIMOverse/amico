@@ -1,18 +1,11 @@
 use std::{
-    future::Future,
     io::{self, Write},
     sync::Arc,
 };
 
-use amico_core::{
-    ecs::Component,
-    traits::EventSource,
-    types::{AgentEvent, EventContent},
-};
 use colored::Colorize;
-use tokio::sync::Mutex;
-
-use crate::engine::events::ConsoleInput;
+use evenio::prelude::*;
+use tokio::{sync::Mutex, task::JoinHandle};
 
 /// A signal for output thread to inform input thread the output
 /// task is complete.
@@ -38,6 +31,47 @@ impl Stdio {
         }
     }
 
+    /// Spawn the user input event source.
+    pub fn spawn_event_source<F>(&self, on_input: F) -> JoinHandle<()>
+    where
+        F: Fn(String) + Send + 'static,
+    {
+        let rx = self.rx.clone();
+        tokio::task::spawn_blocking(move || {
+            println!();
+            println!("{}", "Type \"s\" to speak to Amico, \"q\" to quit".blue());
+            println!("{}", "I'm Amico, how can I assist you today?".green());
+            print_message_separator();
+
+            loop {
+                print!("> ");
+
+                io::stdout().flush().unwrap();
+
+                let mut input = String::new();
+                io::stdin().read_line(&mut input).unwrap();
+                let input = input.trim();
+
+                if input.eq_ignore_ascii_case("q") {
+                    // Exit the run loop
+                    break;
+                }
+
+                print_message_separator();
+
+                on_input(input.to_string());
+
+                // Block until output completes
+                {
+                    rx.blocking_lock().recv().unwrap();
+                }
+            }
+
+            print_message_separator();
+            println!("{}", "Exiting chatbot. Goodbye!".green());
+        })
+    }
+
     pub fn print_message(&self, message: &str) {
         println!("{}", "[Amico]".yellow());
         println!("{}", message.green());
@@ -58,55 +92,5 @@ impl Stdio {
 
     pub fn handle_playback_finish(&self) {
         println!("{}", "Playback finished".yellow());
-    }
-}
-
-impl EventSource for Stdio {
-    async fn run<F, Fut>(&self, on_event: F) -> anyhow::Result<()>
-    where
-        F: Fn(amico_core::types::AgentEvent) -> Fut + Send + Sync + 'static,
-        Fut: Future<Output = ()> + Send + 'static,
-    {
-        println!();
-        println!("{}", "Type \"s\" to speak to Amico, \"q\" to quit".blue());
-        println!("{}", "I'm Amico, how can I assist you today?".green());
-        print_message_separator();
-
-        loop {
-            print!("> ");
-
-            io::stdout().flush().unwrap();
-
-            let mut input = String::new();
-            io::stdin().read_line(&mut input).unwrap();
-            let input = input.trim();
-
-            if input.eq_ignore_ascii_case("q") {
-                // Exit the run loop
-                break;
-            }
-
-            print_message_separator();
-
-            on_event(AgentEvent::new(
-                "ConsoleInput",
-                "Stdio",
-                Some(EventContent::Content(
-                    serde_json::to_value(ConsoleInput(input.to_string())).unwrap(),
-                )),
-                None,
-            ))
-            .await;
-
-            // Block until output completes
-            {
-                self.rx.lock().await.recv().unwrap();
-            }
-        }
-
-        print_message_separator();
-        println!("{}", "Exiting chatbot. Goodbye!".green());
-
-        Ok(())
     }
 }

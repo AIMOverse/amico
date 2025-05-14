@@ -1,7 +1,6 @@
 use std::sync::mpsc::channel;
 
 use amico::ai::services::CompletionServiceDyn;
-use amico_core::{traits::System, world::HandlerRegistry};
 use amico_mods::std::ai::tasks::chatbot::speech::{speech_to_text, text_to_speech};
 use evenio::prelude::*;
 
@@ -12,18 +11,18 @@ use super::{
 };
 
 pub struct ChatbotSystem {
-    pub int_layer: EntityId,
+    pub itr_layer: EntityId,
     pub env_layer: EntityId,
 }
 
-impl System for ChatbotSystem {
-    fn register_to(&self, mut registry: HandlerRegistry) {
+impl ChatbotSystem {
+    pub fn register_to(&self, world: &mut World) {
         let Self {
-            int_layer: itr_layer,
+            itr_layer,
             env_layer,
         } = *self;
 
-        registry.register(
+        world.add_handler(
             move |r: Receiver<UserInput>,
                   mut sender: Sender<(UserContent, RecordStart, RecordFinish)>,
                   io_fetcher: Fetcher<&Stdio>,
@@ -53,7 +52,7 @@ impl System for ChatbotSystem {
             },
         );
 
-        registry.register(
+        world.add_handler(
             move |r: Receiver<AgentContent>, io_fetcher: Fetcher<&Stdio>| {
                 tracing::debug!("ChatbotSystem: Received {:?}", r.event);
 
@@ -63,7 +62,7 @@ impl System for ChatbotSystem {
             },
         );
 
-        registry.register(
+        world.add_handler(
             move |r: Receiver<PlaybackFinish>, io_fetcher: Fetcher<&Stdio>| {
                 tracing::debug!("ChatbotSystem: Received {:?}", r.event);
 
@@ -81,15 +80,15 @@ pub struct SpeechSystem {
     pub agent_mp3_path: &'static str,
 }
 
-impl System for SpeechSystem {
-    fn register_to(&self, mut registry: HandlerRegistry) {
+impl SpeechSystem {
+    pub fn register_to(&self, world: &mut World) {
         let Self {
             env_layer,
             user_mp3_path,
             agent_mp3_path,
         } = *self;
 
-        registry.register(
+        world.add_handler(
             move |r: Receiver<RecordStart>, mut rcd_fetcher: Fetcher<&mut Recorder>| {
                 tracing::debug!("SpeechSystem: Received {:?}", r.event);
 
@@ -103,7 +102,7 @@ impl System for SpeechSystem {
             },
         );
 
-        registry.register(
+        world.add_handler(
             move |r: Receiver<RecordFinish>,
                   mut sender: Sender<UserContent>,
                   mut rcd_fetcher: Fetcher<&mut Recorder>| {
@@ -127,7 +126,7 @@ impl System for SpeechSystem {
             },
         );
 
-        registry.register(
+        world.add_handler(
             move |r: Receiver<AgentContent>, mut sender: Sender<PlaybackFinish>| {
                 tracing::debug!("SpeechSystem: Received {:?}", r.event);
 
@@ -155,10 +154,10 @@ pub struct CompletionSystem {
     pub ai_layer: EntityId,
 }
 
-impl System for CompletionSystem {
-    fn register_to(&self, mut registry: HandlerRegistry) {
+impl CompletionSystem {
+    pub fn register_to(&self, world: &mut World) -> HandlerId {
         let ai_layer = self.ai_layer;
-        registry.register(
+        world.add_handler(
             move |r: Receiver<UserContent>,
                   mut sender: Sender<AgentContent>,
                   ai_fetcher: Fetcher<&AiService>| {

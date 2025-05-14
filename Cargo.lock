@@ -1053,7 +1053,6 @@ dependencies = [
  "lame",
  "nostr",
  "rodio",
- "serde",
  "serde_json",
  "solana-sdk",
  "tokio",

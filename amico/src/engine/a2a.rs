@@ -1,37 +1,25 @@
-use std::{collections::HashMap, future::Future, str::FromStr, sync::Arc};
+use std::{future::Future, str::FromStr};
 
-use amico::{
-    ai::{
-        errors::ToolCallError,
-        tool::{Tool, ToolBuilder},
-    },
-    resource::Resource,
-};
-use amico_core::{
-    runtime::storage::{Namespace, Storage},
-    traits::EventSource,
-    types::{AgentEvent, EventContent},
+use amico::ai::{
+    errors::ToolCallError,
+    tool::{Tool, ToolBuilder},
 };
 use amico_mods::{
     a2a::network::{dephy::DephyNetwork, error::NetworkError, A2aNetwork},
-    runtime::storage::fs::FsStorage,
     web3::wallet::WalletResource,
 };
 use nostr::key::Keys;
-use serde_json::{json, to_value};
+use serde_json::json;
 use solana_sdk::pubkey::Pubkey;
-use tokio::sync::Mutex;
-
-use super::events::A2aMessageReceived;
+use tokio::task::JoinHandle;
 
 #[derive(Clone)]
 pub struct A2aModule {
     network: A2aNetwork,
-    storage: Resource<Arc<Mutex<FsStorage>>>,
 }
 
 impl A2aModule {
-    pub fn new(wallet: WalletResource, storage: Resource<Arc<Mutex<FsStorage>>>) -> Self {
+    pub fn new(wallet: WalletResource) -> Self {
         // Setup wallet and keys
         let keys = Keys::generate();
 
@@ -40,12 +28,27 @@ impl A2aModule {
 
         Self {
             network: A2aNetwork::new(dephy_network),
-            storage,
         }
     }
 
     pub async fn connect(&self) -> Result<(), NetworkError> {
         self.network.connect().await
+    }
+
+    pub fn spawn_event_source<F, Fut>(&self, on_event: F) -> JoinHandle<()>
+    where
+        F: Fn(String) -> Fut + Send + Sync + 'static,
+        Fut: Future<Output = ()> + Send + 'static,
+    {
+        let network = self.network.clone().network;
+        let on_event = Box::pin(on_event);
+        tokio::spawn(async move {
+            network
+                .subscribe_dyn(Box::new(move |message| Box::pin(on_event(message))))
+                .await
+                .inspect_err(|err| tracing::error!("{}", err))
+                .unwrap();
+        })
     }
 
     pub fn send_message_tool(&self) -> Tool {
@@ -83,7 +86,10 @@ impl A2aModule {
                         reason: "Missing".to_string(),
                     })?;
 
-                    let pubkey = Pubkey::from_str(&content.to_string()).map_err(|err| {
+                    let address_str = address.to_string();
+                    let address_str = address_str.trim_matches(|c| c == '\"');
+
+                    let pubkey = Pubkey::from_str(address_str).map_err(|err| {
                         ToolCallError::InvalidParam {
                             name: "address".to_string(),
                             value: address.clone(),
@@ -109,56 +115,5 @@ impl A2aModule {
                     }))
                 }
             })
-    }
-
-    pub fn contact_list_tool(&self) -> Tool {
-        let storage = self.storage.value().clone();
-        ToolBuilder::new()
-            .name("contact_list")
-            .description("Get your contact address list of the Agent-to-agent network")
-            .parameters(json!({}))
-            .build_async(move |_| {
-                let storage = storage.clone();
-
-                async move {
-                    let mut list = HashMap::new();
-                    {
-                        let mut fs_store = storage.lock().await;
-                        let ns = fs_store.open_or_create("contact").unwrap();
-
-                        for key in ns.keys().unwrap() {
-                            let value = ns.get(&key).unwrap().unwrap().to_string().unwrap();
-                            list.insert(key, value);
-                        }
-                    }
-                    let value = to_value(list).unwrap();
-
-                    Ok(value)
-                }
-            })
-    }
-}
-
-impl EventSource for A2aModule {
-    async fn run<F, Fut>(&self, on_event: F) -> anyhow::Result<()>
-    where
-        F: Fn(AgentEvent) -> Fut + Send + Sync + 'static,
-        Fut: Future<Output = ()> + Send + 'static,
-    {
-        self.network
-            .network
-            .subscribe_dyn(Box::new(move |message| {
-                Box::pin(on_event(AgentEvent::new(
-                    "A2aMessageReceived",
-                    "A2aModule",
-                    Some(EventContent::Content(
-                        serde_json::to_value(A2aMessageReceived(message)).unwrap(),
-                    )),
-                    None,
-                )))
-            }))
-            .await?;
-
-        Ok(())
     }
 }
