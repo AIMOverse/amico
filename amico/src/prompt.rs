@@ -1,3 +1,5 @@
+use anyhow::anyhow;
+
 pub const AMICO_SYSTEM_PROMPT: &str = r"
 ## About yourself
 
@@ -16,3 +18,8 @@ You are Amico, a virtual assistant with wallets capable of performing on-chain a
 - Always ask the user to confirm the token address before buying, even if it's your own coin `AMICO`.
 - Always check your SOL balance before buying.
 ";
+
+pub fn load_system_prompt(path: &str) -> anyhow::Result<String> {
+    std::fs::read_to_string(path)
+        .map_err(|err| anyhow!("Failed to load system prompt file at {}: {}", path, err))
+}

@@ -1,10 +1,8 @@
 use std::process;
-use std::sync::Arc;
 
 use amico::ai::services::ServiceBuilder;
 use amico::resource::Resource;
 use amico_mods::interface::Plugin;
-use amico_mods::runtime::storage::fs::FsStorage;
 use amico_mods::std::ai::providers::rig::{providers, RigProvider};
 use amico_mods::std::ai::services::InMemoryService;
 use amico_mods::web3::solana::std::balance::BalanceSensor;
@@ -19,8 +17,7 @@ use engine::interaction::Stdio;
 use engine::systems::{ChatbotSystem, CompletionSystem, SpeechSystem};
 use evenio::prelude::*;
 use helpers::solana_rpc_url;
-use prompt::AMICO_SYSTEM_PROMPT;
-use tokio::sync::Mutex;
+use prompt::{load_system_prompt, AMICO_SYSTEM_PROMPT};
 
 mod audio;
 mod engine;
@@ -73,16 +70,6 @@ async fn main() {
         println!();
     }
 
-    let fs_store = FsStorage::new(".amico/storage")
-        .inspect_err(|err| {
-            eprintln!("{}", "Error loading FS storage".red());
-            tracing::error!("Error loading FS storage: {}", err);
-            process::exit(1);
-        })
-        .unwrap();
-    let storage_resource =
-        Resource::new("Dev FS Storage".to_string(), Arc::new(Mutex::new(fs_store)));
-
     // Load agent wallet
     let wallet = Wallet::load_or_save_new("agent_wallet.txt")
         .inspect(|_| println!("{}", "✔ Loaded agent wallet".green()))
@@ -112,7 +99,7 @@ async fn main() {
     );
 
     // Initialize a2a module
-    let a2a = A2aModule::new(wallet.clone(), storage_resource);
+    let a2a = A2aModule::new(wallet.clone());
 
     // Connect to the network
     if let Err(e) = a2a.connect().await {
@@ -127,17 +114,21 @@ async fn main() {
         &base_url,
     ));
 
+    let system_prompt = load_system_prompt(".amico/prompt.txt")
+        .inspect(|_| println!("{}", "✔ Loaded system prompt".green()))
+        .inspect_err(|_| println!("{}", "Using default system prompt".yellow()))
+        .unwrap_or(AMICO_SYSTEM_PROMPT.to_string());
+
     // Create the Service
     let service = ServiceBuilder::new(provider)
         .model("gpt-4o".to_string())
-        .system_prompt(AMICO_SYSTEM_PROMPT.to_string())
+        .system_prompt(system_prompt)
         .temperature(0.2)
         .max_tokens(1000)
         .tool(balance_sensor.value().agent_wallet_balance_tool())
         .tool(balance_sensor.value().account_balance_tool())
         .tool(trade_effector.value().tool())
         .tool(a2a.send_message_tool())
-        .tool(a2a.contact_list_tool())
         .build::<InMemoryService<RigProvider>>();
 
     println!();
