@@ -10,13 +10,13 @@ use amico_core::{
     types::{AgentEvent, EventContent},
 };
 use colored::Colorize;
-use tokio::sync::Mutex;
+use tokio::sync::{mpsc, Mutex};
 
 use crate::engine::events::ConsoleInput;
 
 /// Create a new STDIO module.
 pub fn create_cli_client() -> (CliComponent, CliEventSource) {
-    let (tx, rx) = std::sync::mpsc::channel();
+    let (tx, rx) = mpsc::channel(1);
     (CliComponent::new(tx), CliEventSource::new(rx))
 }
 
@@ -27,12 +27,12 @@ struct OutputComplete;
 /// A component representing STDIO interaction.
 #[derive(Component)]
 pub struct CliComponent {
-    tx: std::sync::mpsc::Sender<OutputComplete>,
+    tx: mpsc::Sender<OutputComplete>,
 }
 
 /// An event source for STDIO interaction.
 pub struct CliEventSource {
-    rx: Arc<Mutex<std::sync::mpsc::Receiver<OutputComplete>>>,
+    rx: Arc<Mutex<mpsc::Receiver<OutputComplete>>>,
 }
 
 fn print_message_separator() {
@@ -40,7 +40,7 @@ fn print_message_separator() {
 }
 
 impl CliComponent {
-    fn new(tx: std::sync::mpsc::Sender<OutputComplete>) -> Self {
+    fn new(tx: mpsc::Sender<OutputComplete>) -> Self {
         Self { tx }
     }
 
@@ -50,12 +50,18 @@ impl CliComponent {
         print_message_separator();
 
         // Inform event source to prompt user for the next input
-        self.tx.send(OutputComplete).unwrap();
+        let tx = self.tx.clone();
+        tokio::spawn(async move {
+            tx.send(OutputComplete).await.unwrap();
+        });
     }
 
     pub fn handle_record_start(&self) {
         println!("{}", "Recording started. Press any key to finish.".yellow());
-        self.tx.send(OutputComplete).unwrap();
+        let tx = self.tx.clone();
+        tokio::spawn(async move {
+            tx.send(OutputComplete).await.unwrap();
+        });
     }
 
     pub fn handle_record_finish(&self) {
@@ -68,7 +74,7 @@ impl CliComponent {
 }
 
 impl CliEventSource {
-    fn new(rx: std::sync::mpsc::Receiver<OutputComplete>) -> Self {
+    fn new(rx: mpsc::Receiver<OutputComplete>) -> Self {
         Self {
             rx: Arc::new(Mutex::new(rx)),
         }
@@ -112,10 +118,11 @@ impl EventSource for CliEventSource {
             ))
             .await;
 
-            // Block until output completes
-            {
-                self.rx.lock().await.recv().unwrap();
-            }
+            // Wait until output completes
+            let mut rx = self.rx.lock().await;
+
+            tracing::debug!("Waiting for output complete");
+            rx.recv().await.unwrap();
         }
 
         print_message_separator();
