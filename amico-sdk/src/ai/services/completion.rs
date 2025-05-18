@@ -163,6 +163,27 @@ where
         Ok(self)
     }
 
+    #[cfg(feature = "mcp-client")]
+    pub async fn mcp_tool_name(
+        mut self,
+        tool_name: String,
+        mcp_client: McpClient,
+    ) -> anyhow::Result<Self> {
+        let mcp_client = mcp_client.clone();
+        // Find the tool with specified name
+        let tools = mcp_client.list_tools(None, None).await?;
+        let tool = tools
+            .tools
+            .iter()
+            .find(|tool| tool.name == tool_name)
+            .ok_or(anyhow::anyhow!("Tool {} not found", tool_name))?;
+
+        self.tool_list
+            .push(McpTool::from_mcp_server(tool.to_owned(), mcp_client.clone()).into());
+
+        Ok(self)
+    }
+
     /// Sets the temperature for the Service.
     pub fn temperature(mut self, temperature: f64) -> Self {
         self.temperature = temperature;
