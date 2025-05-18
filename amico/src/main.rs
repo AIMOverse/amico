@@ -16,7 +16,7 @@ use colored::Colorize;
 use engine::a2a::A2aModule;
 use engine::components::{AiService, Recorder};
 use engine::dispatcher::MatchDispatcher;
-use engine::interaction::Stdio;
+use engine::interaction::create_cli_client;
 use engine::systems::{ChatbotSystem, CompletionSystem, SpeechSystem};
 use helpers::solana_rpc_url;
 use prompt::AMICO_SYSTEM_PROMPT;
@@ -155,7 +155,9 @@ async fn main() {
     let ai_layer = agent.wm.ai_layer();
     let env_layer = agent.wm.env_layer();
 
-    agent.wm.add_component(int_layer, Stdio::new());
+    let (cli_component, cli_event_source) = create_cli_client();
+
+    agent.wm.add_component(int_layer, cli_component);
     agent.wm.add_component(ai_layer, AiService::new(service));
     agent.wm.add_component(env_layer, Recorder::new());
 
@@ -171,7 +173,7 @@ async fn main() {
     });
 
     agent.spawn_event_source(a2a, OnFinish::Continue);
-    agent.spawn_event_source(Stdio::new(), OnFinish::Stop);
+    agent.spawn_event_source(cli_event_source, OnFinish::Stop);
 
     agent.run().await;
 }

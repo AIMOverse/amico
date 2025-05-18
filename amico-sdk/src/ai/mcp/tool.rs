@@ -9,24 +9,52 @@ use crate::ai::{
     tool::{Tool, ToolBuilder},
 };
 
-use super::{McpClient, McpTransport};
+use super::McpClient;
+
+/// Enum to handle both types of MCP tools
+enum McpToolInner {
+    Sse(rig::tool::McpTool<mcp_core::transport::ClientSseTransport>),
+    Command(rig::tool::McpTool<mcp_core::transport::ClientStdioTransport>),
+}
+
+impl McpToolInner {
+    /// Call the tool with the given arguments
+    async fn call(&self, args: String) -> Result<String, anyhow::Error> {
+        match self {
+            McpToolInner::Sse(tool) => tool.call(args).await.map_err(|e| anyhow::anyhow!("{}", e)),
+            McpToolInner::Command(tool) => {
+                tool.call(args).await.map_err(|e| anyhow::anyhow!("{}", e))
+            }
+        }
+    }
+}
 
 /// MCP tool
 pub struct McpTool {
     name: String,
     description: Option<String>,
     params: serde_json::Value,
-    mcp_tool: rig::tool::McpTool<McpTransport>,
+    mcp_tool: McpToolInner,
 }
 
 impl McpTool {
     /// Build the MCP tool instance from MCP Client.
     pub fn from_mcp_server(definition: mcp_core::types::Tool, client: McpClient) -> Self {
+        let mcp_tool = match client {
+            McpClient::Sse(client) => McpToolInner::Sse(rig::tool::McpTool::from_mcp_server(
+                definition.clone(),
+                client,
+            )),
+            McpClient::Command(client) => McpToolInner::Command(
+                rig::tool::McpTool::from_mcp_server(definition.clone(), client),
+            ),
+        };
+
         Self {
             name: definition.name.clone(),
             description: definition.description.clone(),
             params: definition.input_schema.clone(),
-            mcp_tool: rig::tool::McpTool::from_mcp_server(definition, client),
+            mcp_tool,
         }
     }
 }

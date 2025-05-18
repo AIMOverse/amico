@@ -38,7 +38,9 @@ impl Network for DephyNetwork {
     type Error = NetworkError;
 
     async fn connect(&self) -> Result<(), Self::Error> {
-        self.client.add_relay("wss://dev-relay.dephy.dev").await?;
+        self.client
+            .add_relay("wss://canary-relay.dephy.dev")
+            .await?;
         self.client.connect().await;
 
         Ok(())
@@ -90,21 +92,17 @@ impl Network for DephyNetwork {
         tokio::spawn(async move {
             if let Err(e) = client
                 .handle_notifications(|notification| async {
-                    match notification {
-                        RelayPoolNotification::Event { event, .. } => {
-                            // Just log error messages. Errors are not fatal here.
-                            tracing::info!("Received cipher text {}", event.content);
-                            let keypair = wallet.value().solana();
-                            // Decrypt
-                            if let Ok(plaintext) = crypto::decrypt_message(&event.content, keypair)
-                            {
-                                tracing::info!("Decrypted message {}", plaintext);
-                                on_message(plaintext).await;
-                            } else {
-                                tracing::info!("Failed to decrypt message");
-                            }
+                    if let RelayPoolNotification::Event { event, .. } = notification {
+                        // Just log error messages. Errors are not fatal here.
+                        tracing::info!("Received cipher text {}", event.content);
+                        let keypair = wallet.value().solana();
+                        // Decrypt
+                        if let Ok(plaintext) = crypto::decrypt_message(&event.content, keypair) {
+                            tracing::info!("Decrypted message {}", plaintext);
+                            on_message(plaintext).await;
+                        } else {
+                            tracing::info!("Failed to decrypt message");
                         }
-                        _ => {} // Ignore other notification types
                     }
                     Ok(false) // Keep listening
                 })

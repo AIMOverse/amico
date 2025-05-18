@@ -10,9 +10,15 @@ use amico_core::{
     types::{AgentEvent, EventContent},
 };
 use colored::Colorize;
-use tokio::sync::Mutex;
+use tokio::sync::{mpsc, Mutex};
 
 use crate::engine::events::ConsoleInput;
+
+/// Create a new STDIO module.
+pub fn create_cli_client() -> (CliComponent, CliEventSource) {
+    let (tx, rx) = mpsc::channel(1);
+    (CliComponent::new(tx), CliEventSource::new(rx))
+}
 
 /// A signal for output thread to inform input thread the output
 /// task is complete.
@@ -20,22 +26,22 @@ struct OutputComplete;
 
 /// A component representing STDIO interaction.
 #[derive(Component)]
-pub struct Stdio {
-    tx: std::sync::mpsc::Sender<OutputComplete>,
-    rx: Arc<Mutex<std::sync::mpsc::Receiver<OutputComplete>>>,
+pub struct CliComponent {
+    tx: mpsc::Sender<OutputComplete>,
+}
+
+/// An event source for STDIO interaction.
+pub struct CliEventSource {
+    rx: Arc<Mutex<mpsc::Receiver<OutputComplete>>>,
 }
 
 fn print_message_separator() {
     println!("--------------------");
 }
 
-impl Stdio {
-    pub fn new() -> Self {
-        let (tx, rx) = std::sync::mpsc::channel();
-        Self {
-            tx,
-            rx: Arc::new(Mutex::new(rx)),
-        }
+impl CliComponent {
+    fn new(tx: mpsc::Sender<OutputComplete>) -> Self {
+        Self { tx }
     }
 
     pub fn print_message(&self, message: &str) {
@@ -44,12 +50,18 @@ impl Stdio {
         print_message_separator();
 
         // Inform event source to prompt user for the next input
-        self.tx.send(OutputComplete).unwrap();
+        let tx = self.tx.clone();
+        tokio::spawn(async move {
+            tx.send(OutputComplete).await.unwrap();
+        });
     }
 
     pub fn handle_record_start(&self) {
         println!("{}", "Recording started. Press any key to finish.".yellow());
-        self.tx.send(OutputComplete).unwrap();
+        let tx = self.tx.clone();
+        tokio::spawn(async move {
+            tx.send(OutputComplete).await.unwrap();
+        });
     }
 
     pub fn handle_record_finish(&self) {
@@ -61,7 +73,15 @@ impl Stdio {
     }
 }
 
-impl EventSource for Stdio {
+impl CliEventSource {
+    fn new(rx: mpsc::Receiver<OutputComplete>) -> Self {
+        Self {
+            rx: Arc::new(Mutex::new(rx)),
+        }
+    }
+}
+
+impl EventSource for CliEventSource {
     async fn run<F, Fut>(&self, on_event: F) -> anyhow::Result<()>
     where
         F: Fn(amico_core::types::AgentEvent) -> Fut + Send + Sync + 'static,
@@ -98,10 +118,11 @@ impl EventSource for Stdio {
             ))
             .await;
 
-            // Block until output completes
-            {
-                self.rx.lock().await.recv().unwrap();
-            }
+            // Wait until output completes
+            let mut rx = self.rx.lock().await;
+
+            tracing::debug!("Waiting for output complete");
+            rx.recv().await.unwrap();
         }
 
         print_message_separator();
