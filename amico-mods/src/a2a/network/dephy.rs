@@ -127,7 +127,7 @@ impl From<DephyNetwork> for A2aNetwork {
 mod tests {
     use nostr::key::Keys;
     use tokio::sync::mpsc;
-    use tokio::time::{timeout, Duration};
+    use tokio::time::{Duration, timeout};
 
     use super::*;
 

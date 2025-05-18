@@ -1,8 +1,8 @@
-use base64::{engine::general_purpose::STANDARD, Engine};
+use base64::{Engine, engine::general_purpose::STANDARD};
 use sodiumoxide::crypto::{
     sealedbox,
     sign::{
-        ed25519::{to_curve25519_pk, PublicKey as EdPublicKey, SecretKey as EdSecretKey},
+        ed25519::{PublicKey as EdPublicKey, SecretKey as EdSecretKey, to_curve25519_pk},
         to_curve25519_sk,
     },
 };

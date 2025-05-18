@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
 use amico_mods::std::ai::{providers::rig::RigProvider, services::InMemoryService};
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use evenio::prelude::*;
 use tokio::sync::Mutex;
 
-use crate::audio::{play_blocking, spawn_record_task, RecordSignal};
+use crate::audio::{RecordSignal, play_blocking, spawn_record_task};
 
 #[derive(Component)]
 pub struct AiService(Arc<Mutex<InMemoryService<RigProvider>>>);

@@ -4,7 +4,7 @@ use amico::ai::{
     models::{CompletionRequest, ModelChoice},
     tool::ToolDefinition,
 };
-use rig::{completion as rc, message as rm, OneOrMany};
+use rig::{OneOrMany, completion as rc, message as rm};
 
 /// Convert `sdk`'s `Message` into `rig`'s `Message`
 pub fn into_rig_message(message: &Message) -> rc::Message {

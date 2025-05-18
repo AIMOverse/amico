@@ -6,7 +6,7 @@ use amico::resource::Resource;
 use amico_core::{Agent, OnFinish};
 use amico_mods::interface::Plugin;
 use amico_mods::runtime::storage::fs::FsStorage;
-use amico_mods::std::ai::providers::rig::{providers, RigProvider};
+use amico_mods::std::ai::providers::rig::{RigProvider, providers};
 use amico_mods::std::ai::services::InMemoryService;
 use amico_mods::web3::solana::std::balance::BalanceSensor;
 use amico_mods::web3::solana::std::client::{SolanaClient, SolanaClientResource};

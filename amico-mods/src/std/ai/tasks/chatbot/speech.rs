@@ -1,5 +1,5 @@
-use reqwest::multipart;
 use reqwest::Client;
+use reqwest::multipart;
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;

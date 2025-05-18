@@ -13,7 +13,7 @@ use amico_core::{
     types::{AgentEvent, EventContent},
 };
 use amico_mods::{
-    a2a::network::{dephy::DephyNetwork, error::NetworkError, A2aNetwork},
+    a2a::network::{A2aNetwork, dephy::DephyNetwork, error::NetworkError},
     runtime::storage::fs::FsStorage,
     web3::wallet::WalletResource,
 };
