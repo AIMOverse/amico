@@ -221,7 +221,7 @@ impl McpClientBuilder {
                 let mut capabilities = ClientCapabilities::default();
                 capabilities.experimental = Some(serde_json::json!({}));
                 capabilities.sampling = Some(serde_json::json!({}));
-                
+
                 // Create roots with a boolean listChanged property
                 let roots_obj = serde_json::json!({
                     "listChanged": false
@@ -229,10 +229,7 @@ impl McpClientBuilder {
                 capabilities.roots = Some(serde_json::from_value(roots_obj).unwrap());
 
                 let _init_res = sse_client
-                    .initialize(
-                        Implementation { name, version },
-                        capabilities,
-                    )
+                    .initialize(Implementation { name, version }, capabilities)
                     .await?;
             }
             McpClient::Command(_) => unreachable!("SSE builder can only build SSE clients"),
@@ -314,7 +311,7 @@ impl McpCommandClientBuilder {
     pub fn build(self) -> anyhow::Result<McpClient> {
         // Convert string args to &str references for ClientStdioTransport::new
         let args_refs: Vec<&str> = self.args.iter().map(AsRef::as_ref).collect();
-        
+
         // Build the transport
         let transport = ClientStdioTransport::new(&self.program, &args_refs)?;
 
@@ -360,7 +357,7 @@ impl McpCommandClientBuilder {
                 let mut capabilities = ClientCapabilities::default();
                 capabilities.experimental = Some(serde_json::json!({}));
                 capabilities.sampling = Some(serde_json::json!({}));
-                
+
                 // Create roots with a boolean listChanged property
                 let roots_obj = serde_json::json!({
                     "listChanged": false
@@ -368,10 +365,7 @@ impl McpCommandClientBuilder {
                 capabilities.roots = Some(serde_json::from_value(roots_obj).unwrap());
 
                 let _init_res = command_client
-                    .initialize(
-                        Implementation { name, version },
-                        capabilities,
-                    )
+                    .initialize(Implementation { name, version }, capabilities)
                     .await?;
             }
             McpClient::Sse(_) => unreachable!("Command builder can only build Command clients"),

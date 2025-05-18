@@ -22,7 +22,9 @@ impl McpToolInner {
     async fn call(&self, args: String) -> Result<String, anyhow::Error> {
         match self {
             McpToolInner::Sse(tool) => tool.call(args).await.map_err(|e| anyhow::anyhow!("{}", e)),
-            McpToolInner::Command(tool) => tool.call(args).await.map_err(|e| anyhow::anyhow!("{}", e)),
+            McpToolInner::Command(tool) => {
+                tool.call(args).await.map_err(|e| anyhow::anyhow!("{}", e))
+            }
         }
     }
 }
@@ -39,12 +41,13 @@ impl McpTool {
     /// Build the MCP tool instance from MCP Client.
     pub fn from_mcp_server(definition: mcp_core::types::Tool, client: McpClient) -> Self {
         let mcp_tool = match client {
-            McpClient::Sse(client) => {
-                McpToolInner::Sse(rig::tool::McpTool::from_mcp_server(definition.clone(), client))
-            }
-            McpClient::Command(client) => {
-                McpToolInner::Command(rig::tool::McpTool::from_mcp_server(definition.clone(), client))
-            }
+            McpClient::Sse(client) => McpToolInner::Sse(rig::tool::McpTool::from_mcp_server(
+                definition.clone(),
+                client,
+            )),
+            McpClient::Command(client) => McpToolInner::Command(
+                rig::tool::McpTool::from_mcp_server(definition.clone(), client),
+            ),
         };
 
         Self {

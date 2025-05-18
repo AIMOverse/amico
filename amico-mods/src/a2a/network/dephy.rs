@@ -38,7 +38,9 @@ impl Network for DephyNetwork {
     type Error = NetworkError;
 
     async fn connect(&self) -> Result<(), Self::Error> {
-        self.client.add_relay("wss://canary-relay.dephy.dev").await?;
+        self.client
+            .add_relay("wss://canary-relay.dephy.dev")
+            .await?;
         self.client.connect().await;
 
         Ok(())
