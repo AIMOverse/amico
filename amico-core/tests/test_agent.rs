@@ -1,10 +1,9 @@
 use std::{future::Future, time::Duration};
 
 use amico_core::{
-    ecs,
+    Agent, OnFinish, ecs,
     traits::{Dispatcher, EventSource, System},
     types::{AgentEvent, EventContent},
-    Agent, OnFinish,
 };
 use serde::{Deserialize, Serialize};
 use tokio::time::sleep;

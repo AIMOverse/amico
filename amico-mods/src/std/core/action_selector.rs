@@ -59,7 +59,7 @@ where
                 return Err(ActionSelectorError::SelectingActionFailed(format!(
                     "Failed to generate text: {}",
                     e
-                )))
+                )));
             }
         };
 

@@ -10,7 +10,7 @@ use amico_core::{
     types::{AgentEvent, EventContent},
 };
 use colored::Colorize;
-use tokio::sync::{mpsc, Mutex};
+use tokio::sync::{Mutex, mpsc};
 
 use crate::engine::events::ConsoleInput;
 

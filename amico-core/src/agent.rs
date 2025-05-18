@@ -1,5 +1,5 @@
 use tokio::{
-    sync::mpsc::{channel, Receiver, Sender},
+    sync::mpsc::{Receiver, Sender, channel},
     task::JoinSet,
 };
 

@@ -1,5 +1,5 @@
 use alloy::signers::local::LocalSignerError;
-use alloy::signers::local::{coins_bip39::English, MnemonicBuilder};
+use alloy::signers::local::{MnemonicBuilder, coins_bip39::English};
 use alloy::signers::{k256::Secp256k1, local::LocalSigner};
 use bip39::Mnemonic;
 use ecdsa::SigningKey;

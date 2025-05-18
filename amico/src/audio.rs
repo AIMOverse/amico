@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::io::{BufReader, BufWriter, Write};
 use std::path::Path;
-use std::sync::mpsc::{channel, Receiver};
+use std::sync::mpsc::{Receiver, channel};
 use std::sync::{Arc, Mutex};
 
 use anyhow::Result;
