@@ -14,14 +14,24 @@ use tokio::sync::Mutex;
 
 use crate::engine::events::ConsoleInput;
 
+/// Create a new STDIO module.
+pub fn create_cli_client() -> (CliComponent, CliEventSource) {
+    let (tx, rx) = std::sync::mpsc::channel();
+    (CliComponent::new(tx), CliEventSource::new(rx))
+}
+
 /// A signal for output thread to inform input thread the output
 /// task is complete.
 struct OutputComplete;
 
 /// A component representing STDIO interaction.
 #[derive(Component)]
-pub struct Stdio {
+pub struct CliComponent {
     tx: std::sync::mpsc::Sender<OutputComplete>,
+}
+
+/// An event source for STDIO interaction.
+pub struct CliEventSource {
     rx: Arc<Mutex<std::sync::mpsc::Receiver<OutputComplete>>>,
 }
 
@@ -29,13 +39,9 @@ fn print_message_separator() {
     println!("--------------------");
 }
 
-impl Stdio {
-    pub fn new() -> Self {
-        let (tx, rx) = std::sync::mpsc::channel();
-        Self {
-            tx,
-            rx: Arc::new(Mutex::new(rx)),
-        }
+impl CliComponent {
+    fn new(tx: std::sync::mpsc::Sender<OutputComplete>) -> Self {
+        Self { tx }
     }
 
     pub fn print_message(&self, message: &str) {
@@ -61,7 +67,15 @@ impl Stdio {
     }
 }
 
-impl EventSource for Stdio {
+impl CliEventSource {
+    fn new(rx: std::sync::mpsc::Receiver<OutputComplete>) -> Self {
+        Self {
+            rx: Arc::new(Mutex::new(rx)),
+        }
+    }
+}
+
+impl EventSource for CliEventSource {
     async fn run<F, Fut>(&self, on_event: F) -> anyhow::Result<()>
     where
         F: Fn(amico_core::types::AgentEvent) -> Fut + Send + Sync + 'static,

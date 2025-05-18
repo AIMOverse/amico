@@ -8,7 +8,7 @@ use evenio::prelude::*;
 use super::{
     components::{AiService, Player, Recorder},
     events::{AgentContent, PlaybackFinish, RecordFinish, RecordStart, UserContent, UserInput},
-    interaction::Stdio,
+    interaction::CliComponent,
 };
 
 pub struct ChatbotSystem {
@@ -26,7 +26,7 @@ impl System for ChatbotSystem {
         registry.register(
             move |r: Receiver<UserInput>,
                   mut sender: Sender<(UserContent, RecordStart, RecordFinish)>,
-                  io_fetcher: Fetcher<&Stdio>,
+                  io_fetcher: Fetcher<&CliComponent>,
                   rcd_fetcher: Fetcher<&Recorder>| {
                 tracing::debug!("ChatbotSystem: Received {:?}", r.event);
 
@@ -54,7 +54,7 @@ impl System for ChatbotSystem {
         );
 
         registry.register(
-            move |r: Receiver<AgentContent>, io_fetcher: Fetcher<&Stdio>| {
+            move |r: Receiver<AgentContent>, io_fetcher: Fetcher<&CliComponent>| {
                 tracing::debug!("ChatbotSystem: Received {:?}", r.event);
 
                 let stdio = io_fetcher.get(itr_layer).unwrap();
@@ -64,7 +64,7 @@ impl System for ChatbotSystem {
         );
 
         registry.register(
-            move |r: Receiver<PlaybackFinish>, io_fetcher: Fetcher<&Stdio>| {
+            move |r: Receiver<PlaybackFinish>, io_fetcher: Fetcher<&CliComponent>| {
                 tracing::debug!("ChatbotSystem: Received {:?}", r.event);
 
                 let stdio = io_fetcher.get(itr_layer).unwrap();
