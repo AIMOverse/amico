@@ -7,13 +7,7 @@ use crate::types::AgentEvent;
 pub trait EventSource {
     /// The method to run the `EventSource`.
     ///
-    /// ## Notice
-    ///
-    /// The `run` method **SHOULD NOT SPAWN A THREAD**.
-    /// Event source threads should be handled by `Agent`.
-    ///
-    /// The `run` method only cares about when to call the
-    /// `on_event` callback.
+    /// The `run` method will be called by `Agent` in a new thread.
     fn run<F, Fut>(&self, on_event: F) -> impl Future<Output = anyhow::Result<()>> + Send
     where
         F: Fn(AgentEvent) -> Fut + Send + Sync + 'static,

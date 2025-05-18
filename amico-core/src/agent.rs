@@ -31,17 +31,23 @@ pub enum OnFinish {
 ///
 /// - `D`: The Event `Dispatcher` type, representing the Agent's action selection strategy.
 pub struct Agent<D: Dispatcher> {
-    // The JoinSet to store EventSource thread join handles.
+    /// The JoinSet to store EventSource thread join handles.
     event_source_js: JoinSet<OnFinish>,
 
-    // The mpsc channel to receive agent events from event sources.
+    /// The mpsc channel sender to send agent events to event sources.
     event_tx: Sender<AgentEvent>,
+
+    /// The mpsc channel receiver to receive agent events from event sources.
     event_rx: Receiver<AgentEvent>,
 
-    // The ECS world manager.
+    /// The ECS world manager.
+    ///
+    /// **NOTE**: This field will be private in the future, after
+    /// we wrap the component / system registration into the `Agent`'s
+    /// methods.
     pub wm: WorldManager,
 
-    // The event dispatcher
+    /// The event dispatcher.
     dispatcher: D,
 }
 
