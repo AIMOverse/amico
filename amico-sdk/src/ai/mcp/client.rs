@@ -218,15 +218,16 @@ impl McpClientBuilder {
                 sse_client.open().await?;
 
                 // Initialize the client with proper capabilities
-                let mut capabilities = ClientCapabilities::default();
-                capabilities.experimental = Some(serde_json::json!({}));
-                capabilities.sampling = Some(serde_json::json!({}));
-
-                // Create roots with a boolean listChanged property
-                let roots_obj = serde_json::json!({
-                    "listChanged": false
-                });
-                capabilities.roots = Some(serde_json::from_value(roots_obj).unwrap());
+                let capabilities = ClientCapabilities {
+                    experimental: Some(serde_json::json!({})),
+                    sampling: Some(serde_json::json!({})),
+                    roots: Some(
+                        serde_json::from_value(serde_json::json!({
+                            "listChanged": false
+                        }))
+                        .unwrap(),
+                    ),
+                };
 
                 let _init_res = sse_client
                     .initialize(Implementation { name, version }, capabilities)
@@ -354,15 +355,16 @@ impl McpCommandClientBuilder {
                 command_client.open().await?;
 
                 // Initialize the client with proper capabilities
-                let mut capabilities = ClientCapabilities::default();
-                capabilities.experimental = Some(serde_json::json!({}));
-                capabilities.sampling = Some(serde_json::json!({}));
-
-                // Create roots with a boolean listChanged property
-                let roots_obj = serde_json::json!({
-                    "listChanged": false
-                });
-                capabilities.roots = Some(serde_json::from_value(roots_obj).unwrap());
+                let capabilities = ClientCapabilities {
+                    experimental: Some(serde_json::json!({})),
+                    sampling: Some(serde_json::json!({})),
+                    roots: Some(
+                        serde_json::from_value(serde_json::json!({
+                            "listChanged": false
+                        }))
+                        .unwrap(),
+                    ),
+                };
 
                 let _init_res = command_client
                     .initialize(Implementation { name, version }, capabilities)
