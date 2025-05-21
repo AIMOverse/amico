@@ -74,8 +74,8 @@ pub trait Mediator {
 
 impl<O, M> System for SystemHandler<O, M>
 where
-    O: Observer,
-    M: Mediator,
+    O: Observer + 'static,
+    M: Mediator + 'static,
 {
     fn register_to(self, mut registry: crate::world::HandlerRegistry) {
         match self {
@@ -146,13 +146,6 @@ mod tests {
             Ok(())
         }
     }
-
-    // #[test]
-    // fn test_into_system() {
-    //     // Compile-time tests
-    //     let _: Box<dyn System> = Box::new(TestMediator);
-    //     let _: Box<dyn System> = Box::new(TestObserver);
-    // }
 
     #[test]
     fn test_mediator() {
