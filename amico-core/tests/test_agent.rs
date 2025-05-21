@@ -65,7 +65,7 @@ struct TestSystem;
 struct Tick(pub i32);
 
 impl System for TestSystem {
-    fn register_to(&self, mut registry: amico_core::world::HandlerRegistry) {
+    fn register_to(self, mut registry: amico_core::world::HandlerRegistry) {
         registry.register(|r: ecs::Receiver<Tick>| {
             println!("Received Tick event seq. {}", r.event.0);
         });
