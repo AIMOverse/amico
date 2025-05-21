@@ -8,30 +8,37 @@ use super::System;
 #[derive(ecs::GlobalEvent)]
 pub struct PhantomEvent;
 
-pub enum SystemHandler<
-    E: ecs::GlobalEvent + 'static = PhantomEvent,
-    M: ecs::GlobalEvent + ecs::Event<Mutability = ecs::Mutable> + 'static = PhantomEvent,
-    S: ecs::EventSet + 'static = (),
-> {
-    Observer(Box<dyn Observer<Event = E> + 'static>),
-    Mediator(Box<dyn Mediator<Event = M, EventsToSend = S> + 'static>),
+pub struct PhantomObserver;
+
+pub struct PhantomMediator;
+
+impl Observer for PhantomObserver {
+    type Event = PhantomEvent;
+
+    fn observe(&self, _event: &<Self::Event as ecs::Event>::This<'_>) -> Result<()> {
+        Ok(())
+    }
 }
 
-impl<E, M, S> SystemHandler<E, M, S>
-where
-    E: ecs::GlobalEvent + 'static,
-    M: ecs::GlobalEvent + ecs::Event<Mutability = ecs::Mutable> + 'static,
-    S: ecs::EventSet + 'static,
-{
-    pub fn from_observer<O: Observer<Event = E> + 'static>(observer: O) -> Self {
-        SystemHandler::Observer(Box::new(observer))
-    }
+impl Mediator for PhantomMediator {
+    type Event = PhantomEvent;
+    type EventsToSend = ();
 
-    pub fn from_mediator<Med: Mediator<Event = M, EventsToSend = S> + 'static>(
-        mediator: Med,
-    ) -> Self {
-        SystemHandler::Mediator(Box::new(mediator))
+    fn mediate(
+        &self,
+        _event: &mut EventMut<'_, Self::Event>,
+        _sender: ecs::Sender<Self::EventsToSend>,
+    ) -> Result<()> {
+        Ok(())
     }
+}
+
+pub enum SystemHandler<
+    O: Observer + 'static = PhantomObserver,
+    M: Mediator + 'static = PhantomMediator,
+> {
+    Observer(O),
+    Mediator(M),
 }
 
 pub trait Observer {
@@ -39,11 +46,11 @@ pub trait Observer {
 
     fn observe(&self, event: &<Self::Event as ecs::Event>::This<'_>) -> Result<()>;
 
-    fn to_system(self) -> SystemHandler<Self::Event, PhantomEvent, ()>
+    fn to_system(self) -> SystemHandler<Self, PhantomMediator>
     where
-        Self: Sized + 'static,
+        Self: Sized,
     {
-        SystemHandler::from_observer(self)
+        SystemHandler::Observer(self)
     }
 }
 
@@ -57,36 +64,40 @@ pub trait Mediator {
         sender: ecs::Sender<Self::EventsToSend>,
     ) -> Result<()>;
 
-    fn to_system(self) -> SystemHandler<PhantomEvent, Self::Event, Self::EventsToSend>
+    fn to_system(self) -> SystemHandler<PhantomObserver, Self>
     where
-        Self: Sized + 'static,
+        Self: Sized,
     {
-        SystemHandler::from_mediator(self)
+        SystemHandler::Mediator(self)
     }
 }
 
-impl<E, M, S> System for SystemHandler<E, M, S>
+impl<O, M> System for SystemHandler<O, M>
 where
-    E: ecs::GlobalEvent + 'static,
-    M: ecs::GlobalEvent + ecs::Event<Mutability = ecs::Mutable> + 'static,
-    S: ecs::EventSet + 'static,
+    O: Observer,
+    M: Mediator,
 {
     fn register_to(self, mut registry: crate::world::HandlerRegistry) {
         match self {
-            SystemHandler::Observer(observer) => registry.register(move |r: ecs::Receiver<E>| {
-                if let Err(err) = observer.observe(&r.event) {
-                    tracing::error!("Error in observer: {}", err);
-                }
-            }),
-            SystemHandler::Mediator(mediator) => {
-                registry.register(move |mut r: ecs::ReceiverMut<M>, sender: ecs::Sender<S>| {
-                    if let Err(err) = mediator.mediate(&mut r.event, sender) {
-                        tracing::error!("Error in mediator: {}", err);
+            SystemHandler::Observer(observer) => {
+                registry.register(move |r: ecs::Receiver<O::Event>| {
+                    if let Err(err) = observer.observe(&r.event) {
+                        tracing::error!("Error in observer: {}", err);
                     }
-
-                    // Take ownership of the event after handling it.
-                    EventMut::take(r.event);
                 })
+            }
+            SystemHandler::Mediator(mediator) => {
+                registry.register(
+                    move |mut r: ecs::ReceiverMut<M::Event>,
+                          sender: ecs::Sender<M::EventsToSend>| {
+                        if let Err(err) = mediator.mediate(&mut r.event, sender) {
+                            tracing::error!("Error in mediator: {}", err);
+                        }
+
+                        // Take ownership of the event after handling it.
+                        EventMut::take(r.event);
+                    },
+                )
             }
         }
     }
