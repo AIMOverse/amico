@@ -81,7 +81,7 @@ where
         match self {
             SystemHandler::Observer(observer) => {
                 registry.register(move |r: ecs::Receiver<O::Event>| {
-                    if let Err(err) = observer.observe(&r.event) {
+                    if let Err(err) = observer.observe(r.event) {
                         tracing::error!("Error in observer: {}", err);
                     }
                 })
