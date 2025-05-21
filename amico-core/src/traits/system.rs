@@ -4,5 +4,5 @@ use crate::world::HandlerRegistry;
 /// to an Agent.
 pub trait System {
     /// Register one or some handler functions to the ECS World.
-    fn register_to(&self, registry: HandlerRegistry);
+    fn register_to(self, registry: HandlerRegistry);
 }

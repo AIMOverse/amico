@@ -17,11 +17,11 @@ pub struct ChatbotSystem {
 }
 
 impl System for ChatbotSystem {
-    fn register_to(&self, mut registry: HandlerRegistry) {
+    fn register_to(self, mut registry: HandlerRegistry) {
         let Self {
             int_layer: itr_layer,
             env_layer,
-        } = *self;
+        } = self;
 
         registry.register(
             move |r: Receiver<UserInput>,
@@ -82,12 +82,12 @@ pub struct SpeechSystem {
 }
 
 impl System for SpeechSystem {
-    fn register_to(&self, mut registry: HandlerRegistry) {
+    fn register_to(self, mut registry: HandlerRegistry) {
         let Self {
             env_layer,
             user_mp3_path,
             agent_mp3_path,
-        } = *self;
+        } = self;
 
         registry.register(
             move |r: Receiver<RecordStart>, mut rcd_fetcher: Fetcher<&mut Recorder>| {
@@ -156,7 +156,7 @@ pub struct CompletionSystem {
 }
 
 impl System for CompletionSystem {
-    fn register_to(&self, mut registry: HandlerRegistry) {
+    fn register_to(self, mut registry: HandlerRegistry) {
         let ai_layer = self.ai_layer;
         registry.register(
             move |r: Receiver<UserContent>,
