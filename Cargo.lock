@@ -1100,7 +1100,6 @@ dependencies = [
  "base64 0.22.1",
  "colored",
  "ecdsa",
- "futures",
  "lazy_static",
  "nostr",
  "nostr-sdk",

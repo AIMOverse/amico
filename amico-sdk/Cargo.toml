@@ -11,7 +11,7 @@ name = "amico"
 path = "src/lib.rs"
 
 [features]
-core = ["dep:amico-core"]
+# core = ["dep:amico-core"]
 default = ["mcp-client", "a2a", "aoe"]
 mcp-client = [
     "dep:rig-core",
