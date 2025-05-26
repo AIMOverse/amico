@@ -10,7 +10,7 @@ use amico::{
 use amico_core::{
     runtime::storage::{Namespace, Storage},
     traits::EventSource,
-    types::{AgentEvent, EventContent},
+    types::AgentEvent,
 };
 use amico_mods::{
     a2a::network::{A2aNetwork, dephy::DephyNetwork, error::NetworkError},
@@ -148,14 +148,11 @@ impl EventSource for A2aModule {
         self.network
             .network
             .subscribe_dyn(Box::new(move |message| {
-                Box::pin(on_event(AgentEvent::new(
-                    "A2aMessageReceived",
-                    "A2aModule",
-                    Some(EventContent::Content(
-                        serde_json::to_value(A2aMessageReceived(message)).unwrap(),
-                    )),
-                    None,
-                )))
+                Box::pin(on_event(
+                    AgentEvent::new("A2aMessageReceived", "A2aModule")
+                        .with_content(A2aMessageReceived(message))
+                        .unwrap(),
+                ))
             }))
             .await?;
 

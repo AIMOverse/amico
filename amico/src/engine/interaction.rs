@@ -4,11 +4,7 @@ use std::{
     sync::Arc,
 };
 
-use amico_core::{
-    ecs::Component,
-    traits::EventSource,
-    types::{AgentEvent, EventContent},
-};
+use amico_core::{ecs::Component, traits::EventSource, types::AgentEvent};
 use colored::Colorize;
 use tokio::sync::{Mutex, mpsc};
 
@@ -108,14 +104,10 @@ impl EventSource for CliEventSource {
 
             print_message_separator();
 
-            on_event(AgentEvent::new(
-                "ConsoleInput",
-                "Stdio",
-                Some(EventContent::Content(
-                    serde_json::to_value(ConsoleInput(input.to_string())).unwrap(),
-                )),
-                None,
-            ))
+            on_event(
+                AgentEvent::new("ConsoleInput", "Stdio")
+                    .with_content(ConsoleInput(input.to_string()))?,
+            )
             .await;
 
             // Wait until output completes
