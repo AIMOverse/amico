@@ -75,7 +75,7 @@ impl AgentEvent {
     /// use amico_core::types::AgentEvent;
     ///
     /// let event = AgentEvent::new("test", "TestSource");
-
+    ///
     /// assert_eq!(event.name, "test");
     /// assert_eq!(event.source, "TestSource");
     /// assert_eq!(event.content, None);
