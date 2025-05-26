@@ -3,7 +3,7 @@ use std::{future::Future, time::Duration};
 use amico_core::{
     Agent, OnFinish, ecs,
     traits::{Dispatcher, EventSource, System},
-    types::{AgentEvent, EventContent},
+    types::AgentEvent,
 };
 use serde::{Deserialize, Serialize};
 use tokio::time::sleep;
@@ -23,15 +23,12 @@ impl EventSource for TestEventSource {
         Fut: Future + Send + 'static,
     {
         for i in 1..10 {
-            let event = AgentEvent::new(
-                "Tick",
-                "TestEventSource",
-                Some(EventContent::Content(serde_json::to_value(EventInner {
+            let event = AgentEvent::new("Tick", "TestEventSource")
+                .with_content(EventInner {
                     message: "tick".to_string(),
                     value: i,
-                })?)),
-                Some(Duration::from_secs(10)),
-            );
+                })?
+                .lifetime(Duration::from_secs(10));
 
             on_event(event).await;
 

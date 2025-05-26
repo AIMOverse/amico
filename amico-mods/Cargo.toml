@@ -23,7 +23,7 @@ std-cli-chatbot = []
 std-audio-chatbot = ["dep:amico-hal", "amico-hal/os-common"]
 
 # Core plugins
-std-core = ["futures", "amico-core", "amico-sdk/core"]
+std-core = ["amico-core"]
 
 # Runtime
 storage-fs = ["amico-core"]
@@ -77,8 +77,6 @@ amico-core = { path = "../amico-core", default-features = false, optional = true
 # Plugin-specific dependencies
 
 # Core
-futures = { version = "0.3.31", optional = true }
-tokio = { workspace = true, optional = true }
 
 # Std
 rig-core = { workspace = true, optional = true, default-features = false }
@@ -105,6 +103,7 @@ sodiumoxide = { version = "0.2", optional = true }
 base64 = { version = "0.22", optional = true }
 
 # Common dependencies
+tokio = { workspace = true, optional = true }
 async-trait = { workspace = true }
 thiserror = { workspace = true }
 colored = "3.0.0"

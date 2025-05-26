@@ -4,12 +4,7 @@ use crate::{types::AgentEvent, world::EventDelegate};
 
 /// `Dispatcher`s dispatches `AgentEvent`s into the ECS `World`.
 ///
-/// Currently, `Dispatcher` = `ActionSelector` + `Action` + ECS.
-///
-/// ## TODO
-///
-/// - Integrate `EventPool` to handle a list of events.
-/// - Replace `ActionSelector`.
+/// Representing an Agent's action selection strategy.
 pub trait Dispatcher {
     /// Dispatches an `AgentEvent` into the ECS `World`.
     fn dispatch(

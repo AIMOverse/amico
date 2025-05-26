@@ -130,21 +130,16 @@ mod tests {
     #[test]
     fn test_event_pool() -> Result<(), EventPoolError> {
         // Create a new EventPool
-        let mut event_pool = EventPool::new(5);
+        let mut event_pool = EventPool::new(1);
         // Add two events to the event pool
         event_pool.extend_events(vec![
-            AgentEvent::new("ExampleEvent", "ExampleSource", Default::default(), None),
-            AgentEvent::new(
-                "ExampleEvent2",
-                "ExampleSource2",
-                Default::default(),
-                Some(Duration::from_secs(10)),
-            ),
+            AgentEvent::new("ExampleEvent", "ExampleSource"),
+            AgentEvent::new("ExampleEvent2", "ExampleSource2").lifetime(Duration::from_secs(3)),
         ])?;
         assert_eq!(event_pool.get_events().len(), 2);
 
-        // Wait for 6 seconds
-        std::thread::sleep(std::time::Duration::from_secs(6));
+        // Wait for 2 seconds
+        std::thread::sleep(std::time::Duration::from_secs(2));
 
         assert_eq!(event_pool.get_events().len(), 1);
 
