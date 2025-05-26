@@ -93,7 +93,6 @@ impl<D: Dispatcher> Agent<D> {
                     tracing::debug!("On AgentEvent {:?}", event);
                     let tx = event_tx.clone();
 
-                    // Never enters this `async move` block
                     async move {
                         let name = event.name;
                         tracing::debug!("Sending Event to agent...");
@@ -108,18 +107,12 @@ impl<D: Dispatcher> Agent<D> {
                 .await
                 .unwrap();
 
-            tracing::debug!("Event source ended.");
-
             // Send termination signal if needed
             match &on_finish {
                 OnFinish::Stop => {
                     // Send a termination instruction to signal the main loop to exit
-                    let terminate_event = AgentEvent::new(
-                        "Terminate",
-                        "EventSource",
-                        Some(EventContent::Instruction(AgentInstruction::Terminate)),
-                        None,
-                    );
+                    let terminate_event = AgentEvent::new("Terminate", "EventSource")
+                        .instruction(AgentInstruction::Terminate);
 
                     // Try to send the termination event, but don't panic if it fails
                     // (channel might already be closed)
