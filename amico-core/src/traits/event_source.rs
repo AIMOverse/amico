@@ -1,4 +1,5 @@
 use tokio::task::JoinHandle;
+use tokio_with_wasm::alias as tokio;
 
 use crate::types::AgentEvent;
 

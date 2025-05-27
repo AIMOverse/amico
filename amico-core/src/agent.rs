@@ -1,4 +1,5 @@
 use tokio::sync::mpsc::{Receiver, Sender, channel};
+use tokio_with_wasm::alias as tokio;
 
 use crate::{
     traits::Dispatcher,

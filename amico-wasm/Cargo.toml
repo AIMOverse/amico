@@ -14,10 +14,7 @@ default = ["console_error_panic_hook"]
 
 [dependencies]
 wasm-bindgen = "0.2.100"
-amico-sdk = { path = "../amico-sdk", default-features = false }
-amico-mods = { path = "../amico-mods", default-features = false, features = [
-    "web3-solana-wasm",
-] }
+amico-core = { path = "../amico-core" }
 
 # The `console_error_panic_hook` crate provides better debugging of panics by
 # logging them with `console.error`. This is great for development, but requires
@@ -25,9 +22,22 @@ amico-mods = { path = "../amico-mods", default-features = false, features = [
 # code size when deploying.
 console_error_panic_hook = { version = "0.1.7", optional = true }
 wasm-bindgen-futures = "0.4.50"
-js-sys = "0.3.77"
+#js-sys = "0.3.77"
 getrandom = { version = "0.2", features = ["js"] }
-solana-sdk = { workspace = true }
+#solana-sdk = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+tokio = { workspace = true, features = ["time", "macros", "rt"] }
+anyhow = { workspace = true }
+evenio = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = "0.3.19"
+tracing-subscriber-wasm = "0.1.0"
+tokio_with_wasm = { workspace = true, features = ["rt", "macros", "time"] }
+async-trait = { workspace = true }
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.50"
+
+# For meaningful backtraces
+[profile.release]
+debug = true
