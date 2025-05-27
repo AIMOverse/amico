@@ -1,7 +1,4 @@
-use tokio::{
-    sync::mpsc::{Receiver, Sender, channel},
-    task::JoinSet,
-};
+use tokio::sync::mpsc::{Receiver, Sender, channel};
 
 use crate::{
     traits::Dispatcher,
@@ -31,9 +28,6 @@ pub enum OnFinish {
 ///
 /// - `D`: The Event `Dispatcher` type, representing the Agent's action selection strategy.
 pub struct Agent<D: Dispatcher> {
-    /// The JoinSet to store EventSource thread join handles.
-    event_source_js: JoinSet<OnFinish>,
-
     /// The mpsc channel sender to send agent events to event sources.
     event_tx: Sender<AgentEvent>,
 
@@ -60,7 +54,6 @@ impl<D: Dispatcher> Agent<D> {
 
         // Build the Agnet.
         Self {
-            event_source_js: JoinSet::new(),
             event_tx: tx,
             event_rx: rx,
             wm: WorldManager::new(),
@@ -82,51 +75,48 @@ impl<D: Dispatcher> Agent<D> {
         event_source: S,
         on_finish: OnFinish,
     ) {
-        let js = &mut self.event_source_js;
-
+        let event_tx = self.event_tx.clone();
         // Spawn the thread.
-        let tx = self.event_tx.clone();
-        js.spawn(async move {
-            let event_tx = tx.clone();
-            event_source
-                .run(move |event| {
-                    tracing::debug!("On AgentEvent {:?}", event);
-                    let tx = event_tx.clone();
+        let jh = event_source.spawn(move |event| {
+            tracing::debug!("On AgentEvent {:?}", event);
+            let tx = event_tx.clone();
 
-                    async move {
-                        let name = event.name;
-                        tracing::debug!("Sending Event to agent...");
+            async move {
+                let name = event.name;
+                tracing::debug!("Sending Event to agent...");
 
-                        if let Err(err) = tx.send(event).await {
-                            tracing::warn!("Failed to send AgentEvent {}", err);
-                        } else {
-                            tracing::info!("Sent AgentEvent {}", name);
-                        }
+                if let Err(err) = tx.send(event).await {
+                    tracing::warn!("Failed to send AgentEvent {}", err);
+                } else {
+                    tracing::info!("Sent AgentEvent {}", name);
+                }
+            }
+        });
+
+        // Wait for the event source to finish and send termination signal if needed.
+        match &on_finish {
+            OnFinish::Stop => {
+                let event_tx = self.event_tx.clone();
+                tokio::spawn(async move {
+                    // Wait for the event source to finish.
+                    if let Err(err) = jh.await.unwrap() {
+                        tracing::error!("Event source JoinError: {}", err);
+                        return;
                     }
-                })
-                .await
-                .unwrap();
 
-            // Send termination signal if needed
-            match &on_finish {
-                OnFinish::Stop => {
                     // Send a termination instruction to signal the main loop to exit
-                    let terminate_event = AgentEvent::new("Terminate", "EventSource")
+                    let terminate_event = AgentEvent::new("Terminate", "spawn_event_source")
                         .instruction(AgentInstruction::Terminate);
 
                     // Try to send the termination event, but don't panic if it fails
                     // (channel might already be closed)
-                    if let Err(err) = tx.send(terminate_event).await {
+                    if let Err(err) = event_tx.send(terminate_event).await {
                         tracing::warn!("Failed to send termination event: {}", err);
                     }
-                }
-                OnFinish::Continue => {}
+                });
             }
-
-            // Yield the finish behaviour to the agent.
-            // See `Agent::run`.
-            on_finish
-        });
+            OnFinish::Continue => {}
+        }
     }
 
     /// The function to run the agent.
@@ -166,15 +156,15 @@ impl<D: Dispatcher> Agent<D> {
 
         // Waits for event sources to finish.
         // If an event source choose to stop the agent workflow,
-        while let Some(res) = self.event_source_js.join_next().await {
-            match res {
-                Ok(OnFinish::Continue) => continue,
-                Ok(OnFinish::Stop) => return,
-                Err(err) => {
-                    tracing::error!("Event source JoinSet JoinError: {}", err);
-                    panic!("Event source JoinSet JoinError: {}", err);
-                }
-            }
-        }
+        // while let Some(res) = self.event_source_js.join_next().await {
+        //     match res {
+        //         Ok(OnFinish::Continue) => continue,
+        //         Ok(OnFinish::Stop) => return,
+        //         Err(err) => {
+        //             tracing::error!("Event source JoinSet JoinError: {}", err);
+        //             panic!("Event source JoinSet JoinError: {}", err);
+        //         }
+        //     }
+        // }
     }
 }
