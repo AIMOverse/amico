@@ -1,4 +1,5 @@
-use std::future::Future;
+use tokio::task::JoinHandle;
+use tokio_with_wasm::alias as tokio;
 
 use crate::types::AgentEvent;
 
@@ -8,7 +9,7 @@ pub trait EventSource {
     /// The method to run the `EventSource`.
     ///
     /// The `run` method will be called by `Agent` in a new thread.
-    fn run<F, Fut>(&self, on_event: F) -> impl Future<Output = anyhow::Result<()>> + Send
+    fn spawn<F, Fut>(&self, on_event: F) -> JoinHandle<anyhow::Result<()>>
     where
         F: Fn(AgentEvent) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = ()> + Send + 'static;

@@ -1,162 +1,91 @@
-//! WASM bindings for Amico
+use std::{future::Future, time::Duration};
 
-#[cfg(test)]
-mod tests;
-
-mod js_provider;
-
-use amico::{
-    ai::{
-        services::{CompletionService, ServiceBuilder},
-        tool::Tool,
-    },
-    resource::Resource,
+use amico_core::{
+    Agent, OnFinish, ecs,
+    traits::{Dispatcher, EventSource, System},
+    types::AgentEvent,
 };
-use amico_mods::{
-    std::ai::{
-        providers::rig::{RigProvider, providers},
-        services::InMemoryService,
-    },
-    web3::wallet::Wallet,
-};
-use wasm_bindgen::prelude::*;
+use serde::{Deserialize, Serialize};
+use tokio::{spawn, task::JoinHandle, time::sleep};
+use tokio_with_wasm::alias as tokio;
+use wasm_bindgen::prelude::wasm_bindgen;
 
-/// WASM wrapper for `Tool`.
-#[wasm_bindgen]
-pub struct WasmTool {
-    pub(crate) tool: Tool,
+mod log;
+
+#[derive(Serialize, Deserialize)]
+struct EventInner {
+    message: String,
+    value: i32,
 }
 
-/// WASM wrapper for `InMemoryService<RigProvider>`.
-#[wasm_bindgen]
-pub struct WasmStdService {
-    pub(crate) service: InMemoryService<RigProvider>,
-}
+struct TestEventSource;
 
-#[wasm_bindgen]
-impl WasmStdService {
-    /// Creates a new `WasmStdService`.
-    ///
-    /// # Arguments
-    ///
-    /// * `provider` - The provider to use for the service.
-    /// * `model_name` - The name of the model to use.
-    /// * `system_prompt` - The system prompt to use.
-    /// * `temperature` - The temperature to use.
-    /// * `max_tokens` - The maximum number of tokens to use.
-    /// * `tools` - The tools to use.
-    ///
-    /// # Returns
-    ///
-    /// A new `WasmStdService`.
-    #[wasm_bindgen(constructor)]
-    pub fn new(
-        provider: WasmProvider,
-        model_name: &str,
-        system_prompt: &str,
-        temperature: f64,
-        max_tokens: u64,
-        tools: Vec<WasmTool>,
-    ) -> Self {
-        let service_builder = ServiceBuilder::new(provider.provider)
-            .model(model_name.to_string())
-            .system_prompt(system_prompt.to_string())
-            .temperature(temperature)
-            .max_tokens(max_tokens)
-            .tools(tools.iter().map(|t| t.tool.clone()).collect());
-        let service = service_builder.build::<InMemoryService<RigProvider>>();
-        Self { service }
-    }
+impl EventSource for TestEventSource {
+    fn spawn<F, Fut>(&self, on_event: F) -> JoinHandle<anyhow::Result<()>>
+    where
+        F: Fn(AgentEvent) -> Fut + Send + Sync + 'static,
+        Fut: Future + Send + 'static,
+    {
+        spawn(async move {
+            for i in 1..10 {
+                let event = AgentEvent::new("Tick", "TestEventSource")
+                    .with_content(EventInner {
+                        message: "tick".to_string(),
+                        value: i,
+                    })?
+                    .lifetime(Duration::from_secs(10));
 
-    /// Generates text based on a prompt.
-    ///
-    /// # Arguments
-    ///
-    /// * `prompt` - The prompt to generate text from.
-    ///
-    /// # Returns
-    ///
-    /// A `Result` containing the generated text or an error.
-    #[wasm_bindgen]
-    pub async fn chat(&mut self, prompt: &str) -> Result<String, String> {
-        self.service
-            .generate_text(prompt.to_string())
-            .await
-            .map_err(|e| e.to_string())
-    }
-}
+                on_event(event).await;
 
-/// WASM wrapper for `RigProvider`.
-#[wasm_bindgen]
-pub struct WasmProvider {
-    pub(crate) provider: RigProvider,
-}
+                sleep(Duration::from_millis(50)).await;
+            }
 
-#[wasm_bindgen]
-impl WasmProvider {
-    /// Creates a new `WasmProvider`.
-    ///
-    /// # Arguments
-    ///
-    /// * `base_url` - The base URL of the provider.
-    /// * `api_key` - The API key for the provider.
-    ///
-    /// # Returns
-    ///
-    /// A new `WasmProvider`.
-    #[wasm_bindgen(constructor)]
-    pub fn new(base_url: &str, api_key: &str) -> Self {
-        Self {
-            provider: RigProvider::openai(providers::openai::Client::from_url(api_key, base_url)),
-        }
-    }
-}
-
-/// WASM wrapper for `Wallet`.
-#[derive(Clone)]
-#[wasm_bindgen]
-pub struct WasmWallet {
-    pub(crate) wallet: Resource<Wallet>,
-}
-
-#[wasm_bindgen]
-impl WasmWallet {
-    /// Creates a new `WasmWallet`.
-    ///
-    /// # Returns
-    ///
-    /// A new `WasmWallet`.
-    #[wasm_bindgen(constructor)]
-    pub fn new() -> Result<Self, String> {
-        let wallet = Wallet::new().map_err(|e| e.to_string())?;
-        Ok(Self {
-            wallet: Resource::new("wallet".to_string(), wallet),
+            Ok(())
         })
     }
+}
 
-    /// Loads a wallet from a mnemonic phrase.
-    ///
-    /// # Arguments
-    ///
-    /// * `phrase` - The mnemonic phrase to load the wallet from.
-    ///
-    /// # Returns
-    ///
-    /// A `Result` containing the loaded `WasmWallet` or an error.
-    pub fn load(phrase: &str) -> Result<Self, String> {
-        let wallet = Wallet::from_phrase(phrase).map_err(|e| e.to_string())?;
-        Ok(Self {
-            wallet: Resource::new("wallet".to_string(), wallet),
-        })
-    }
+struct TestDispatcher;
 
-    /// Returns the mnemonic phrase of the wallet.
-    ///
-    /// # Returns
-    ///
-    /// The mnemonic phrase.
-    #[wasm_bindgen]
-    pub fn phrase(&self) -> String {
-        self.wallet.value().phrase().to_string()
+impl Dispatcher for TestDispatcher {
+    async fn dispatch(
+        &mut self,
+        agent_event: &AgentEvent,
+        mut delegate: amico_core::world::EventDelegate<'_>,
+    ) -> anyhow::Result<()> {
+        let EventInner { value, .. } = agent_event.parse_content::<EventInner>()?;
+        sleep(Duration::from_millis(80)).await;
+
+        delegate.send_event(Tick(value));
+
+        Ok(())
     }
+}
+
+struct TestSystem;
+
+#[derive(amico_core::ecs::GlobalEvent)]
+struct Tick(pub i32);
+
+impl System for TestSystem {
+    fn register_to(self, mut registry: amico_core::world::HandlerRegistry) {
+        registry.register(|r: ecs::Receiver<Tick>| {
+            println!("Received Tick event seq. {}", r.event.0);
+        });
+    }
+}
+
+#[tokio::main(flavor = "current_thread")]
+async fn test_agent() {
+    let mut agent = Agent::new(TestDispatcher);
+    agent.spawn_event_source(TestEventSource, OnFinish::Stop);
+    agent.wm.register_system(TestSystem);
+
+    agent.run().await;
+}
+
+#[wasm_bindgen(start)]
+pub fn start() {
+    log::init();
+    test_agent();
 }

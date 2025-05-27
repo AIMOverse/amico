@@ -6,7 +6,8 @@ use amico_core::{
     types::AgentEvent,
 };
 use serde::{Deserialize, Serialize};
-use tokio::time::sleep;
+use tokio::{task::JoinHandle, time::sleep};
+use tokio_with_wasm::alias as tokio;
 
 #[derive(Serialize, Deserialize)]
 struct EventInner {
@@ -17,25 +18,27 @@ struct EventInner {
 struct TestEventSource;
 
 impl EventSource for TestEventSource {
-    async fn run<F, Fut>(&self, on_event: F) -> anyhow::Result<()>
+    fn spawn<F, Fut>(&self, on_event: F) -> JoinHandle<anyhow::Result<()>>
     where
         F: Fn(AgentEvent) -> Fut + Send + Sync + 'static,
-        Fut: Future + Send + 'static,
+        Fut: Future<Output = ()> + Send + 'static,
     {
-        for i in 1..10 {
-            let event = AgentEvent::new("Tick", "TestEventSource")
-                .with_content(EventInner {
-                    message: "tick".to_string(),
-                    value: i,
-                })?
-                .lifetime(Duration::from_secs(10));
+        tokio::spawn(async move {
+            for i in 1..10 {
+                let event = AgentEvent::new("Tick", "TestEventSource")
+                    .with_content(EventInner {
+                        message: "tick".to_string(),
+                        value: i,
+                    })?
+                    .lifetime(Duration::from_secs(10));
 
-            on_event(event).await;
+                on_event(event).await;
 
-            sleep(Duration::from_millis(50)).await;
-        }
+                sleep(Duration::from_millis(50)).await;
+            }
 
-        Ok(())
+            Ok(())
+        })
     }
 }
 

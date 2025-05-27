@@ -1,4 +1,4 @@
-use std::{collections::HashMap, future::Future, str::FromStr, sync::Arc};
+use std::{collections::HashMap, future::Future, str::FromStr, sync::Arc, time::Duration};
 
 use amico::{
     ai::{
@@ -20,7 +20,7 @@ use amico_mods::{
 use nostr::key::Keys;
 use serde_json::{json, to_value};
 use solana_sdk::pubkey::Pubkey;
-use tokio::sync::Mutex;
+use tokio::{sync::Mutex, task::JoinHandle};
 
 use super::events::A2aMessageReceived;
 
@@ -140,22 +140,27 @@ impl A2aModule {
 }
 
 impl EventSource for A2aModule {
-    async fn run<F, Fut>(&self, on_event: F) -> anyhow::Result<()>
+    fn spawn<F, Fut>(&self, on_event: F) -> JoinHandle<anyhow::Result<()>>
     where
         F: Fn(AgentEvent) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = ()> + Send + 'static,
     {
-        self.network
-            .network
-            .subscribe_dyn(Box::new(move |message| {
-                Box::pin(on_event(
-                    AgentEvent::new("A2aMessageReceived", "A2aModule")
-                        .with_content(A2aMessageReceived(message))
-                        .unwrap(),
-                ))
-            }))
-            .await?;
+        let network = self.network.network.clone();
+        tokio::spawn(async move {
+            network
+                .subscribe_dyn(Box::new(move |message| {
+                    Box::pin(on_event(
+                        AgentEvent::new("A2aMessageReceived", "A2aModule")
+                            .with_content(A2aMessageReceived(message))
+                            .unwrap(),
+                    ))
+                }))
+                .await?;
 
-        Ok(())
+            // Wait forever.
+            tokio::time::sleep(Duration::MAX).await;
+
+            Ok(())
+        })
     }
 }

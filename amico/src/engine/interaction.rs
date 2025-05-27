@@ -6,7 +6,10 @@ use std::{
 
 use amico_core::{ecs::Component, traits::EventSource, types::AgentEvent};
 use colored::Colorize;
-use tokio::sync::{Mutex, mpsc};
+use tokio::{
+    sync::{Mutex, mpsc},
+    task::JoinHandle,
+};
 
 use crate::engine::events::ConsoleInput;
 
@@ -78,48 +81,51 @@ impl CliEventSource {
 }
 
 impl EventSource for CliEventSource {
-    async fn run<F, Fut>(&self, on_event: F) -> anyhow::Result<()>
+    fn spawn<F, Fut>(&self, on_event: F) -> JoinHandle<anyhow::Result<()>>
     where
         F: Fn(amico_core::types::AgentEvent) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = ()> + Send + 'static,
     {
-        println!();
-        println!("{}", "Type \"s\" to speak to Amico, \"q\" to quit".blue());
-        println!("{}", "I'm Amico, how can I assist you today?".green());
-        print_message_separator();
+        let rx = self.rx.clone();
+        tokio::spawn(async move {
+            println!();
+            println!("{}", "Type \"s\" to speak to Amico, \"q\" to quit".blue());
+            println!("{}", "I'm Amico, how can I assist you today?".green());
+            print_message_separator();
 
-        loop {
-            print!("> ");
+            loop {
+                print!("> ");
 
-            io::stdout().flush().unwrap();
+                io::stdout().flush().unwrap();
 
-            let mut input = String::new();
-            io::stdin().read_line(&mut input).unwrap();
-            let input = input.trim();
+                let mut input = String::new();
+                io::stdin().read_line(&mut input).unwrap();
+                let input = input.trim();
 
-            if input.eq_ignore_ascii_case("q") {
-                // Exit the run loop
-                break;
+                if input.eq_ignore_ascii_case("q") {
+                    // Exit the run loop
+                    break;
+                }
+
+                print_message_separator();
+
+                on_event(
+                    AgentEvent::new("ConsoleInput", "Stdio")
+                        .with_content(ConsoleInput(input.to_string()))?,
+                )
+                .await;
+
+                // Wait until output completes
+                let mut rx = rx.lock().await;
+
+                tracing::debug!("Waiting for output complete");
+                rx.recv().await.unwrap();
             }
 
             print_message_separator();
+            println!("{}", "Exiting chatbot. Goodbye!".green());
 
-            on_event(
-                AgentEvent::new("ConsoleInput", "Stdio")
-                    .with_content(ConsoleInput(input.to_string()))?,
-            )
-            .await;
-
-            // Wait until output completes
-            let mut rx = self.rx.lock().await;
-
-            tracing::debug!("Waiting for output complete");
-            rx.recv().await.unwrap();
-        }
-
-        print_message_separator();
-        println!("{}", "Exiting chatbot. Goodbye!".green());
-
-        Ok(())
+            Ok(())
+        })
     }
 }
