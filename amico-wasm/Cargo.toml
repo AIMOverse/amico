@@ -37,7 +37,3 @@ async-trait = { workspace = true }
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.50"
-
-# For meaningful backtraces
-[profile.release]
-debug = true
