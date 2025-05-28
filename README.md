@@ -6,6 +6,10 @@ Amico is a next-generation Autonomous AI Agent Framework designed for embedded A
 
 See our [Document Site](https://www.amico.dev) for more information.
 
+## Community
+
+- [Discord](https://discord.gg/MkeG9Zwuaw)
+
 ## 🚧 Stability Notice: Early Development Phase
 
 This project is currently in its early development stage. While we are excited to share our progress, please be aware of the following:
