@@ -156,7 +156,6 @@ pub struct BalanceSensorResult {
 impl Sensor for BalanceSensor {
     type Args = BalanceSensorArgs;
     type Output = BalanceSensorResult;
-    type Error = BalanceSensorError;
 
     /// Sense the balance of a Solana account
     ///
@@ -165,7 +164,7 @@ impl Sensor for BalanceSensor {
     ///
     /// Returns:
     ///    * `Result<BalanceSensorResult, BalanceSensorError>` - The result of the sensor.
-    async fn sense(&self, args: Self::Args) -> Result<Self::Output, Self::Error> {
+    async fn sense(&self, args: Self::Args) -> anyhow::Result<Self::Output> {
         let lamports = self
             .client
             .value()

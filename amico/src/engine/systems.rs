@@ -2,7 +2,7 @@ use std::sync::mpsc::channel;
 
 use amico::ai::services::CompletionServiceDyn;
 use amico_core::{traits::System, world::HandlerRegistry};
-use amico_mods::std::ai::tasks::chatbot::speech::{speech_to_text, text_to_speech};
+use amico_mods::std::ai::services::speech::{speech_to_text, text_to_speech};
 use evenio::prelude::*;
 
 use super::{

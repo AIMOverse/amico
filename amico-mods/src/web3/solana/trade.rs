@@ -105,9 +105,8 @@ pub enum TradeError {
 impl Effector for TradeEffector {
     type Args = TradeEffectorArgs;
     type Output = ();
-    type Error = TradeError;
 
-    async fn effect(&self, args: Self::Args) -> Result<Self::Output, Self::Error> {
+    async fn effect(&self, args: Self::Args) -> anyhow::Result<Self::Output> {
         swap(
             self.client.value().rpc_client(),
             self.wallet.value().solana(),
@@ -115,6 +114,6 @@ impl Effector for TradeEffector {
             &args.output_mint,
             &args.amount,
         )
-        .map_err(|_| TradeError::ClientError)
+        .map_err(|_| anyhow::anyhow!("Failed to trade solana tokens on Raydium"))
     }
 }

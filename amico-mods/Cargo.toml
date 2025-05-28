@@ -116,6 +116,7 @@ lazy_static = "1.5.0"
 serde = { workspace = true }
 serde_json = { workspace = true }
 tracing = { workspace = true }
+anyhow = { workspace = true }
 
 # Testing dependencies
 [dev-dependencies]
