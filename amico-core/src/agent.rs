@@ -2,23 +2,10 @@ use tokio::sync::mpsc::{Receiver, Sender, channel};
 use tokio_with_wasm::alias as tokio;
 
 use crate::{
-    traits::Dispatcher,
-    types::{AgentInstruction, EventContent},
+    traits::{Dispatcher, EventSource},
+    types::{AgentEvent, AgentInstruction, EventContent},
     world::WorldManager,
 };
-use crate::{traits::EventSource, types::AgentEvent};
-
-/// The behaviour to choose when event source thread finishes.
-///
-/// TODO: Replace this with `AgentInstruction` after the
-/// agent instruction feature is implemented.
-pub enum OnFinish {
-    // Do nothing when the event source thread finishes.
-    Continue,
-
-    // Stop the Agent workflow when the thread finishes.
-    Stop,
-}
 
 /// The core event-driven Agent program. Defines the workflow of the agent.
 ///
@@ -67,10 +54,6 @@ impl<D: Dispatcher> Agent<D> {
     /// ## Spawns
     ///
     /// Spawns a new `tokio` thread for the event source.
-    ///
-    /// ## Panics
-    ///
-    /// Panics on `SendError`s.
     pub fn spawn_event_source<S: EventSource + Send + 'static>(
         &mut self,
         event_source: S,
@@ -84,7 +67,6 @@ impl<D: Dispatcher> Agent<D> {
 
             async move {
                 let name = event.name;
-                tracing::debug!("Sending Event to agent...");
 
                 if let Err(err) = tx.send(event).await {
                     tracing::warn!("Failed to send AgentEvent {}", err);
@@ -97,6 +79,7 @@ impl<D: Dispatcher> Agent<D> {
         // Wait for the event source to finish and send termination signal if needed.
         match &on_finish {
             OnFinish::Stop => {
+                // Spawn a new thread to wait for the event source to finish.
                 let event_tx = self.event_tx.clone();
                 tokio::spawn(async move {
                     // Wait for the event source to finish.
@@ -154,18 +137,14 @@ impl<D: Dispatcher> Agent<D> {
         }
 
         tracing::info!("Exited event loop.");
-
-        // Waits for event sources to finish.
-        // If an event source choose to stop the agent workflow,
-        // while let Some(res) = self.event_source_js.join_next().await {
-        //     match res {
-        //         Ok(OnFinish::Continue) => continue,
-        //         Ok(OnFinish::Stop) => return,
-        //         Err(err) => {
-        //             tracing::error!("Event source JoinSet JoinError: {}", err);
-        //             panic!("Event source JoinSet JoinError: {}", err);
-        //         }
-        //     }
-        // }
     }
+}
+
+/// The behaviour to choose when event source thread finishes.
+pub enum OnFinish {
+    // Do nothing when the event source thread finishes.
+    Continue,
+
+    // Stop the Agent workflow when the thread finishes.
+    Stop,
 }
