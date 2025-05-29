@@ -6,12 +6,9 @@ use amico::{
         tool::{Tool, ToolBuilder},
     },
     resource::Resource,
-};
-use amico_core::{
     runtime::storage::{Namespace, Storage},
-    traits::EventSource,
-    types::AgentEvent,
 };
+use amico_core::{traits::EventSource, types::AgentEvent};
 use amico_mods::{
     a2a::network::{A2aNetwork, dephy::DephyNetwork, error::NetworkError},
     runtime::storage::fs::FsStorage,

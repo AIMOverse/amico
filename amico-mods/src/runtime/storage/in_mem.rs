@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use amico_core::runtime::storage::{Namespace, RawData, Storage, StorageError};
+use amico::runtime::storage::{Namespace, RawData, Storage, StorageError};
 
 /// An in-memory storage implementation where each namespace is a collection of key-value pairs
 /// held in memory using a HashMap.
