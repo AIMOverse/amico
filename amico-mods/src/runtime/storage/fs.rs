@@ -3,7 +3,7 @@ use std::fs::{self, File, OpenOptions};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 
-use amico_core::runtime::storage::{Namespace, RawData, Storage, StorageError};
+use amico::runtime::storage::{Namespace, RawData, Storage, StorageError};
 
 /// A filesystem-based storage implementation where each namespace is a JSON file
 /// and each file contains key-value pairs.
