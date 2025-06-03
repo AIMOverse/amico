@@ -44,13 +44,12 @@ mod tests {
         // Setup wallet and keys
         let keys = Keys::generate();
         let wallet = Wallet::new().unwrap();
-        let wallet_resource = Resource::new("Test wallet".to_string(), wallet);
+        let wallet_resource = Resource::new("Test wallet", wallet);
 
         // Setup underlying network
         let dephy_network = DephyNetwork::new(keys, wallet_resource);
 
         // Setup A2A network
-        let _network_resource =
-            Resource::new("Test network".to_string(), A2aNetwork::new(dephy_network));
+        let _network_resource = Resource::new("Test network", A2aNetwork::new(dephy_network));
     }
 }

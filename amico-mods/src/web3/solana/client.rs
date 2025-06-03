@@ -1,4 +1,4 @@
-use amico::resource::Resource;
+use amico::resource::{IntoResource, Resource};
 
 pub type RpcClient = solana_client::nonblocking::rpc_client::RpcClient;
 
@@ -14,5 +14,10 @@ impl SolanaClient {
     }
 }
 
-/// Solana client resource uses Solana's non-blocking client.
+impl IntoResource<SolanaClient> for SolanaClient {
+    fn into_resource(self) -> Resource<SolanaClient> {
+        Resource::new("solana-client", self)
+    }
+}
+
 pub type SolanaClientResource = Resource<SolanaClient>;

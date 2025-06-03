@@ -23,7 +23,7 @@ use std::sync::Arc;
 /// }
 ///
 /// fn main() {
-///     let resource = Resource::new("one".to_string(), 1);
+///     let resource = Resource::new("one", 1);
 ///
 ///     // Just clone the resource wherever needed.
 ///     resource_consumer_one(resource.clone());
@@ -38,7 +38,7 @@ use std::sync::Arc;
 #[derive(Debug)]
 pub struct Resource<T> {
     /// The name of the resource.
-    name: String,
+    name: &'static str,
 
     /// The value of the resource. Stored in an `Arc`.
     value: Arc<T>,
@@ -53,7 +53,7 @@ impl<T> Resource<T> {
     ///
     /// Returns:
     ///    * `Resource` - The new resource instance.
-    pub fn new(name: String, value: T) -> Self {
+    pub fn new(name: &'static str, value: T) -> Self {
         Self {
             name,
             value: Arc::new(value),
@@ -65,7 +65,7 @@ impl<T> Resource<T> {
     /// Returns:
     ///    * `&str` - The name of the resource.
     pub fn name(&self) -> &str {
-        &self.name
+        self.name
     }
 
     /// Get the value of the resource
@@ -92,10 +92,37 @@ impl<T> Clone for Resource<T> {
     ///    * `Resource` - A clone of the resource.
     fn clone(&self) -> Self {
         Self {
-            name: self.name.clone(),
+            name: self.name,
             value: Arc::clone(&self.value),
         }
     }
+}
+
+/// `IntoResource<T>` is a trait that allows types to be converted into a `Resource<T>`.
+/// This trait is useful for converting types into a `Resource<T>` without having to
+/// implement the `Resource` trait directly.
+///
+/// # Example
+///
+/// ```rust
+/// use amico::resource::{IntoResource, Resource};
+/// use tokio::sync::Mutex;
+///
+/// struct MyResource {
+///     value: i32,
+/// }
+///
+/// // Example: Simplifies the creation of a mutable resource behind a mutex.
+///
+/// impl IntoResource<Mutex<MyResource>> for MyResource {
+///     fn into_resource(self) -> Resource<Mutex<MyResource>> {
+///         Resource::new("my_resource", Mutex::new(self))
+///     }
+/// }
+/// ```
+pub trait IntoResource<T> {
+    /// Convert the type into a `Resource<T>`.
+    fn into_resource(self) -> Resource<T>;
 }
 
 #[cfg(test)]
@@ -106,21 +133,21 @@ mod tests {
 
     #[test]
     fn test_resource() {
-        let resource = Resource::new("test".to_string(), 1);
+        let resource = Resource::new("test", 1);
         assert_eq!(resource.name(), "test");
         assert_eq!(*resource.value(), 1);
     }
 
     #[test]
     fn test_boxed_resource() {
-        let resource = Resource::new("test".to_string(), Box::new(1));
+        let resource = Resource::new("test", Box::new(1));
         assert_eq!(resource.name(), "test");
         assert_eq!(**resource.value(), 1);
     }
 
     #[test]
     fn test_multithreaded_resource() {
-        let resource = Resource::new("test".to_string(), Mutex::new(1));
+        let resource = Resource::new("test", Mutex::new(1));
 
         let mut handles = vec![];
         for _ in 0..100 {

@@ -1,4 +1,4 @@
-use std::{collections::HashMap, future::Future, str::FromStr, sync::Arc, time::Duration};
+use std::{collections::HashMap, future::Future, str::FromStr, time::Duration};
 
 use amico::{
     ai::{
@@ -24,11 +24,11 @@ use super::events::A2aMessageReceived;
 #[derive(Clone)]
 pub struct A2aModule {
     network: A2aNetwork,
-    storage: Resource<Arc<Mutex<FsStorage>>>,
+    storage: Resource<Mutex<FsStorage>>,
 }
 
 impl A2aModule {
-    pub fn new(wallet: WalletResource, storage: Resource<Arc<Mutex<FsStorage>>>) -> Self {
+    pub fn new(wallet: WalletResource, storage: Resource<Mutex<FsStorage>>) -> Self {
         // Setup wallet and keys
         let keys = Keys::generate();
 
@@ -109,7 +109,7 @@ impl A2aModule {
     }
 
     pub fn contact_list_tool(&self) -> Tool {
-        let storage = self.storage.value().clone();
+        let storage = self.storage.value_ptr();
         ToolBuilder::new()
             .name("contact_list")
             .description("Get your contact address list of the Agent-to-agent network")

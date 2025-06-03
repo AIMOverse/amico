@@ -6,6 +6,7 @@ use amico::{
         tool::{Tool, ToolBuilder},
     },
     environment::Sensor,
+    resource::{IntoResource, Resource},
 };
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
@@ -130,6 +131,12 @@ impl BalanceSensor {
                         })
                 }
             })
+    }
+}
+
+impl IntoResource<BalanceSensor> for BalanceSensor {
+    fn into_resource(self) -> Resource<BalanceSensor> {
+        Resource::new("balance_sensor", self)
     }
 }
 

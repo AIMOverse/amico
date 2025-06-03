@@ -1,15 +1,14 @@
 use std::process;
-use std::sync::Arc;
 
 use amico::ai::services::ServiceBuilder;
-use amico::resource::Resource;
+use amico::resource::IntoResource;
 use amico_core::{Agent, OnFinish};
 use amico_mods::interface::Plugin;
 use amico_mods::runtime::storage::fs::FsStorage;
 use amico_mods::std::ai::providers::rig::{RigProvider, providers};
 use amico_mods::std::ai::services::InMemoryService;
 use amico_mods::web3::solana::balance::BalanceSensor;
-use amico_mods::web3::solana::client::{SolanaClient, SolanaClientResource};
+use amico_mods::web3::solana::client::SolanaClient;
 use amico_mods::web3::solana::trade::TradeEffector;
 use amico_mods::web3::wallet::Wallet;
 use colored::Colorize;
@@ -20,7 +19,6 @@ use engine::interaction::create_cli_client;
 use engine::systems::{ChatbotSystem, CompletionSystem, SpeechSystem};
 use helpers::solana_rpc_url;
 use prompt::AMICO_SYSTEM_PROMPT;
-use tokio::sync::Mutex;
 
 mod audio;
 mod engine;
@@ -73,15 +71,14 @@ async fn main() {
         println!();
     }
 
-    let fs_store = FsStorage::new(".amico/storage")
+    let storage_resource = FsStorage::new(".amico/storage")
         .inspect_err(|err| {
             eprintln!("{}", "Error loading FS storage".red());
             tracing::error!("Error loading FS storage: {}", err);
             process::exit(1);
         })
-        .unwrap();
-    let storage_resource =
-        Resource::new("Dev FS Storage".to_string(), Arc::new(Mutex::new(fs_store)));
+        .unwrap()
+        .into_resource();
 
     // Load agent wallet
     let wallet = Wallet::load_or_save_new("agent_wallet.txt")
@@ -89,27 +86,17 @@ async fn main() {
         .unwrap_or_else(|err| {
             eprintln!("Error loading wallet: {err}");
             process::exit(1);
-        });
-    // Make wallet a resource
-    let wallet = Resource::new("wallet".to_string(), wallet);
+        })
+        .into_resource();
 
     // Create Client resource
-    let client = SolanaClientResource::new(
-        "Client resource".to_string(),
-        SolanaClient::new(solana_rpc_url("devnet").as_str()),
-    );
+    let client = SolanaClient::new(solana_rpc_url("devnet").as_str()).into_resource();
 
     // Create BalanceSensor instance
-    let balance_sensor = Resource::new(
-        "balance_sensor".to_string(),
-        BalanceSensor::new(client.clone(), wallet.clone()),
-    );
+    let balance_sensor = BalanceSensor::new(client.clone(), wallet.clone()).into_resource();
 
     // Create TradeEffector instance
-    let trade_effector = Resource::new(
-        "TradeEffector".to_string(),
-        TradeEffector::new(client.clone(), wallet.clone()),
-    );
+    let trade_effector = TradeEffector::new(client.clone(), wallet.clone()).into_resource();
 
     // Initialize a2a module
     let a2a = A2aModule::new(wallet.clone(), storage_resource);
