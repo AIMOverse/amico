@@ -43,7 +43,7 @@ impl System for ChatbotSystem {
                 let (tx, rx) = channel::<bool>();
                 let recorder_resource = recorder.clone();
                 tokio::spawn(async move {
-                    tx.send(!recorder_resource.lock().await.is_recording())
+                    tx.send(recorder_resource.lock().await.is_recording())
                         .unwrap();
                 });
 
@@ -59,7 +59,7 @@ impl System for ChatbotSystem {
                 let (tx, rx) = channel::<bool>();
                 let recorder_resource = recorder.clone();
                 tokio::spawn(async move {
-                    tx.send(!recorder_resource.lock().await.is_recording())
+                    tx.send(recorder_resource.lock().await.is_recording())
                         .unwrap();
                 });
 
