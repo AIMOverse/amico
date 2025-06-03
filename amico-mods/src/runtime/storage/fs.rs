@@ -3,7 +3,9 @@ use std::fs::{self, File, OpenOptions};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 
+use amico::resource::{IntoResource, Resource};
 use amico::runtime::storage::{Namespace, RawData, Storage, StorageError};
+use tokio::sync::Mutex;
 
 /// A filesystem-based storage implementation where each namespace is a JSON file
 /// and each file contains key-value pairs.
@@ -233,6 +235,12 @@ impl Drop for FsNamespace {
         if self.modified {
             let _ = self.save();
         }
+    }
+}
+
+impl IntoResource<Mutex<FsStorage>> for FsStorage {
+    fn into_resource(self) -> Resource<Mutex<FsStorage>> {
+        Resource::new("fs-storage", Mutex::new(self))
     }
 }
 

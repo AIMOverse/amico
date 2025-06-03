@@ -125,6 +125,7 @@ impl From<DephyNetwork> for A2aNetwork {
 
 #[cfg(test)]
 mod tests {
+    use amico::resource::IntoResource;
     use nostr::key::Keys;
     use tokio::sync::mpsc;
     use tokio::time::{Duration, timeout};
@@ -141,8 +142,8 @@ mod tests {
     #[tokio::test]
     async fn test_network_pubsub() {
         // Setup two network clients
-        let publisher = Resource::new("wallet1".to_string(), Wallet::new().unwrap());
-        let subscriber = Resource::new("wallet2".to_string(), Wallet::new().unwrap());
+        let publisher = Wallet::new().unwrap().into_resource();
+        let subscriber = Wallet::new().unwrap().into_resource();
 
         // Create two DephyNetwork instances
         let publisher_network = DephyNetwork::new(Keys::generate(), publisher.clone());

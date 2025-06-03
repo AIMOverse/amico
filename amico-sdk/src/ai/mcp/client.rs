@@ -9,7 +9,7 @@ use mcp_core::{
     types::{ClientCapabilities, Implementation},
 };
 
-use crate::resource::Resource;
+use crate::resource::{IntoResource, Resource};
 
 /// MCP feature for Amico uses SSE Transport.
 pub type McpSseTransport = ClientSseTransport;
@@ -32,21 +32,9 @@ pub enum McpClient {
     Command(McpCommandClient),
 }
 
-/// The resource type representing a MCP Client.
-pub type McpResource = Resource<McpClient>;
-
-impl McpResource {
-    /// Create a new MCP resource from a client.
-    ///
-    /// # Arguments
-    ///
-    /// * `client` - The MCP client.
-    ///
-    /// # Returns
-    ///
-    /// A new `McpResource`.
-    pub fn from_client(client: McpClient) -> Self {
-        Resource::new("MCP Client Resource".to_string(), client)
+impl IntoResource<McpClient> for McpClient {
+    fn into_resource(self) -> Resource<McpClient> {
+        Resource::new("MCP Client Resource", self)
     }
 }
 

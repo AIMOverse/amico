@@ -4,6 +4,7 @@ use amico::{
         tool::{Tool, ToolBuilder},
     },
     environment::Effector,
+    resource::{IntoResource, Resource},
 };
 use async_trait::async_trait;
 
@@ -84,6 +85,12 @@ impl TradeEffector {
                         })
                 }
             })
+    }
+}
+
+impl IntoResource<TradeEffector> for TradeEffector {
+    fn into_resource(self) -> Resource<TradeEffector> {
+        Resource::new("trade_effector", self)
     }
 }
 

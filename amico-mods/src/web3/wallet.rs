@@ -1,4 +1,4 @@
-use amico::resource::Resource;
+use amico::resource::{IntoResource, Resource};
 use bip39::{Language, Mnemonic, MnemonicType, Seed};
 
 #[cfg(feature = "web3-ethereum")]
@@ -163,11 +163,16 @@ impl Wallet {
     }
 }
 
+impl IntoResource<Wallet> for Wallet {
+    fn into_resource(self) -> Resource<Wallet> {
+        Resource::new("web3-wallet", self)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    use amico::resource::Resource;
     use solana_sdk::signer::Signer;
     use std::fs;
     use std::path::Path;
@@ -283,10 +288,10 @@ mod tests {
         let phrase = wallet.phrase().to_string();
 
         // Create a resource with the wallet
-        let wallet_resource = Resource::new("my_wallet".to_string(), wallet);
+        let wallet_resource = wallet.into_resource();
 
         // Test resource name
-        assert_eq!(wallet_resource.name(), "my_wallet");
+        assert_eq!(wallet_resource.name(), "web3-wallet");
 
         // Test accessing wallet methods through the resource
         let resource_phrase = wallet_resource.value().phrase().to_string();
