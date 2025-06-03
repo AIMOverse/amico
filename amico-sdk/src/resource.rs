@@ -65,7 +65,7 @@ impl<T> Resource<T> {
     /// Returns:
     ///    * `&str` - The name of the resource.
     pub fn name(&self) -> &str {
-        &self.name
+        self.name
     }
 
     /// Get the value of the resource
