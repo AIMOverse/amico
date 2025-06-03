@@ -4,6 +4,7 @@ use std::{
     sync::Arc,
 };
 
+use amico::resource::{IntoResource, Resource};
 use amico_core::{ecs::Component, traits::EventSource, types::AgentEvent};
 use colored::Colorize;
 use tokio::{
@@ -27,6 +28,12 @@ struct OutputComplete;
 #[derive(Component)]
 pub struct CliComponent {
     tx: mpsc::Sender<OutputComplete>,
+}
+
+impl IntoResource<CliComponent> for CliComponent {
+    fn into_resource(self) -> Resource<CliComponent> {
+        Resource::new("cli-component", self)
+    }
 }
 
 /// An event source for STDIO interaction.
