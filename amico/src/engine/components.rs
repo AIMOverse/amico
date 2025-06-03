@@ -1,24 +1,9 @@
-use std::sync::Arc;
-
-use amico_mods::std::ai::{providers::rig::RigProvider, services::InMemoryService};
+use amico::resource::{IntoResource, Resource};
 use anyhow::{Result, bail};
 use evenio::prelude::*;
 use tokio::sync::Mutex;
 
 use crate::audio::{RecordSignal, play_blocking, spawn_record_task};
-
-#[derive(Component)]
-pub struct AiService(Arc<Mutex<InMemoryService<RigProvider>>>);
-
-impl AiService {
-    pub fn new(service: InMemoryService<RigProvider>) -> Self {
-        Self(Arc::new(Mutex::new(service)))
-    }
-
-    pub fn get(&self) -> Arc<Mutex<InMemoryService<RigProvider>>> {
-        self.0.clone()
-    }
-}
 
 #[derive(Component)]
 pub struct Recorder {
@@ -63,6 +48,12 @@ impl Recorder {
         self.recording_task_rx = None;
 
         Ok(())
+    }
+}
+
+impl IntoResource<Mutex<Recorder>> for Recorder {
+    fn into_resource(self) -> Resource<Mutex<Recorder>> {
+        Resource::new("Recorder", Mutex::new(self))
     }
 }
 

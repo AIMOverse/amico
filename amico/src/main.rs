@@ -13,7 +13,7 @@ use amico_mods::web3::solana::trade::TradeEffector;
 use amico_mods::web3::wallet::Wallet;
 use colored::Colorize;
 use engine::a2a::A2aModule;
-use engine::components::{AiService, Recorder};
+use engine::components::Recorder;
 use engine::dispatcher::MatchDispatcher;
 use engine::interaction::create_cli_client;
 use engine::systems::{ChatbotSystem, CompletionSystem, SpeechSystem};
@@ -135,28 +135,25 @@ async fn main() {
     println!("Using service plugin: {}", service.info().name);
     println!("Tools enabled:\n{}", service.ctx.tools.describe());
 
+    let service_resource = service.into_resource();
+
     // Initialize ECS
     let mut agent = Agent::new(MatchDispatcher);
 
-    let int_layer = agent.wm.int_layer();
-    let ai_layer = agent.wm.ai_layer();
-    let env_layer = agent.wm.env_layer();
-
     let (cli_component, cli_event_source) = create_cli_client();
+    let recorder = Recorder::new().into_resource();
 
-    agent.wm.add_component(int_layer, cli_component);
-    agent.wm.add_component(ai_layer, AiService::new(service));
-    agent.wm.add_component(env_layer, Recorder::new());
-
-    agent.wm.register_system(CompletionSystem { ai_layer });
+    agent
+        .wm
+        .register_system(CompletionSystem { service_resource });
     agent.wm.register_system(SpeechSystem {
-        env_layer,
+        recorder: recorder.clone(),
         user_mp3_path: ".amico/cache/user.mp3",
         agent_mp3_path: ".amico/cache/agent.mp3",
     });
     agent.wm.register_system(ChatbotSystem {
-        env_layer,
-        int_layer,
+        cli_component: cli_component.into_resource(),
+        recorder: recorder.clone(),
     });
 
     agent.spawn_event_source(a2a, OnFinish::Continue);

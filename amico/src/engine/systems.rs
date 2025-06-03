@@ -1,50 +1,74 @@
 use std::sync::mpsc::channel;
 
 use amico::ai::services::CompletionServiceDyn;
+use amico::resource::Resource;
 use amico_core::{traits::System, world::HandlerRegistry};
-use amico_mods::std::ai::services::speech::{speech_to_text, text_to_speech};
+use amico_mods::std::ai::{
+    providers::rig::RigProvider,
+    services::{
+        InMemoryService,
+        speech::{speech_to_text, text_to_speech},
+    },
+};
 use evenio::prelude::*;
+use tokio::sync::Mutex;
 
 use super::{
-    components::{AiService, Player, Recorder},
+    components::{Player, Recorder},
     events::{AgentContent, PlaybackFinish, RecordFinish, RecordStart, UserContent, UserInput},
     interaction::CliComponent,
 };
 
 pub struct ChatbotSystem {
-    pub int_layer: EntityId,
-    pub env_layer: EntityId,
+    pub cli_component: Resource<CliComponent>,
+    pub recorder: Resource<Mutex<Recorder>>,
 }
 
 impl System for ChatbotSystem {
     fn register_to(self, mut registry: HandlerRegistry) {
         let Self {
-            int_layer: itr_layer,
-            env_layer,
+            cli_component,
+            recorder,
         } = self;
 
+        let cli = cli_component.value_ptr();
+        let recorder = recorder.value_ptr();
         registry.register(
             move |r: Receiver<UserInput>,
-                  mut sender: Sender<(UserContent, RecordStart, RecordFinish)>,
-                  io_fetcher: Fetcher<&CliComponent>,
-                  rcd_fetcher: Fetcher<&Recorder>| {
+                  mut sender: Sender<(UserContent, RecordStart, RecordFinish)>| {
                 tracing::debug!("ChatbotSystem: Received {:?}", r.event);
 
                 let UserInput(content) = r.event;
-                let stdio = io_fetcher.get(itr_layer).unwrap();
-                let recorder = rcd_fetcher.get(env_layer).unwrap();
+
+                let (tx, rx) = channel::<bool>();
+                let recorder_resource = recorder.clone();
+                tokio::spawn(async move {
+                    tx.send(recorder_resource.lock().await.is_recording())
+                        .unwrap();
+                });
+
+                let is_recording = rx.recv().unwrap();
 
                 // If user typed "s" and the recorder is not recording, start the recorder.
-                if content.eq_ignore_ascii_case("s") && !recorder.is_recording() {
+                if content.eq_ignore_ascii_case("s") && !is_recording {
                     sender.send(RecordStart);
-                    stdio.handle_record_start();
+                    cli.handle_record_start();
                     return;
                 }
 
+                let (tx, rx) = channel::<bool>();
+                let recorder_resource = recorder.clone();
+                tokio::spawn(async move {
+                    tx.send(recorder_resource.lock().await.is_recording())
+                        .unwrap();
+                });
+
+                let is_recording = rx.recv().unwrap();
+
                 // If any user input is received during recording, stop recording.
-                if recorder.is_recording() {
+                if is_recording {
                     sender.send(RecordFinish);
-                    stdio.handle_record_finish();
+                    cli.handle_record_finish();
                     return;
                 }
 
@@ -53,30 +77,25 @@ impl System for ChatbotSystem {
             },
         );
 
-        registry.register(
-            move |r: Receiver<AgentContent>, io_fetcher: Fetcher<&CliComponent>| {
-                tracing::debug!("ChatbotSystem: Received {:?}", r.event);
+        let cli = cli_component.value_ptr();
+        registry.register(move |r: Receiver<AgentContent>| {
+            tracing::debug!("ChatbotSystem: Received {:?}", r.event);
 
-                let stdio = io_fetcher.get(itr_layer).unwrap();
-                let AgentContent(content) = r.event;
-                stdio.print_message(content);
-            },
-        );
+            let AgentContent(content) = r.event;
+            cli.print_message(content);
+        });
 
-        registry.register(
-            move |r: Receiver<PlaybackFinish>, io_fetcher: Fetcher<&CliComponent>| {
-                tracing::debug!("ChatbotSystem: Received {:?}", r.event);
+        let cli = cli_component.value_ptr();
+        registry.register(move |r: Receiver<PlaybackFinish>| {
+            tracing::debug!("ChatbotSystem: Received {:?}", r.event);
 
-                let stdio = io_fetcher.get(itr_layer).unwrap();
-                stdio.handle_playback_finish();
-            },
-        );
+            cli.handle_playback_finish();
+        });
     }
 }
 
 pub struct SpeechSystem {
-    pub env_layer: EntityId,
-
+    pub recorder: Resource<Mutex<Recorder>>,
     pub user_mp3_path: &'static str,
     pub agent_mp3_path: &'static str,
 }
@@ -84,41 +103,44 @@ pub struct SpeechSystem {
 impl System for SpeechSystem {
     fn register_to(self, mut registry: HandlerRegistry) {
         let Self {
-            env_layer,
+            recorder,
             user_mp3_path,
             agent_mp3_path,
         } = self;
 
-        registry.register(
-            move |r: Receiver<RecordStart>, mut rcd_fetcher: Fetcher<&mut Recorder>| {
-                tracing::debug!("SpeechSystem: Received {:?}", r.event);
+        let recorder_resource = recorder.value_ptr();
+        registry.register(move |r: Receiver<RecordStart>| {
+            tracing::debug!("SpeechSystem: Received {:?}", r.event);
 
-                let recorder = rcd_fetcher.get_mut(env_layer).unwrap();
-
-                if recorder.is_recording() {
+            let (tx, rx) = channel::<()>();
+            let recorder_resource = recorder_resource.clone();
+            tokio::spawn(async move {
+                if recorder_resource.lock().await.is_recording() {
                     panic!("`RecordStart` handler: Recorder is recording!");
                 }
 
-                recorder.start_record(user_mp3_path);
-            },
-        );
+                recorder_resource.lock().await.start_record(user_mp3_path);
 
+                tx.send(()).unwrap();
+            });
+
+            rx.recv().unwrap();
+        });
+
+        let recorder_resource = recorder.value_ptr();
         registry.register(
-            move |r: Receiver<RecordFinish>,
-                  mut sender: Sender<UserContent>,
-                  mut rcd_fetcher: Fetcher<&mut Recorder>| {
+            move |r: Receiver<RecordFinish>, mut sender: Sender<UserContent>| {
                 tracing::debug!("SpeechSystem: Received {:?}", r.event);
 
-                let recorder = rcd_fetcher.get_mut(env_layer).unwrap();
-
-                if !recorder.is_recording() {
-                    panic!("`RecordFinish` handler: Recorder is not recording!");
-                }
-
-                recorder.finish_record().unwrap();
-
                 let (tx, rx) = channel::<String>();
+                let recorder_resource = recorder_resource.clone();
                 tokio::spawn(async move {
+                    if !recorder_resource.lock().await.is_recording() {
+                        panic!("`RecordFinish` handler: Recorder is not recording!");
+                    }
+
+                    recorder_resource.lock().await.finish_record().unwrap();
+
                     let content = speech_to_text(user_mp3_path).await.unwrap();
                     tx.send(content).unwrap();
                 });
@@ -152,27 +174,26 @@ impl System for SpeechSystem {
 }
 
 pub struct CompletionSystem {
-    pub ai_layer: EntityId,
+    pub service_resource: Resource<Mutex<InMemoryService<RigProvider>>>,
 }
 
 impl System for CompletionSystem {
     fn register_to(self, mut registry: HandlerRegistry) {
-        let ai_layer = self.ai_layer;
+        let service_resource = self.service_resource.clone();
         registry.register(
-            move |r: Receiver<UserContent>,
-                  mut sender: Sender<AgentContent>,
-                  ai_fetcher: Fetcher<&AiService>| {
+            move |r: Receiver<UserContent>, mut sender: Sender<AgentContent>| {
                 tracing::debug!("CompletionSystem: Received {:?}", r.event);
 
-                let service = ai_fetcher.get(ai_layer).unwrap().get();
                 let UserContent(text) = r.event;
                 let text = text.to_string();
 
                 // Spawning an async task in tokio to run `generate_text`.
                 // We can't await a JoinHandle in sync block, so use a channel instead.
                 let (tx, rx) = channel::<String>();
+                let service_resource = service_resource.clone();
                 tokio::spawn(async move {
-                    let response = service
+                    let response = service_resource
+                        .value()
                         .lock()
                         .await
                         .generate_text_dyn(text)
