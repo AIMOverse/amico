@@ -1,10 +1,6 @@
 use evenio::prelude::Component;
 
-use crate::{
-    ecs,
-    traits::{Resource, System},
-    types::ResMap,
-};
+use crate::{ecs, traits::System};
 
 use super::{EventDelegate, HandlerRegistry};
 
@@ -19,8 +15,6 @@ pub struct WorldManager {
     ai_layer: ecs::EntityId,
     env_layer: ecs::EntityId,
     int_layer: ecs::EntityId,
-
-    res_map: ResMap,
 }
 
 impl WorldManager {
@@ -36,7 +30,6 @@ impl WorldManager {
             ai_layer,
             env_layer,
             int_layer,
-            res_map: ResMap::new(),
         }
     }
 
@@ -82,26 +75,7 @@ impl WorldManager {
         self.world.insert(entity, component);
     }
 
-    /// Gets a resource from the resource map.
-    pub fn get_resource<T: Resource>(&self) -> Option<&T> {
-        self.res_map.get::<T>()
-    }
-
-    /// Gets a mutable reference to a resource from the resource map.
-    pub fn get_resource_mut<T: Resource>(&mut self) -> Option<&mut T> {
-        self.res_map.get_mut::<T>()
-    }
-
-    /// Inserts a resource into the resource map.
-    pub fn insert_resource<T: Resource>(&mut self, value: T) {
-        self.res_map.insert(value);
-    }
-
-    /// Removes a resource from the resource map.
-    pub fn remove_resource<T: Resource>(&mut self) {
-        self.res_map.remove::<T>();
-    }
-
+    /// Gets the event delegate.
     pub(crate) fn event_delegate(&mut self) -> EventDelegate {
         EventDelegate {
             world: &mut self.world,
