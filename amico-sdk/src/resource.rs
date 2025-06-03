@@ -23,7 +23,7 @@ use std::sync::Arc;
 /// }
 ///
 /// fn main() {
-///     let resource = Resource::new("one".to_string(), 1);
+///     let resource = Resource::new("one", 1);
 ///
 ///     // Just clone the resource wherever needed.
 ///     resource_consumer_one(resource.clone());
@@ -105,7 +105,8 @@ impl<T> Clone for Resource<T> {
 /// # Example
 ///
 /// ```rust
-/// use amico::resource::IntoResource;
+/// use amico::resource::{IntoResource, Resource};
+/// use tokio::sync::Mutex;
 ///
 /// struct MyResource {
 ///     value: i32,
