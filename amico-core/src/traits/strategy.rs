@@ -1,15 +1,15 @@
 use std::future::Future;
 
-use crate::{types::AgentEvent, world::EventDelegate};
+use crate::{types::AgentEvent, world::ActionSender};
 
-/// A `Strategy` is responsible for dispatching `AgentEvent`s into the ECS `World`.
+/// The Agent's action selection strategy.
 ///
-/// Representing an Agent's action selection strategy.
+/// Actions for the Agent is one or several ECS events sent to the ECS `World`.
 pub trait Strategy {
-    /// Dispatches an `AgentEvent` into the ECS `World`.
-    fn dispatch(
+    /// Responsible for selecting actions based on the `AgentEvent` received.
+    fn deliberate(
         &mut self,
         agent_event: &AgentEvent,
-        delegate: EventDelegate,
+        sender: ActionSender,
     ) -> impl Future<Output = anyhow::Result<()>>;
 }

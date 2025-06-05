@@ -2,7 +2,7 @@ use std::{future::Future, time::Duration};
 
 use amico_core::{
     Agent, OnFinish, ecs,
-    traits::{Strategy, EventSource, System},
+    traits::{EventSource, Strategy, System},
     types::AgentEvent,
 };
 use serde::{Deserialize, Serialize};
@@ -34,6 +34,7 @@ impl EventSource for TestEventSource {
 
                 on_event(event).await;
 
+                // Simulate an asynchronous process.
                 sleep(Duration::from_millis(50)).await;
             }
 
@@ -42,18 +43,18 @@ impl EventSource for TestEventSource {
     }
 }
 
-struct TestDispatcher;
+struct TestStrategy;
 
-impl Strategy for TestDispatcher {
-    async fn dispatch(
+impl Strategy for TestStrategy {
+    async fn deliberate(
         &mut self,
         agent_event: &AgentEvent,
-        mut delegate: amico_core::world::EventDelegate<'_>,
+        mut sender: amico_core::world::ActionSender<'_>,
     ) -> anyhow::Result<()> {
         let EventInner { value, .. } = agent_event.parse_content::<EventInner>()?;
         sleep(Duration::from_millis(80)).await;
 
-        delegate.send_event(Tick(value));
+        sender.send(Tick(value));
 
         Ok(())
     }
@@ -76,7 +77,7 @@ impl System for TestSystem {
 async fn test_agent() {
     tracing_subscriber::fmt::init();
 
-    let mut agent = Agent::new(TestDispatcher);
+    let mut agent = Agent::new(TestStrategy);
     agent.spawn_event_source(TestEventSource, OnFinish::Stop);
     agent.wm.register_system(TestSystem);
 

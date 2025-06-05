@@ -2,7 +2,7 @@ use evenio::prelude::Component;
 
 use crate::{ecs, traits::System};
 
-use super::{EventDelegate, HandlerRegistry};
+use super::{ActionSender, HandlerRegistry};
 
 /// The ECS World manager.
 ///
@@ -75,9 +75,9 @@ impl WorldManager {
         self.world.insert(entity, component);
     }
 
-    /// Gets the event delegate.
-    pub(crate) fn event_delegate(&mut self) -> EventDelegate {
-        EventDelegate {
+    /// Gets the action sender.
+    pub(crate) fn action_sender(&mut self) -> ActionSender {
+        ActionSender {
             world: &mut self.world,
         }
     }

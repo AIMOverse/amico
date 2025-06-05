@@ -14,7 +14,6 @@ serde_json = { workspace = true, features = ["std"] }
 tracing = { workspace = true }
 anyhow = { workspace = true }
 evenio = { workspace = true }
-async-trait = { workspace = true }
 
 # Check: For WASM support, only `sync`, `macros`, `io-util`, `rt` and `time` features are supported
 tokio = { workspace = true, features = ["rt", "sync"] }

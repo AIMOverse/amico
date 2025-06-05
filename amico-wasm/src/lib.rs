@@ -2,7 +2,7 @@ use std::{future::Future, time::Duration};
 
 use amico_core::{
     Agent, OnFinish, ecs,
-    traits::{Strategy, EventSource, System},
+    traits::{EventSource, Strategy, System},
     types::AgentEvent,
 };
 use serde::{Deserialize, Serialize};
@@ -48,15 +48,15 @@ impl EventSource for TestEventSource {
 struct TestDispatcher;
 
 impl Strategy for TestDispatcher {
-    async fn dispatch(
+    async fn deliberate(
         &mut self,
         agent_event: &AgentEvent,
-        mut delegate: amico_core::world::EventDelegate<'_>,
+        mut delegate: amico_core::world::ActionSender<'_>,
     ) -> anyhow::Result<()> {
         let EventInner { value, .. } = agent_event.parse_content::<EventInner>()?;
         sleep(Duration::from_millis(80)).await;
 
-        delegate.send_event(Tick(value));
+        delegate.send(Tick(value));
 
         Ok(())
     }
