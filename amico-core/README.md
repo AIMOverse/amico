@@ -6,34 +6,41 @@ This crate is a part of the [**Amico** project](https://github.com/AIMOverse/ami
 
 This crate provides the core engine for the Amico AI Agent Framework, including the following features:
 
-1. Engine layer interfaces and workflows;
-2. Action selection and event generation mechanisms;
-3. Core controller functionality for agent behavior.
+1. Event-driven agent architecture with a robust event handling system
+2. Entity Component System (ECS) integration for efficient state management
+3. Flexible event dispatching and action selection mechanisms
+4. World state management and delegation for agent operations
 
 ## Directory Structure
 
 The crate is organized as follows:
 
-### Core Components
-
-- **`core-macros/`**: A sub-crate providing procedural macros for `amico-core`, enhancing code generation and reducing boilerplate.
-
 ### Source Code (`src/`)
 
-- **`controller/`**: Implements the agent workflow and execution logic.
-- **`entities/`**: Contains concrete type definitions for events, actions, and state management.
-- **`errors/`**: Defines error types and handling for actions, event pools, and action selectors.
-- **`traits/`**: Provides core interfaces for actions, events, and action selection mechanisms.
+- **`agent.rs`**: Defines the core `Agent` struct that manages the event loop and event sources
+- **`ecs.rs`**: Provides Entity Component System (ECS) integration 
+- **`errors/`**: Defines error types and handling for the framework
+- **`traits/`**: Core interfaces including:
+  - `Dispatcher`: Action selection strategies
+  - `EventSource`: Event generation interfaces
+  - `System`: ECS system interfaces
+  - `handlers`: Event handling mechanisms
+- **`types/`**: Contains concrete type definitions for events, instructions, and data structures
+- **`world/`**: World state management components including:
+  - `manager.rs`: Core world management functionality
+  - `delegate.rs`: Delegation patterns for world operations
 
-### Deprecated Components
+## Key Concepts
 
-- **`config/`**: ⚠️ Deprecated module for configuration handling. Configuration features have been migrated to the runtime crate and this module will be removed in a future release.
+- **Event-Driven Architecture**: The framework operates on an event-based model where `EventSource`s generate `AgentEvent`s that are processed by the agent.
+- **Entity Component System**: Uses an ECS pattern for efficient state management and component organization.
+- **Dispatcher Pattern**: Flexible event dispatching through the `Dispatcher` trait for customizable action selection logic.
+- **World Management**: The `WorldManager` provides structured access to the agent's world state.
 
 ## Documents
 
-- [Framework architecture overview](https://www.amico.dev/docs/architecture-overview)
-- [Core Module reference](https://www.amico.dev/docs/modules/amico-core)
+See Amico's website [https://amico.dev](https://amico.dev)
 
 ## License
 
-This crate is released under the [**MIT License**](https://github.com/AIMOverse/amico/blob/main/LICENSE)
+This crate is released under the [MIT License](https://github.com/AIMOverse/amico/blob/main/LICENSE-MIT) **OR** the [Apache-2.0 License](https://github.com/AIMOverse/amico/blob/main/LICENSE-Apache-2.0)
