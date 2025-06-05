@@ -6,7 +6,7 @@ use serde_json::Value;
 
 use crate::errors::AgentEventError;
 
-use super::AgentInstruction;
+use super::Instruction;
 
 /// Struct representing an event the agent receives.
 ///
@@ -32,12 +32,12 @@ use super::AgentInstruction;
 /// ## Create an event with instruction
 ///
 /// ```
-/// use amico_core::types::{AgentEvent, AgentInstruction, EventContent};
+/// use amico_core::types::{AgentEvent, Instruction, EventContent};
 ///
 /// let event = AgentEvent::new("test", "TestSource")
-///     .instruction(AgentInstruction::Terminate);
+///     .instruction(Instruction::Terminate);
 ///
-/// assert_eq!(event.content, Some(EventContent::Instruction(AgentInstruction::Terminate)));
+/// assert_eq!(event.content, Some(EventContent::Instruction(Instruction::Terminate)));
 /// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AgentEvent {
@@ -63,7 +63,7 @@ pub struct AgentEvent {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum EventContent {
     Content(Value),
-    Instruction(AgentInstruction),
+    Instruction(Instruction),
 }
 
 impl AgentEvent {
@@ -155,7 +155,7 @@ impl AgentEvent {
     ///
     /// assert_eq!(event.content, Some(EventContent::Instruction(AgentInstruction::Terminate)));
     /// ```
-    pub fn instruction(self, instruction: AgentInstruction) -> Self {
+    pub fn instruction(self, instruction: Instruction) -> Self {
         Self {
             content: Some(EventContent::Instruction(instruction)),
             ..self

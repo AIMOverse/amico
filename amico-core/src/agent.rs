@@ -3,7 +3,7 @@ use tokio_with_wasm::alias as tokio;
 
 use crate::{
     traits::{EventSource, Strategy},
-    types::{AgentEvent, AgentInstruction, EventContent},
+    types::{AgentEvent, EventContent, Instruction},
     world::WorldManager,
 };
 
@@ -98,7 +98,7 @@ impl<S: Strategy> Agent<S> {
 
                     // Send a termination instruction to signal the main loop to exit
                     let terminate_event = AgentEvent::new("Terminate", "spawn_event_source")
-                        .instruction(AgentInstruction::Terminate);
+                        .instruction(Instruction::Terminate);
 
                     // Try to send the termination event, but don't panic if it fails
                     // (channel might already be closed)
@@ -124,7 +124,7 @@ impl<S: Strategy> Agent<S> {
                 tracing::debug!("Received instruction {:?}", instruction);
                 match instruction {
                     // TODO: process other instructions
-                    AgentInstruction::Terminate => {
+                    Instruction::Terminate => {
                         tracing::info!("Terminating event loop due to Terminate instruction");
                         break; // Exit the event loop immediately
                     }
