@@ -1,7 +1,7 @@
 use std::sync::mpsc::channel;
 
-use amico::ai::services::CompletionServiceDyn;
 use amico::resource::Resource;
+use amico::{ai::services::CompletionServiceDyn, resource::ResourceMut};
 use amico_core::{traits::System, world::HandlerRegistry};
 use amico_mods::std::ai::{
     providers::rig::RigProvider,
@@ -11,7 +11,6 @@ use amico_mods::std::ai::{
     },
 };
 use evenio::prelude::*;
-use tokio::sync::Mutex;
 
 use super::{
     components::{Player, Recorder},
@@ -21,7 +20,7 @@ use super::{
 
 pub struct ChatbotSystem {
     pub cli_component: Resource<CliComponent>,
-    pub recorder: Resource<Mutex<Recorder>>,
+    pub recorder: ResourceMut<Recorder>,
 }
 
 impl System for ChatbotSystem {
@@ -95,7 +94,7 @@ impl System for ChatbotSystem {
 }
 
 pub struct SpeechSystem {
-    pub recorder: Resource<Mutex<Recorder>>,
+    pub recorder: ResourceMut<Recorder>,
     pub user_mp3_path: &'static str,
     pub agent_mp3_path: &'static str,
 }
@@ -174,7 +173,7 @@ impl System for SpeechSystem {
 }
 
 pub struct CompletionSystem {
-    pub service_resource: Resource<Mutex<InMemoryService<RigProvider>>>,
+    pub service_resource: ResourceMut<InMemoryService<RigProvider>>,
 }
 
 impl System for CompletionSystem {
@@ -193,7 +192,6 @@ impl System for CompletionSystem {
                 let service_resource = service_resource.clone();
                 tokio::spawn(async move {
                     let response = service_resource
-                        .get()
                         .lock()
                         .await
                         .generate_text_dyn(text)

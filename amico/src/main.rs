@@ -1,7 +1,7 @@
 use std::process;
 
 use amico::ai::services::ServiceBuilder;
-use amico::resource::IntoResource;
+use amico::resource::{IntoResource, IntoResourceMut};
 use amico_core::{Agent, OnFinish};
 use amico_mods::interface::Plugin;
 use amico_mods::runtime::storage::fs::FsStorage;
@@ -78,7 +78,7 @@ async fn main() {
             process::exit(1);
         })
         .unwrap()
-        .into_resource();
+        .into_resource_mut();
 
     // Load agent wallet
     let wallet = Wallet::load_or_save_new("agent_wallet.txt")
@@ -135,13 +135,13 @@ async fn main() {
     println!("Using service plugin: {}", service.info().name);
     println!("Tools enabled:\n{}", service.ctx.tools.describe());
 
-    let service_resource = service.into_resource();
+    let service_resource = service.into_resource_mut();
 
     // Initialize ECS
     let mut agent = Agent::new(DispatchStrategy);
 
     let (cli_component, cli_event_source) = create_cli_client();
-    let recorder = Recorder::new().into_resource();
+    let recorder = Recorder::new().into_resource_mut();
 
     agent.add_system(CompletionSystem { service_resource });
     agent.add_system(SpeechSystem {

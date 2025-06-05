@@ -108,17 +108,14 @@ impl<T> Clone for Resource<T> {
 ///
 /// ```rust
 /// use amico::resource::{IntoResource, Resource};
-/// use tokio::sync::Mutex;
 ///
 /// struct MyResource {
 ///     value: i32,
 /// }
 ///
-/// // Example: Simplifies the creation of a mutable resource behind a mutex.
-///
-/// impl IntoResource<Mutex<MyResource>> for MyResource {
-///     fn into_resource(self) -> Resource<Mutex<MyResource>> {
-///         Resource::new("my_resource", Mutex::new(self))
+/// impl IntoResource<MyResource> for MyResource {
+///     fn into_resource(self) -> Resource<MyResource> {
+///         Resource::new("my_resource", self)
 ///     }
 /// }
 /// ```

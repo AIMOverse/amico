@@ -5,7 +5,7 @@ use amico::{
         errors::ToolCallError,
         tool::{Tool, ToolBuilder},
     },
-    resource::Resource,
+    resource::ResourceMut,
     runtime::storage::{Namespace, Storage},
 };
 use amico_core::{traits::EventSource, types::AgentEvent};
@@ -17,18 +17,18 @@ use amico_mods::{
 use nostr::key::Keys;
 use serde_json::{json, to_value};
 use solana_sdk::pubkey::Pubkey;
-use tokio::{sync::Mutex, task::JoinHandle};
+use tokio::task::JoinHandle;
 
 use super::events::A2aMessageReceived;
 
 #[derive(Clone)]
 pub struct A2aModule {
     network: A2aNetwork,
-    storage: Resource<Mutex<FsStorage>>,
+    storage: ResourceMut<FsStorage>,
 }
 
 impl A2aModule {
-    pub fn new(wallet: WalletResource, storage: Resource<Mutex<FsStorage>>) -> Self {
+    pub fn new(wallet: WalletResource, storage: ResourceMut<FsStorage>) -> Self {
         // Setup wallet and keys
         let keys = Keys::generate();
 
