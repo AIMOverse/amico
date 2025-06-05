@@ -148,12 +148,12 @@ impl AgentEvent {
     /// # Examples
     ///
     /// ```
-    /// use amico_core::types::{AgentEvent, AgentInstruction, EventContent};
+    /// use amico_core::types::{AgentEvent, Instruction, EventContent};
     ///
     /// let event = AgentEvent::new("test", "TestSource")
-    ///     .instruction(AgentInstruction::Terminate);
+    ///     .instruction(Instruction::Terminate);
     ///
-    /// assert_eq!(event.content, Some(EventContent::Instruction(AgentInstruction::Terminate)));
+    /// assert_eq!(event.content, Some(EventContent::Instruction(Instruction::Terminate)));
     /// ```
     pub fn instruction(self, instruction: Instruction) -> Self {
         Self {
