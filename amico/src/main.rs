@@ -1,7 +1,7 @@
 use std::process;
 
 use amico::ai::services::ServiceBuilder;
-use amico::resource::IntoResource;
+use amico::resource::{IntoResource, IntoResourceMut};
 use amico_core::{Agent, OnFinish};
 use amico_mods::interface::Plugin;
 use amico_mods::runtime::storage::fs::FsStorage;
@@ -78,7 +78,7 @@ async fn main() {
             process::exit(1);
         })
         .unwrap()
-        .into_resource();
+        .into_resource_mut();
 
     // Load agent wallet
     let wallet = Wallet::load_or_save_new("agent_wallet.txt")
@@ -120,28 +120,28 @@ async fn main() {
         .system_prompt(AMICO_SYSTEM_PROMPT.to_string())
         .temperature(0.2)
         .max_tokens(1000)
-        .tool(balance_sensor.value().agent_wallet_balance_tool())
-        .tool(balance_sensor.value().account_balance_tool())
-        .tool(trade_effector.value().tool())
+        .tool(balance_sensor.get().agent_wallet_balance_tool())
+        .tool(balance_sensor.get().account_balance_tool())
+        .tool(trade_effector.get().tool())
         .tool(a2a.send_message_tool())
         .tool(a2a.contact_list_tool())
         .build::<InMemoryService<RigProvider>>();
 
     println!();
     println!("Agent wallet addresses:");
-    println!("{}", wallet.value().pubkey_list());
+    println!("{}", wallet.get().pubkey_list());
 
     println!();
     println!("Using service plugin: {}", service.info().name);
     println!("Tools enabled:\n{}", service.ctx.tools.describe());
 
-    let service_resource = service.into_resource();
+    let service_resource = service.into_resource_mut();
 
     // Initialize ECS
     let mut agent = Agent::new(DispatchStrategy);
 
     let (cli_component, cli_event_source) = create_cli_client();
-    let recorder = Recorder::new().into_resource();
+    let recorder = Recorder::new().into_resource_mut();
 
     agent.add_system(CompletionSystem { service_resource });
     agent.add_system(SpeechSystem {

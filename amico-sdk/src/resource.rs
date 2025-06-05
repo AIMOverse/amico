@@ -1,5 +1,8 @@
 use std::sync::Arc;
 
+use tokio::sync::{Mutex, MutexGuard};
+use tokio_with_wasm::alias as tokio;
+
 /// `Resource<T>` represents a globally available resource instance that can be shared among agents.
 ///
 /// The actual resource instance is stored in an `Arc` (Atomic Reference Counted pointer),
@@ -15,11 +18,11 @@ use std::sync::Arc;
 /// fn resource_consumer_one(resource: Resource<i32>) {
 ///     // Resource consumers don't need to consume
 ///     // a resource with references.
-///     assert_eq!(*resource.value(), 1);
+///     assert_eq!(*resource.get(), 1);
 /// }
 ///
 /// fn resource_consumer_two(resource: Resource<i32>) {
-///     assert_eq!(*resource.value(), 1);
+///     assert_eq!(*resource.get(), 1);
 /// }
 ///
 /// fn main() {
@@ -32,7 +35,7 @@ use std::sync::Arc;
 ///     resource_consumer_two(resource.clone());
 ///
 ///     // The resource is still available here.
-///     assert_eq!(*resource.value(), 1);
+///     assert_eq!(*resource.get(), 1);
 /// }
 /// ```
 #[derive(Debug)]
@@ -64,7 +67,7 @@ impl<T> Resource<T> {
     ///
     /// Returns:
     ///    * `&str` - The name of the resource.
-    pub fn name(&self) -> &str {
+    pub fn name(&self) -> &'static str {
         self.name
     }
 
@@ -72,7 +75,7 @@ impl<T> Resource<T> {
     ///
     /// Returns:
     ///    * `&T` - The value of the resource.
-    pub fn value(&self) -> &T {
+    pub fn get(&self) -> &T {
         &self.value
     }
 
@@ -80,7 +83,7 @@ impl<T> Resource<T> {
     ///
     /// Returns:
     ///    * `Arc<T>` - A clone of the value of the resource.
-    pub fn value_ptr(&self) -> Arc<T> {
+    pub fn get_ptr(&self) -> Arc<T> {
         Arc::clone(&self.value)
     }
 }
@@ -99,24 +102,20 @@ impl<T> Clone for Resource<T> {
 }
 
 /// `IntoResource<T>` is a trait that allows types to be converted into a `Resource<T>`.
-/// This trait is useful for converting types into a `Resource<T>` without having to
-/// implement the `Resource` trait directly.
+/// This trait is useful for converting types into a `Resource<T>`.
 ///
 /// # Example
 ///
 /// ```rust
 /// use amico::resource::{IntoResource, Resource};
-/// use tokio::sync::Mutex;
 ///
 /// struct MyResource {
 ///     value: i32,
 /// }
 ///
-/// // Example: Simplifies the creation of a mutable resource behind a mutex.
-///
-/// impl IntoResource<Mutex<MyResource>> for MyResource {
-///     fn into_resource(self) -> Resource<Mutex<MyResource>> {
-///         Resource::new("my_resource", Mutex::new(self))
+/// impl IntoResource<MyResource> for MyResource {
+///     fn into_resource(self) -> Resource<MyResource> {
+///         Resource::new("my_resource", self)
 ///     }
 /// }
 /// ```
@@ -125,41 +124,130 @@ pub trait IntoResource<T> {
     fn into_resource(self) -> Resource<T>;
 }
 
+/// `ResourceMut<T>` represents a globally available mutable resource instance that can be shared among agents.
+///
+/// The value of a `ResourceMut<T>` is stored inside a tokio Mutex.
+#[derive(Debug)]
+pub struct ResourceMut<T> {
+    name: &'static str,
+    value: Arc<Mutex<T>>,
+}
+
+impl<T> ResourceMut<T> {
+    /// Create a new resource
+    pub fn new(name: &'static str, value: T) -> Self {
+        Self {
+            name,
+            value: Arc::new(Mutex::new(value)),
+        }
+    }
+
+    /// Get the name of the resource
+    pub fn name(&self) -> &'static str {
+        self.name
+    }
+
+    /// Lock the resource
+    pub async fn lock(&self) -> MutexGuard<T> {
+        self.value.lock().await
+    }
+
+    /// Blockingly lock the resource
+    pub fn blocking_lock(&self) -> MutexGuard<T> {
+        self.value.blocking_lock()
+    }
+
+    /// Get a clone of the `Arc` pointer to the value of the resource
+    pub fn get_ptr(&self) -> Arc<Mutex<T>> {
+        Arc::clone(&self.value)
+    }
+}
+
+impl<T> Clone for ResourceMut<T> {
+    /// Clone the resource.
+    fn clone(&self) -> Self {
+        Self {
+            name: self.name,
+            value: Arc::clone(&self.value),
+        }
+    }
+}
+
+/// `IntoResourceMut<T>` is a trait that allows types to be converted into a `ResourceMut<T>`.
+/// This trait is useful for converting types into a `ResourceMut<T>`.
+pub trait IntoResourceMut<T> {
+    fn into_resource_mut(self) -> ResourceMut<T>;
+}
+
 #[cfg(test)]
 mod tests {
-    use std::{sync::Mutex, thread};
-
     use super::*;
 
     #[test]
     fn test_resource() {
         let resource = Resource::new("test", 1);
         assert_eq!(resource.name(), "test");
-        assert_eq!(*resource.value(), 1);
+        assert_eq!(*resource.get(), 1);
     }
 
     #[test]
-    fn test_boxed_resource() {
-        let resource = Resource::new("test", Box::new(1));
+    fn test_resource_mut() {
+        let resource = ResourceMut::new("test", 1);
         assert_eq!(resource.name(), "test");
-        assert_eq!(**resource.value(), 1);
+        assert_eq!(*resource.blocking_lock(), 1);
     }
 
     #[test]
-    fn test_multithreaded_resource() {
-        let resource = Resource::new("test", Mutex::new(1));
+    fn test_resource_mut_modify() {
+        let resource = ResourceMut::new("test", 1);
+        {
+            let mut value = resource.blocking_lock();
+            *value += 1;
+        }
+        assert_eq!(*resource.blocking_lock(), 2);
+    }
+
+    #[tokio::test]
+    async fn test_async_resource_mut() {
+        let resource = ResourceMut::new("test", 1);
+        {
+            let mut value = resource.lock().await;
+            *value += 1;
+        }
+        assert_eq!(*resource.lock().await, 2);
+    }
+
+    #[tokio::test]
+    async fn test_multithreaded_resource_mut() {
+        let resource = ResourceMut::new("test", 1);
 
         let mut handles = vec![];
         for _ in 0..100 {
-            let ptr = resource.value_ptr();
-            handles.push(thread::spawn(move || {
-                let mut value = ptr.lock().unwrap();
+            let resource_clone = resource.clone();
+            handles.push(tokio::spawn(async move {
+                let mut value = resource_clone.lock().await;
                 *value += 1;
             }));
         }
+
         for handle in handles {
-            handle.join().unwrap();
+            handle.await.unwrap();
         }
-        assert_eq!(*resource.value().lock().unwrap(), 101);
+
+        assert_eq!(*resource.lock().await, 101);
+    }
+
+    #[test]
+    fn test_resource_mut_clone() {
+        let resource = ResourceMut::new("test", 1);
+        let cloned = resource.clone();
+
+        {
+            let mut value = resource.blocking_lock();
+            *value += 1;
+        }
+
+        assert_eq!(*cloned.blocking_lock(), 2);
+        assert_eq!(*resource.blocking_lock(), 2);
     }
 }

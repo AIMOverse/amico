@@ -34,6 +34,8 @@ rig-core = { workspace = true, optional = true, default-features = false }
 mcp-core = { version = "0.1.46", optional = true }
 mcp-core-macros = { version = "0.1.22", optional = true }
 anyhow = { workspace = true, optional = true }
+tokio = { workspace = true, features = ["sync"] }
+tokio_with_wasm = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["rt", "macros", "time"] }

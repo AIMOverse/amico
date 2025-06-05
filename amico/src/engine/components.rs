@@ -1,7 +1,6 @@
-use amico::resource::{IntoResource, Resource};
+use amico::resource::{IntoResourceMut, ResourceMut};
 use anyhow::{Result, bail};
 use evenio::prelude::*;
-use tokio::sync::Mutex;
 
 use crate::audio::{RecordSignal, play_blocking, spawn_record_task};
 
@@ -51,9 +50,9 @@ impl Recorder {
     }
 }
 
-impl IntoResource<Mutex<Recorder>> for Recorder {
-    fn into_resource(self) -> Resource<Mutex<Recorder>> {
-        Resource::new("Recorder", Mutex::new(self))
+impl IntoResourceMut<Recorder> for Recorder {
+    fn into_resource_mut(self) -> ResourceMut<Recorder> {
+        ResourceMut::new("Recorder", self)
     }
 }
 

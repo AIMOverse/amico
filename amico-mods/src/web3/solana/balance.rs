@@ -46,7 +46,7 @@ impl BalanceSensor {
     /// in the future release.
     pub fn agent_wallet_balance_tool(&self) -> Tool {
         // `Pubkey` implements the `Copy` trait, so we can just copy it
-        let pubkey = self.wallet.value().solana().pubkey();
+        let pubkey = self.wallet.get().solana().pubkey();
         let sensor = self.clone();
 
         ToolBuilder::new()
@@ -174,7 +174,7 @@ impl Sensor for BalanceSensor {
     async fn sense(&self, args: Self::Args) -> anyhow::Result<Self::Output> {
         let lamports = self
             .client
-            .value()
+            .get()
             .rpc_client()
             .get_balance(&args.pubkey)
             .await?;

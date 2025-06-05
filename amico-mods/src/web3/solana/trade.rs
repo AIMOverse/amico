@@ -115,8 +115,8 @@ impl Effector for TradeEffector {
 
     async fn effect(&self, args: Self::Args) -> anyhow::Result<Self::Output> {
         swap(
-            self.client.value().rpc_client(),
-            self.wallet.value().solana(),
+            self.client.get().rpc_client(),
+            self.wallet.get().solana(),
             &args.input_mint,
             &args.output_mint,
             &args.amount,

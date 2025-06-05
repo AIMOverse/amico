@@ -6,9 +6,8 @@ use amico::{
         models::{CompletionModel, CompletionRequestBuilder, ModelChoice},
         services::ServiceContext,
     },
-    resource::{IntoResource, Resource},
+    resource::{IntoResourceMut, ResourceMut},
 };
-use tokio::sync::Mutex;
 
 /// Convert a message history to a human-readable brief list for debugging
 fn debug_history(history: &[Message]) -> String {
@@ -136,8 +135,8 @@ impl<M: CompletionModel + Send> amico::ai::services::CompletionService for InMem
     }
 }
 
-impl<M: CompletionModel + Send> IntoResource<Mutex<InMemoryService<M>>> for InMemoryService<M> {
-    fn into_resource(self) -> Resource<Mutex<InMemoryService<M>>> {
-        Resource::new(self.info().name, Mutex::new(self))
+impl<M: CompletionModel + Send> IntoResourceMut<InMemoryService<M>> for InMemoryService<M> {
+    fn into_resource_mut(self) -> ResourceMut<InMemoryService<M>> {
+        ResourceMut::new(self.info().name, self)
     }
 }
