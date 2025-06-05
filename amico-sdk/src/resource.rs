@@ -18,11 +18,11 @@ use tokio_with_wasm::alias as tokio;
 /// fn resource_consumer_one(resource: Resource<i32>) {
 ///     // Resource consumers don't need to consume
 ///     // a resource with references.
-///     assert_eq!(*resource.value(), 1);
+///     assert_eq!(*resource.get(), 1);
 /// }
 ///
 /// fn resource_consumer_two(resource: Resource<i32>) {
-///     assert_eq!(*resource.value(), 1);
+///     assert_eq!(*resource.get(), 1);
 /// }
 ///
 /// fn main() {
@@ -35,7 +35,7 @@ use tokio_with_wasm::alias as tokio;
 ///     resource_consumer_two(resource.clone());
 ///
 ///     // The resource is still available here.
-///     assert_eq!(*resource.value(), 1);
+///     assert_eq!(*resource.get(), 1);
 /// }
 /// ```
 #[derive(Debug)]
