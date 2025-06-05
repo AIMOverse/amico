@@ -60,7 +60,7 @@ impl Network for DephyNetwork {
 
         self.client.send_event_builder(event).await?;
 
-        let from_address = self.wallet.value().solana().pubkey().to_string();
+        let from_address = self.wallet.get().solana().pubkey().to_string();
         tracing::info!("Published cipher text from {from_address} to {address}: {message}");
 
         Ok(())
@@ -76,7 +76,7 @@ impl Network for DephyNetwork {
         >,
     ) -> Result<(), Self::Error> {
         let client = self.client.clone();
-        let pubkey = self.wallet.value().solana().pubkey().to_string();
+        let pubkey = self.wallet.get().solana().pubkey().to_string();
         let wallet = self.wallet.clone();
 
         let filter = Filter::new()
@@ -95,7 +95,7 @@ impl Network for DephyNetwork {
                     if let RelayPoolNotification::Event { event, .. } = notification {
                         // Just log error messages. Errors are not fatal here.
                         tracing::info!("Received cipher text {}", event.content);
-                        let keypair = wallet.value().solana();
+                        let keypair = wallet.get().solana();
                         // Decrypt
                         if let Ok(plaintext) = crypto::decrypt_message(&event.content, keypair) {
                             tracing::info!("Decrypted message {}", plaintext);
@@ -170,7 +170,7 @@ mod tests {
 
         // Publish a message
         publisher_network
-            .publish(subscriber.value().solana().pubkey(), "test".to_string())
+            .publish(subscriber.get().solana().pubkey(), "test".to_string())
             .await
             .unwrap();
 
@@ -183,7 +183,7 @@ mod tests {
 
         // Send another message
         publisher_network
-            .publish(subscriber.value().solana().pubkey(), "test2".to_string())
+            .publish(subscriber.get().solana().pubkey(), "test2".to_string())
             .await
             .unwrap();
 

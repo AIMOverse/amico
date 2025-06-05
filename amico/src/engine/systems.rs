@@ -31,8 +31,8 @@ impl System for ChatbotSystem {
             recorder,
         } = self;
 
-        let cli = cli_component.value_ptr();
-        let recorder = recorder.value_ptr();
+        let cli = cli_component.get_ptr();
+        let recorder = recorder.get_ptr();
         registry.register(
             move |r: Receiver<UserInput>,
                   mut sender: Sender<(UserContent, RecordStart, RecordFinish)>| {
@@ -77,7 +77,7 @@ impl System for ChatbotSystem {
             },
         );
 
-        let cli = cli_component.value_ptr();
+        let cli = cli_component.get_ptr();
         registry.register(move |r: Receiver<AgentContent>| {
             tracing::debug!("ChatbotSystem: Received {:?}", r.event);
 
@@ -85,7 +85,7 @@ impl System for ChatbotSystem {
             cli.print_message(content);
         });
 
-        let cli = cli_component.value_ptr();
+        let cli = cli_component.get_ptr();
         registry.register(move |r: Receiver<PlaybackFinish>| {
             tracing::debug!("ChatbotSystem: Received {:?}", r.event);
 
@@ -108,7 +108,7 @@ impl System for SpeechSystem {
             agent_mp3_path,
         } = self;
 
-        let recorder_resource = recorder.value_ptr();
+        let recorder_resource = recorder.get_ptr();
         registry.register(move |r: Receiver<RecordStart>| {
             tracing::debug!("SpeechSystem: Received {:?}", r.event);
 
@@ -127,7 +127,7 @@ impl System for SpeechSystem {
             rx.recv().unwrap();
         });
 
-        let recorder_resource = recorder.value_ptr();
+        let recorder_resource = recorder.get_ptr();
         registry.register(
             move |r: Receiver<RecordFinish>, mut sender: Sender<UserContent>| {
                 tracing::debug!("SpeechSystem: Received {:?}", r.event);
@@ -193,7 +193,7 @@ impl System for CompletionSystem {
                 let service_resource = service_resource.clone();
                 tokio::spawn(async move {
                     let response = service_resource
-                        .value()
+                        .get()
                         .lock()
                         .await
                         .generate_text_dyn(text)

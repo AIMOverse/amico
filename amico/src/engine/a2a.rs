@@ -109,7 +109,7 @@ impl A2aModule {
     }
 
     pub fn contact_list_tool(&self) -> Tool {
-        let storage = self.storage.value_ptr();
+        let storage = self.storage.get_ptr();
         ToolBuilder::new()
             .name("contact_list")
             .description("Get your contact address list of the Agent-to-agent network")

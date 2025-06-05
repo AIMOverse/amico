@@ -120,16 +120,16 @@ async fn main() {
         .system_prompt(AMICO_SYSTEM_PROMPT.to_string())
         .temperature(0.2)
         .max_tokens(1000)
-        .tool(balance_sensor.value().agent_wallet_balance_tool())
-        .tool(balance_sensor.value().account_balance_tool())
-        .tool(trade_effector.value().tool())
+        .tool(balance_sensor.get().agent_wallet_balance_tool())
+        .tool(balance_sensor.get().account_balance_tool())
+        .tool(trade_effector.get().tool())
         .tool(a2a.send_message_tool())
         .tool(a2a.contact_list_tool())
         .build::<InMemoryService<RigProvider>>();
 
     println!();
     println!("Agent wallet addresses:");
-    println!("{}", wallet.value().pubkey_list());
+    println!("{}", wallet.get().pubkey_list());
 
     println!();
     println!("Using service plugin: {}", service.info().name);

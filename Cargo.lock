@@ -1137,6 +1137,7 @@ dependencies = [
  "solana-sdk",
  "thiserror 2.0.12",
  "tokio",
+ "tokio_with_wasm",
 ]
 
 [[package]]
