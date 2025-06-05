@@ -26,6 +26,8 @@ The crate is organized as follows:
   - `System`: ECS system interfaces
   - `handlers`: Event handling mechanisms
 - **`types/`**: Contains concrete type definitions for events, instructions, and data structures
+  - `agent_event.rs`: Defines the `AgentEvent` structure and `EventContent` enum
+  - `instruction.rs`: Defines agent instructions like `Terminate`
 - **`world/`**: World state management components including:
   - `manager.rs`: Core world management functionality
   - `delegate.rs`: Delegation patterns for world operations
@@ -35,7 +37,11 @@ The crate is organized as follows:
 - **Event-Driven Architecture**: The framework operates on an event-based model where `EventSource`s generate `AgentEvent`s that are processed by the agent.
 - **Entity Component System**: Uses an ECS pattern for efficient state management and component organization.
 - **Strategy Pattern**: Flexible event dispatching through the `Strategy` trait for customizable action selection logic.
-- **World Management**: The `WorldManager` provides structured access to the agent's world state.
+- **Event Sources**: Components that generate events for the agent to process. They implement the `EventSource` trait and can be any source of information or stimuli for the agent, such as user input, timers, or external APIs.
+- **Agent Events**: Represented by the `AgentEvent` struct, these are high-level events that carry information from event sources to the agent. They contain metadata (name, source), optional content (data or instructions), and can have an expiry time.
+- **Agent Actions**: Unlike `AgentEvent`s which are external stimuli, Agent Actions are implemented as ECS events (using the `evenio` library's `Event` trait). These events represent internal state changes and behaviors within the agent's world model. The Strategy component translates external `AgentEvent`s into appropriate ECS events that modify the world state. 
+
+**NOTE** The ECS Events will be used only in the crate's internal APIs and be hidden behind Actions in future versions.
 
 ## Documents
 
