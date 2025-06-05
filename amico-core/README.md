@@ -21,7 +21,7 @@ The crate is organized as follows:
 - **`ecs.rs`**: Provides Entity Component System (ECS) integration 
 - **`errors/`**: Defines error types and handling for the framework
 - **`traits/`**: Core interfaces including:
-  - `Dispatcher`: Action selection strategies
+  - `Strategy`: Action selection strategies
   - `EventSource`: Event generation interfaces
   - `System`: ECS system interfaces
   - `handlers`: Event handling mechanisms
@@ -34,7 +34,7 @@ The crate is organized as follows:
 
 - **Event-Driven Architecture**: The framework operates on an event-based model where `EventSource`s generate `AgentEvent`s that are processed by the agent.
 - **Entity Component System**: Uses an ECS pattern for efficient state management and component organization.
-- **Dispatcher Pattern**: Flexible event dispatching through the `Dispatcher` trait for customizable action selection logic.
+- **Strategy Pattern**: Flexible event dispatching through the `Strategy` trait for customizable action selection logic.
 - **World Management**: The `WorldManager` provides structured access to the agent's world state.
 
 ## Documents
