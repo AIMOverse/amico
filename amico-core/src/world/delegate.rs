@@ -14,18 +14,22 @@ impl HandlerRegistry<'_> {
     }
 }
 
+/// Sends ECS events (Actions for the Agent) to the ECS `World`.
+///
 /// A wrapper around `&mut World` to restrict the caller to
 /// access only the `send` method in `World`.
-pub struct EventDelegate<'world> {
+pub struct ActionSender<'world> {
     pub(crate) world: &'world mut ecs::World,
 }
 
-impl EventDelegate<'_> {
-    pub fn send_event<E: ecs::GlobalEvent>(&mut self, event: E) {
+impl ActionSender<'_> {
+    /// Send an ECS event to the ECS `World`.
+    pub fn send<E: ecs::GlobalEvent>(&mut self, event: E) {
         self.world.send(event);
     }
 
-    pub fn send_event_to<E: ecs::TargetedEvent>(&mut self, target: ecs::EntityId, event: E) {
+    /// Send an ECS event to a specific entity in the ECS `World`.
+    pub fn send_to<E: ecs::TargetedEvent>(&mut self, target: ecs::EntityId, event: E) {
         self.world.send_to(target, event);
     }
 }

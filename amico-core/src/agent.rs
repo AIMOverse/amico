@@ -2,8 +2,8 @@ use tokio::sync::mpsc::{Receiver, Sender, channel};
 use tokio_with_wasm::alias as tokio;
 
 use crate::{
-    traits::{Dispatcher, EventSource},
-    types::{AgentEvent, AgentInstruction, EventContent},
+    traits::{EventSource, Strategy, System},
+    types::{AgentEvent, EventContent, Instruction},
     world::WorldManager,
 };
 
@@ -14,8 +14,12 @@ use crate::{
 ///
 /// ## Type parameters
 ///
-/// - `D`: The Event `Dispatcher` type, representing the Agent's action selection strategy.
-pub struct Agent<D: Dispatcher> {
+/// - `S`: `Strategy` type, representing the Agent's action selection strategy.
+///
+/// ## Compatibility
+///
+/// - WASM: compatible.
+pub struct Agent<S: Strategy> {
     /// The mpsc channel sender to send agent events to event sources.
     event_tx: Sender<AgentEvent>,
 
@@ -23,19 +27,15 @@ pub struct Agent<D: Dispatcher> {
     event_rx: Receiver<AgentEvent>,
 
     /// The ECS world manager.
-    ///
-    /// **NOTE**: This field will be private in the future, after
-    /// we wrap the component / system registration into the `Agent`'s
-    /// methods.
-    pub wm: WorldManager,
+    wm: WorldManager,
 
-    /// The event dispatcher.
-    dispatcher: D,
+    /// The action selection strategy.
+    strategy: S,
 }
 
-impl<D: Dispatcher> Agent<D> {
+impl<S: Strategy> Agent<S> {
     /// Create a new agent.
-    pub fn new(dispatcher: D) -> Self {
+    pub fn new(strategy: S) -> Self {
         // Create an event channel.
         // TODO: make the channel size configurable.
         let (tx, rx) = channel(4);
@@ -45,7 +45,7 @@ impl<D: Dispatcher> Agent<D> {
             event_tx: tx,
             event_rx: rx,
             wm: WorldManager::new(),
-            dispatcher,
+            strategy,
         }
     }
 
@@ -54,9 +54,13 @@ impl<D: Dispatcher> Agent<D> {
     /// ## Spawns
     ///
     /// Spawns a new `tokio` thread for the event source.
-    pub fn spawn_event_source<S: EventSource + Send + 'static>(
+    ///
+    /// ## Compatibility
+    ///
+    /// - WASM: compatible with `tokio_with_wasm`
+    pub fn spawn_event_source<E: EventSource + Send + 'static>(
         &mut self,
-        event_source: S,
+        event_source: E,
         on_finish: OnFinish,
     ) {
         let event_tx = self.event_tx.clone();
@@ -90,7 +94,7 @@ impl<D: Dispatcher> Agent<D> {
 
                     // Send a termination instruction to signal the main loop to exit
                     let terminate_event = AgentEvent::new("Terminate", "spawn_event_source")
-                        .instruction(AgentInstruction::Terminate);
+                        .instruction(Instruction::Terminate);
 
                     // Try to send the termination event, but don't panic if it fails
                     // (channel might already be closed)
@@ -103,10 +107,14 @@ impl<D: Dispatcher> Agent<D> {
         }
     }
 
+    /// Add a system to the agent.
+    pub fn add_system<SS: System>(&mut self, system: SS) {
+        self.wm.add_system(system);
+    }
+
     /// The function to run the agent.
     ///
-    /// `run` dispatches `AgentEvent`s into the ECS `World` and
-    /// awaits all event sources to finish.
+    /// `run` dispatches `AgentEvent`s into the ECS `World` based on the Agent's strategy.
     pub async fn run(&mut self) {
         // Listen for events sent by event sources.
         while let Some(event) = self.event_rx.recv().await {
@@ -117,7 +125,7 @@ impl<D: Dispatcher> Agent<D> {
                 tracing::debug!("Received instruction {:?}", instruction);
                 match instruction {
                     // TODO: process other instructions
-                    AgentInstruction::Terminate => {
+                    Instruction::Terminate => {
                         tracing::info!("Terminating event loop due to Terminate instruction");
                         break; // Exit the event loop immediately
                     }
@@ -126,11 +134,10 @@ impl<D: Dispatcher> Agent<D> {
                 // The event is not an instruction, dispatch the event to the `World`.
                 tracing::debug!("Dispatching event {:?}", event);
                 if let Err(err) = self
-                    .dispatcher
-                    .dispatch(&event, self.wm.event_delegate())
+                    .strategy
+                    .deliberate(&event, self.wm.action_sender())
                     .await
                 {
-                    // Just report the error here.
                     tracing::error!("Error dispatching event {:?}: {}", event, err);
                 }
             }

@@ -1,8 +1,8 @@
 [package]
 name = "amico-core"
-version = "0.0.1"
+version = "1.0.1"
 edition = "2024"
-description = "The core of the Amico AI Agent Framework"
+description = "The core Agent components of the Amico AI Agent Framework"
 repository = "https://github.com/AIMOverse/amico"
 license = "MIT OR Apache-2.0"
 
@@ -14,7 +14,6 @@ serde_json = { workspace = true, features = ["std"] }
 tracing = { workspace = true }
 anyhow = { workspace = true }
 evenio = { workspace = true }
-async-trait = { workspace = true }
 
 # Check: For WASM support, only `sync`, `macros`, `io-util`, `rt` and `time` features are supported
 tokio = { workspace = true, features = ["rt", "sync"] }

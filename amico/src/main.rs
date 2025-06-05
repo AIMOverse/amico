@@ -14,8 +14,8 @@ use amico_mods::web3::wallet::Wallet;
 use colored::Colorize;
 use engine::a2a::A2aModule;
 use engine::components::Recorder;
-use engine::dispatcher::MatchDispatcher;
 use engine::interaction::create_cli_client;
+use engine::strategy::DispatchStrategy;
 use engine::systems::{ChatbotSystem, CompletionSystem, SpeechSystem};
 use helpers::solana_rpc_url;
 use prompt::AMICO_SYSTEM_PROMPT;
@@ -138,20 +138,18 @@ async fn main() {
     let service_resource = service.into_resource();
 
     // Initialize ECS
-    let mut agent = Agent::new(MatchDispatcher);
+    let mut agent = Agent::new(DispatchStrategy);
 
     let (cli_component, cli_event_source) = create_cli_client();
     let recorder = Recorder::new().into_resource();
 
-    agent
-        .wm
-        .register_system(CompletionSystem { service_resource });
-    agent.wm.register_system(SpeechSystem {
+    agent.add_system(CompletionSystem { service_resource });
+    agent.add_system(SpeechSystem {
         recorder: recorder.clone(),
         user_mp3_path: ".amico/cache/user.mp3",
         agent_mp3_path: ".amico/cache/agent.mp3",
     });
-    agent.wm.register_system(ChatbotSystem {
+    agent.add_system(ChatbotSystem {
         cli_component: cli_component.into_resource(),
         recorder: recorder.clone(),
     });
