@@ -2,7 +2,7 @@ use tokio::sync::mpsc::{Receiver, Sender, channel};
 use tokio_with_wasm::alias as tokio;
 
 use crate::{
-    traits::{Dispatcher, EventSource},
+    traits::{EventSource, Strategy},
     types::{AgentEvent, AgentInstruction, EventContent},
     world::WorldManager,
 };
@@ -15,7 +15,7 @@ use crate::{
 /// ## Type parameters
 ///
 /// - `D`: The Event `Dispatcher` type, representing the Agent's action selection strategy.
-pub struct Agent<D: Dispatcher> {
+pub struct Agent<D: Strategy> {
     /// The mpsc channel sender to send agent events to event sources.
     event_tx: Sender<AgentEvent>,
 
@@ -33,7 +33,7 @@ pub struct Agent<D: Dispatcher> {
     dispatcher: D,
 }
 
-impl<D: Dispatcher> Agent<D> {
+impl<D: Strategy> Agent<D> {
     /// Create a new agent.
     pub fn new(dispatcher: D) -> Self {
         // Create an event channel.

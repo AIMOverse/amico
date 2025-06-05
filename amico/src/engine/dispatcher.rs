@@ -1,10 +1,10 @@
-use amico_core::{traits::Dispatcher, types::AgentEvent, world::EventDelegate};
+use amico_core::{traits::Strategy, types::AgentEvent, world::EventDelegate};
 
 use super::events::{A2aMessageReceived, ConsoleInput, UserInput};
 
 pub struct MatchDispatcher;
 
-impl Dispatcher for MatchDispatcher {
+impl Strategy for MatchDispatcher {
     async fn dispatch(
         &mut self,
         agent_event: &AgentEvent,

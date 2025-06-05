@@ -2,7 +2,7 @@ use std::{future::Future, time::Duration};
 
 use amico_core::{
     Agent, OnFinish, ecs,
-    traits::{Dispatcher, EventSource, System},
+    traits::{Strategy, EventSource, System},
     types::AgentEvent,
 };
 use serde::{Deserialize, Serialize};
@@ -44,7 +44,7 @@ impl EventSource for TestEventSource {
 
 struct TestDispatcher;
 
-impl Dispatcher for TestDispatcher {
+impl Strategy for TestDispatcher {
     async fn dispatch(
         &mut self,
         agent_event: &AgentEvent,
