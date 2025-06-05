@@ -22,7 +22,7 @@ impl WorldManager {
     }
 
     /// Register a `System` to the world.
-    pub fn register_system<S: System>(&mut self, system: S) {
+    pub fn add_system<S: System>(&mut self, system: S) {
         system.register_to(HandlerRegistry {
             world: &mut self.world,
         });

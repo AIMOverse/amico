@@ -79,7 +79,7 @@ async fn test_agent() {
 
     let mut agent = Agent::new(TestStrategy);
     agent.spawn_event_source(TestEventSource, OnFinish::Stop);
-    agent.wm.register_system(TestSystem);
+    agent.add_system(TestSystem);
 
     agent.run().await;
 }

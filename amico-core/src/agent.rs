@@ -2,7 +2,7 @@ use tokio::sync::mpsc::{Receiver, Sender, channel};
 use tokio_with_wasm::alias as tokio;
 
 use crate::{
-    traits::{EventSource, Strategy},
+    traits::{EventSource, Strategy, System},
     types::{AgentEvent, EventContent, Instruction},
     world::WorldManager,
 };
@@ -27,11 +27,7 @@ pub struct Agent<S: Strategy> {
     event_rx: Receiver<AgentEvent>,
 
     /// The ECS world manager.
-    ///
-    /// **NOTE**: This field will be private in the future, after
-    /// we wrap the component / system registration into the `Agent`'s
-    /// methods.
-    pub wm: WorldManager,
+    wm: WorldManager,
 
     /// The action selection strategy.
     strategy: S,
@@ -109,6 +105,11 @@ impl<S: Strategy> Agent<S> {
             }
             OnFinish::Continue => {}
         }
+    }
+
+    /// Add a system to the agent.
+    pub fn add_system<SS: System>(&mut self, system: SS) {
+        self.wm.add_system(system);
     }
 
     /// The function to run the agent.
