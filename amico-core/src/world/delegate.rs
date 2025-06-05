@@ -23,10 +23,12 @@ pub struct ActionSender<'world> {
 }
 
 impl ActionSender<'_> {
+    /// Send an ECS event to the ECS `World`.
     pub fn send<E: ecs::GlobalEvent>(&mut self, event: E) {
         self.world.send(event);
     }
 
+    /// Send an ECS event to a specific entity in the ECS `World`.
     pub fn send_to<E: ecs::TargetedEvent>(&mut self, target: ecs::EntityId, event: E) {
         self.world.send_to(target, event);
     }
