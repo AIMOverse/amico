@@ -1042,9 +1042,9 @@ dependencies = [
 name = "amico"
 version = "0.0.1"
 dependencies = [
- "amico-core",
+ "amico-core 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "amico-mods",
- "amico-sdk",
+ "amico-sdk 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "anyhow",
  "colored",
  "cpal",
@@ -1078,6 +1078,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "amico-core"
+version = "1.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a69124ffec3a019204b9dc5a56449a468d28e0b4b3974f27def0f6a1ea85d325"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "evenio",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.12",
+ "tokio",
+ "tokio_with_wasm",
+ "tracing",
+]
+
+[[package]]
 name = "amico-hal"
 version = "0.0.1"
 dependencies = [
@@ -1094,9 +1111,9 @@ name = "amico-mods"
 version = "0.0.1"
 dependencies = [
  "alloy",
- "amico-core",
+ "amico-core 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "amico-hal",
- "amico-sdk",
+ "amico-sdk 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "anyhow",
  "async-trait",
  "base64 0.22.1",
@@ -1140,10 +1157,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "amico-sdk"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "30449bb561d77ac41acaddd31c57b85ab716b7a2549c435935156d442597d234"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "mcp-core",
+ "mcp-core-macros",
+ "rig-core",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.12",
+ "tokio",
+ "tokio_with_wasm",
+]
+
+[[package]]
 name = "amico-wasm"
 version = "0.0.1"
 dependencies = [
- "amico-core",
+ "amico-core 1.0.2",
  "anyhow",
  "async-trait",
  "console_error_panic_hook",

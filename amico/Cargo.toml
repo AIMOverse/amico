@@ -7,9 +7,9 @@ repository = "https://github.com/AIMOverse/amico"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-amico-core = { path = "../amico-core" }
+amico-core = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
-amico-sdk = { path = "../amico-sdk" }
+amico-sdk = { workspace = true }
 amico-mods = { path = "../amico-mods" }
 serde_json = { workspace = true }
 tracing = { workspace = true }

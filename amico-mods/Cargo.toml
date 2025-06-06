@@ -70,9 +70,9 @@ full = [
 ]
 
 [dependencies]
-amico-sdk = { path = "../amico-sdk", default-features = false }
+amico-sdk = { workspace = true, default-features = false }
 amico-hal = { path = "../amico-hal", default-features = false, optional = true }
-amico-core = { path = "../amico-core", default-features = false, optional = true }
+amico-core = { workspace = true, default-features = false, optional = true }
 
 # Plugin-specific dependencies
 
