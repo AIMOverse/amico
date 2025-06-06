@@ -1107,12 +1107,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "amico-hal"
+version = "0.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "df54ab3c901b6482a7ea2d22094ef8eeef55d0ca137846ac8309df8c72bdb21f"
+dependencies = [
+ "cpal",
+ "hound",
+ "lame",
+ "rodio",
+ "thiserror 2.0.12",
+ "tokio",
+]
+
+[[package]]
 name = "amico-mods"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
  "alloy",
  "amico-core 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "amico-hal",
+ "amico-hal 0.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "amico-sdk 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "anyhow",
  "async-trait",

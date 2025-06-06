@@ -1,6 +1,6 @@
 [package]
 name = "amico-mods"
-version = "0.0.1"
+version = "0.0.2"
 edition = "2024"
 description = "The plugins of the Amico AI Agent Framework"
 repository = "https://github.com/AIMOverse/amico"
@@ -71,7 +71,7 @@ full = [
 
 [dependencies]
 amico-sdk = { workspace = true }
-amico-hal = { path = "../amico-hal", default-features = false, optional = true }
+amico-hal = { workspace = true, optional = true }
 amico-core = { workspace = true, optional = true }
 
 # Plugin-specific dependencies
