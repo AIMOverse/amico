@@ -18,17 +18,13 @@ pub trait CompletionService {
     type Model: CompletionModel;
 
     /// A service should be built from a context
-    fn from(context: ServiceContext<Self::Model>) -> Self
-    where
-        Self: Sized;
+    fn from(context: ServiceContext<Self::Model>) -> Self;
 
     /// Generates text based on a prompt.
     fn generate_text(
         &mut self,
         prompt: String,
-    ) -> impl Future<Output = Result<String, ServiceError>> + Send
-    where
-        Self: Sized;
+    ) -> impl Future<Output = Result<String, ServiceError>> + Send;
 }
 
 #[async_trait]
@@ -139,17 +135,21 @@ where
         self
     }
 
-    /// Add a MCP tool to the Service.
+    /// Add a MCP tool to the Service by definition.
     #[cfg(feature = "mcp-client")]
-    pub fn mcp_tool(mut self, mcp_tool: mcp_core::types::Tool, mcp_client: McpClient) -> Self {
+    pub fn mcp_tool_definition(
+        mut self,
+        tool_definition: mcp_core::types::Tool,
+        mcp_client: McpClient,
+    ) -> Self {
         self.tool_list
-            .push(McpTool::from_mcp_server(mcp_tool, mcp_client).into());
+            .push(McpTool::from_mcp_server(tool_definition, mcp_client).into());
         self
     }
 
     /// Add all MCP tools from a server to the Service.
     #[cfg(feature = "mcp-client")]
-    pub async fn add_tools_from_server(mut self, mcp_client: McpClient) -> anyhow::Result<Self> {
+    pub async fn mcp_tools_from_server(mut self, mcp_client: McpClient) -> anyhow::Result<Self> {
         mcp_client
             .list_tools(None, None)
             .await?
@@ -163,8 +163,9 @@ where
         Ok(self)
     }
 
+    /// Add a MCP tool to the Service by name.
     #[cfg(feature = "mcp-client")]
-    pub async fn mcp_tool_name(
+    pub async fn mcp_tool(
         mut self,
         tool_name: String,
         mcp_client: McpClient,
