@@ -23,11 +23,11 @@ std-cli-chatbot = []
 std-audio-chatbot = ["dep:amico-hal", "amico-hal/os-common"]
 
 # Core plugins
-std-core = ["amico-core", "chrono"]
+std-core = ["chrono"]
 
 # Runtime
-storage-fs = ["amico-core"]
-storage-in-mem = ["amico-core"]
+storage-fs = []
+storage-in-mem = []
 
 # A2A features
 a2a = ["amico-sdk/a2a", "sodiumoxide", "base64"]
@@ -72,7 +72,7 @@ full = [
 [dependencies]
 amico-sdk = { workspace = true }
 amico-hal = { workspace = true, optional = true }
-amico-core = { workspace = true, optional = true }
+amico-core = { workspace = true }
 
 # Plugin-specific dependencies
 
