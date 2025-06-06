@@ -1,8 +1,5 @@
 use amico::{
-    ai::{
-        errors::ToolCallError,
-        tool::{Tool, ToolBuilder},
-    },
+    ai::tool::{Tool, ToolBuilder},
     environment::Effector,
     resource::{IntoResource, Resource},
 };
@@ -78,11 +75,6 @@ impl TradeEffector {
                         .effect(effector_args)
                         .await
                         .map(|_| serde_json::json!({"status": "success"}))
-                        .map_err(|err| ToolCallError::ExecutionError {
-                            tool_name: "trade_solana_token".to_string(),
-                            params: args,
-                            reason: err.to_string(),
-                        })
                 }
             })
     }

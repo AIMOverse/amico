@@ -1,7 +1,5 @@
-pub mod errors;
+pub mod completion;
 pub mod message;
-pub mod models;
-pub mod services;
 pub mod tool;
 
 #[cfg(feature = "mcp-client")]

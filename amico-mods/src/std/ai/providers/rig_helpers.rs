@@ -1,7 +1,6 @@
 use amico::ai::{
-    errors::CompletionModelError,
+    completion::{ModelChoice, Request},
     message::Message,
-    models::{CompletionRequest, ModelChoice},
     tool::ToolDefinition,
 };
 use rig::{OneOrMany, completion as rc, message as rm};
@@ -46,8 +45,8 @@ pub fn into_amico_choice<T>(response: rc::CompletionResponse<T>) -> ModelChoice 
 }
 
 /// Convert `rig`'s `CompletionError` into `amico`'s `CompletionModelError`
-pub fn into_amico_err(error: rc::CompletionError) -> CompletionModelError {
-    CompletionModelError::ProviderError(error.to_string())
+pub fn into_amico_err(error: rc::CompletionError) -> amico::ai::completion::Error {
+    amico::ai::completion::Error::Model(error.to_string())
 }
 
 /// Convert `amico`'s `Tool` into `rig`'s `ToolDefinition`
@@ -60,7 +59,7 @@ pub fn into_rig_tool_def(def: &ToolDefinition) -> rig::completion::ToolDefinitio
 }
 
 /// Convert `amico`'s `CompletionRequest` into `rig`'s
-pub fn into_rig_request(request: &CompletionRequest) -> rc::CompletionRequest {
+pub fn into_rig_request(request: &Request) -> rc::CompletionRequest {
     // Documented in `rig-core`:
     // The very last message will always be the prompt (hense why there is *always* one)
 

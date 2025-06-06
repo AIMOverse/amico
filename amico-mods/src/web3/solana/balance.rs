@@ -1,10 +1,7 @@
 use std::str::FromStr;
 
 use amico::{
-    ai::{
-        errors::ToolCallError,
-        tool::{Tool, ToolBuilder},
-    },
+    ai::tool::{Tool, ToolBuilder},
     environment::Sensor,
     resource::{IntoResource, Resource},
 };
@@ -53,22 +50,16 @@ impl BalanceSensor {
             .name("balance_sensor")
             .description("Get the balance of your own Solana account.")
             .parameters(serde_json::json!({}))
-            .build_async(move |args| {
+            .build_async(move |_| {
                 // Clone the sensor and pubkey to move into the async block
                 let sensor = sensor.clone();
                 let pubkey = pubkey;
-                let args = args.clone();
 
                 // Return a boxed future that is both Send and Sync
                 async move {
                     sensor
                         .sense(BalanceSensorArgs { pubkey })
                         .await
-                        .map_err(|err| ToolCallError::ExecutionError {
-                            tool_name: "balance_sensor".to_string(),
-                            params: args,
-                            reason: err.to_string(),
-                        })
                         .map(|result| {
                             serde_json::json!({
                                 "balance": result.lamports as f64 / LAMPORTS_PER_SOL as f64
@@ -104,26 +95,14 @@ impl BalanceSensor {
                 // Clone the sensor and pubkey to move into the async block
                 let sensor = sensor.clone();
                 let pubkey_arg = args["pubkey"].to_string();
-                let args = args.clone();
 
                 // Return a boxed future that is both Send and Sync
                 async move {
                     // Parse the pubkey
-                    let pubkey = Pubkey::from_str(&pubkey_arg).map_err(|err| {
-                        ToolCallError::ExecutionError {
-                            tool_name: "account_balance_tool".to_string(),
-                            params: args.clone(),
-                            reason: err.to_string(),
-                        }
-                    })?;
+                    let pubkey = Pubkey::from_str(&pubkey_arg)?;
                     sensor
                         .sense(BalanceSensorArgs { pubkey })
                         .await
-                        .map_err(|err| ToolCallError::ExecutionError {
-                            tool_name: "account_balance_tool".to_string(),
-                            params: args,
-                            reason: err.to_string(),
-                        })
                         .map(|result| {
                             serde_json::json!({
                                 "balance": result.lamports as f64 / LAMPORTS_PER_SOL as f64

@@ -1,7 +1,7 @@
 use std::sync::mpsc::channel;
 
 use amico::resource::Resource;
-use amico::{ai::services::CompletionServiceDyn, resource::ResourceMut};
+use amico::{ai::completion::SessionDyn, resource::ResourceMut};
 use amico_core::{traits::System, world::HandlerRegistry};
 use amico_mods::std::ai::{
     providers::rig::RigProvider,

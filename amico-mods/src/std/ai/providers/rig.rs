@@ -1,7 +1,4 @@
-use amico::ai::{
-    errors::CompletionModelError,
-    models::{CompletionModel, CompletionRequest, ModelChoice},
-};
+use amico::ai::completion::{Error as CompletionError, Model, ModelChoice, Request};
 use rig::{
     completion::{self as rc, CompletionModel as _},
     providers as rp,
@@ -22,7 +19,7 @@ async fn provider_completion(
     provider: &RigProvider,
     model_name: &str,
     request: rc::CompletionRequest,
-) -> Result<ModelChoice, CompletionModelError> {
+) -> Result<ModelChoice, CompletionError> {
     match provider {
         RigProvider::Anthropic(client) => client
             .completion_model(model_name)
@@ -91,12 +88,9 @@ impl RigProvider {
     }
 }
 
-impl CompletionModel for RigProvider {
+impl Model for RigProvider {
     #[doc = " Completes a prompt with the provider."]
-    async fn completion(
-        &self,
-        req: &CompletionRequest,
-    ) -> Result<ModelChoice, CompletionModelError> {
+    async fn completion(&self, req: &Request) -> Result<ModelChoice, CompletionError> {
         provider_completion(self, &req.model, into_rig_request(req)).await
     }
 }

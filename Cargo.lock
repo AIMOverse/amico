@@ -1123,9 +1123,8 @@ dependencies = [
 
 [[package]]
 name = "amico-sdk"
-version = "0.0.2"
+version = "1.0.0"
 dependencies = [
- "amico-core",
  "anyhow",
  "async-trait",
  "mcp-core",

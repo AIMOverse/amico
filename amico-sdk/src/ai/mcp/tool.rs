@@ -4,10 +4,7 @@ use rig::tool::ToolDyn;
 use std::str::FromStr;
 use std::sync::Arc;
 
-use crate::ai::{
-    errors::ToolCallError,
-    tool::{Tool, ToolBuilder},
-};
+use crate::ai::tool::{Tool, ToolBuilder};
 
 use super::McpClient;
 
@@ -72,21 +69,13 @@ impl From<McpTool> for Tool {
             .build_async(move |args| {
                 let args = args.clone();
                 let args_str = args.to_string();
-                let name = val.name.clone();
+                // let name = val.name.clone();
                 let mcp_tool = mcp_tool.clone(); // Clone the Arc, not the inner value
 
                 async move {
-                    mcp_tool
-                        .call(args_str)
-                        .await
-                        .map(|res| {
-                            serde_json::Value::from_str(&res).unwrap_or(serde_json::json!(res))
-                        })
-                        .map_err(|err| ToolCallError::ExecutionError {
-                            tool_name: name,
-                            params: args,
-                            reason: err.to_string(),
-                        })
+                    mcp_tool.call(args_str).await.map(|res| {
+                        serde_json::Value::from_str(&res).unwrap_or(serde_json::json!(res))
+                    })
                 }
             })
     }
