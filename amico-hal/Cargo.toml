@@ -1,6 +1,6 @@
 [package]
 name = "amico-hal"
-version = "0.0.1"
+version = "0.0.2"
 edition = "2024"
 description = "The HAL of the Amico AI Agent Framework"
 repository = "https://github.com/AIMOverse/amico"
