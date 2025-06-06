@@ -1,6 +1,6 @@
 use std::process;
 
-use amico::ai::services::ServiceBuilder;
+use amico::ai::completion::SessionBuilder;
 use amico::resource::{IntoResource, IntoResourceMut};
 use amico_core::{Agent, OnFinish};
 use amico_mods::interface::Plugin;
@@ -115,7 +115,7 @@ async fn main() {
     ));
 
     // Create the Service
-    let service = ServiceBuilder::new(provider)
+    let service = SessionBuilder::new(provider)
         .model("gpt-4o".to_string())
         .system_prompt(AMICO_SYSTEM_PROMPT.to_string())
         .temperature(0.2)

@@ -1,10 +1,8 @@
 use crate::interface::{Plugin, PluginCategory, PluginInfo};
 use amico::{
     ai::{
-        errors::ServiceError,
+        completion::{Error, Model, ModelChoice, RequestBuilder, Session, SessionContext},
         message::Message,
-        models::{CompletionModel, CompletionRequestBuilder, ModelChoice},
-        services::ServiceContext,
     },
     resource::{IntoResourceMut, ResourceMut},
 };
@@ -31,15 +29,15 @@ fn debug_history(history: &[Message]) -> String {
 }
 
 #[derive(Debug)]
-pub struct InMemoryService<M: CompletionModel + Send> {
+pub struct InMemoryService<M: Model + Send> {
     /// The context config for the service
-    pub ctx: ServiceContext<M>,
+    pub ctx: SessionContext<M>,
 
     /// In-memory Chat history storage
     pub history: Vec<Message>,
 }
 
-impl<M: CompletionModel + Send> Plugin for InMemoryService<M> {
+impl<M: Model + Send> Plugin for InMemoryService<M> {
     fn info(&self) -> &'static PluginInfo {
         &PluginInfo {
             name: "StdInMemoryService",
@@ -48,31 +46,31 @@ impl<M: CompletionModel + Send> Plugin for InMemoryService<M> {
     }
 }
 
-impl<M: CompletionModel + Send> amico::ai::services::CompletionService for InMemoryService<M> {
+impl<M: Model + Send> Session for InMemoryService<M> {
     type Model = M;
 
-    fn from(context: ServiceContext<M>) -> Self {
+    fn from(context: SessionContext<M>) -> Self {
         Self {
             ctx: context,
             history: Vec::new(),
         }
     }
 
-    async fn generate_text(&mut self, prompt: String) -> Result<String, ServiceError> {
+    async fn generate_text(&mut self, prompt: String) -> Result<String, Error> {
         // Append the new user prompt to chat history.
         self.history.push(Message::User(prompt));
 
         // Generate the final text
         loop {
             // Call the LLM API wrapper with the current prompt and chat history.
-            let request = CompletionRequestBuilder::from_ctx(&self.ctx)
+            let request = RequestBuilder::from_ctx(&self.ctx)
                 // We've already added the user prompt to the history, so no need to add it again
                 // .prompt(prompt.clone())
                 .history(self.history.clone())
                 .build();
 
             // Call the LLM API wrapper with the current prompt and chat history.
-            match self.ctx.completion_model.completion(&request).await {
+            match self.ctx.model.completion(&request).await {
                 // When a plain message is received, update the chat history and return the response.
                 Ok(ModelChoice::Message(msg)) => {
                     tracing::debug!("Received message response: {}", msg);
@@ -128,14 +126,14 @@ impl<M: CompletionModel + Send> amico::ai::services::CompletionService for InMem
                 // Handle potential errors from the API call.
                 Err(err) => {
                     tracing::error!("Provider error: {}", err);
-                    return Err(ServiceError::CompletionModelError(err));
+                    return Err(Error::Model(err.to_string()));
                 }
             }
         }
     }
 }
 
-impl<M: CompletionModel + Send> IntoResourceMut<InMemoryService<M>> for InMemoryService<M> {
+impl<M: Model + Send> IntoResourceMut<InMemoryService<M>> for InMemoryService<M> {
     fn into_resource_mut(self) -> ResourceMut<InMemoryService<M>> {
         ResourceMut::new(self.info().name, self)
     }

@@ -1,8 +1,7 @@
 use async_trait::async_trait;
 
-use crate::ai::errors::ServiceError;
 use crate::ai::{
-    models::CompletionModel,
+    completion::{Error, Model},
     tool::{Tool, ToolSet},
 };
 
@@ -13,77 +12,77 @@ use crate::ai::mcp::{McpClient, McpTool};
 /// using a series of model provider calls.
 ///
 /// A service should contain a context that is used to configure the service.
-pub trait CompletionService {
+pub trait Session {
     /// The LLM API provider type the service uses
-    type Model: CompletionModel;
+    type Model: Model;
 
     /// A service should be built from a context
-    fn from(context: ServiceContext<Self::Model>) -> Self;
+    fn from(context: SessionContext<Self::Model>) -> Self;
 
     /// Generates text based on a prompt.
     fn generate_text(
         &mut self,
         prompt: String,
-    ) -> impl Future<Output = Result<String, ServiceError>> + Send;
+    ) -> impl Future<Output = Result<String, Error>> + Send;
 }
 
 #[async_trait]
-pub trait CompletionServiceDyn {
+pub trait SessionDyn {
     /// Generates text based on a prompt.
-    async fn generate_text_dyn(&mut self, prompt: String) -> Result<String, ServiceError>;
+    async fn generate_text_dyn(&mut self, prompt: String) -> Result<String, Error>;
 }
 
 #[async_trait(?Send)]
-pub trait CompletionServiceLocal {
+pub trait SessionLocal {
     /// Generates text based on a prompt.
-    async fn generate_text_local(&mut self, prompt: String) -> Result<String, ServiceError>;
+    async fn generate_text_local(&mut self, prompt: String) -> Result<String, Error>;
 }
 
 #[async_trait]
-impl<T: CompletionService + Send> CompletionServiceDyn for T {
-    async fn generate_text_dyn(&mut self, prompt: String) -> Result<String, ServiceError> {
+impl<T: Session + Send> SessionDyn for T {
+    async fn generate_text_dyn(&mut self, prompt: String) -> Result<String, Error> {
         self.generate_text(prompt).await
     }
 }
 
 #[async_trait(?Send)]
-impl<T: CompletionService> CompletionServiceLocal for T {
-    async fn generate_text_local(&mut self, prompt: String) -> Result<String, ServiceError> {
+impl<T: Session> SessionLocal for T {
+    async fn generate_text_local(&mut self, prompt: String) -> Result<String, Error> {
         self.generate_text(prompt).await
     }
 }
 
 /// The context of a Service.
 #[derive(Debug)]
-pub struct ServiceContext<M>
+pub struct SessionContext<M>
 where
-    M: CompletionModel,
+    M: Model,
 {
     pub system_prompt: String,
-    pub completion_model: M,
+    pub model: M,
     pub model_name: String,
     pub temperature: f64,
     pub max_tokens: u64,
     pub tools: ToolSet,
 }
 
-impl<M> ServiceContext<M>
+impl<M> SessionContext<M>
 where
-    M: CompletionModel,
+    M: Model,
 {
     /// Updates the context with a function.
     pub fn update<F>(&mut self, update: F)
     where
-        F: Fn(&mut ServiceContext<M>),
+        F: Fn(&mut SessionContext<M>),
     {
         update(self);
     }
 }
 
 /// A ServiceBuilder allows to configure a Service before it is used.
-pub struct ServiceBuilder<M>
+pub struct SessionBuilder<M>
 where
-    M: CompletionModel,
+    M: Model,
 {
     /// Temporarily stores tools in a vector.
     /// These are moved into the ServiceContext when the builder is built.
@@ -95,9 +94,9 @@ where
     max_tokens: u64,
 }
 
-impl<M> ServiceBuilder<M>
+impl<M> SessionBuilder<M>
 where
-    M: CompletionModel,
+    M: Model,
 {
     /// Creates a new `ServiceBuilder` with default values.
     pub fn new(completion_model: M) -> Self {
@@ -200,10 +199,10 @@ where
     /// Build the Service.
     pub fn build<S>(self) -> S
     where
-        S: CompletionService<Model = M>,
+        S: Session<Model = M>,
     {
-        S::from(ServiceContext {
-            completion_model: self.completion_model,
+        S::from(SessionContext {
+            model: self.completion_model,
             model_name: self.model_name,
             system_prompt: self.system_prompt,
             temperature: self.temperature,
@@ -216,9 +215,7 @@ where
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::ai::errors::CompletionModelError;
-    use crate::ai::models::ModelChoice;
-    use crate::ai::models::{CompletionRequest, CompletionRequestBuilder};
+    use crate::ai::completion::{Error, ModelChoice, Request, RequestBuilder};
     use crate::ai::tool::ToolBuilder;
 
     // Structs for testing
@@ -226,40 +223,35 @@ mod test {
     struct TestCompletionModel;
 
     struct TestService {
-        ctx: ServiceContext<TestCompletionModel>,
+        ctx: SessionContext<TestCompletionModel>,
     }
 
-    impl CompletionModel for TestCompletionModel {
-        async fn completion(
-            &self,
-            _req: &CompletionRequest,
-        ) -> Result<ModelChoice, CompletionModelError> {
+    impl Model for TestCompletionModel {
+        async fn completion(&self, _req: &Request) -> Result<ModelChoice, Error> {
             Ok(ModelChoice::Message("test".to_string()))
         }
     }
 
-    impl CompletionService for TestService {
+    impl Session for TestService {
         type Model = TestCompletionModel;
 
-        fn from(context: ServiceContext<TestCompletionModel>) -> Self {
+        fn from(context: SessionContext<TestCompletionModel>) -> Self {
             TestService { ctx: context }
         }
 
-        async fn generate_text(&mut self, prompt: String) -> Result<String, ServiceError> {
+        async fn generate_text(&mut self, prompt: String) -> Result<String, Error> {
             // Build the request
-            let request = CompletionRequestBuilder::from_ctx(&self.ctx)
-                .prompt(prompt)
-                .build();
+            let request = RequestBuilder::from_ctx(&self.ctx).prompt(prompt).build();
 
             // Perform the completion
             self.ctx
-                .completion_model
+                .model
                 .completion(&request)
                 .await
                 .map(|choice| match choice {
                     ModelChoice::Message(text) => Ok(text),
                     _ => {
-                        return Err(ServiceError::UnexpectedResponse(
+                        return Err(Error::BadResponse(
                             "Expected a message, got a tool call".to_string(),
                         ));
                     }
@@ -270,7 +262,7 @@ mod test {
 
     /// Builds a test service
     fn build_test_service() -> TestService {
-        ServiceBuilder::new(TestCompletionModel)
+        SessionBuilder::new(TestCompletionModel)
             .model("test".to_string())
             .system_prompt("test".to_string())
             .temperature(0.2)
@@ -332,6 +324,6 @@ mod test {
         let service = build_test_service();
 
         // Ensure the service is dynamically compatible
-        let _: Box<dyn CompletionServiceDyn> = Box::new(service);
+        let _: Box<dyn SessionDyn> = Box::new(service);
     }
 }

@@ -9,16 +9,6 @@ pub enum CreationError {
     },
 }
 
-/// Errors during completion of chatting
-#[derive(Debug, thiserror::Error)]
-pub enum CompletionModelError {
-    #[error("Provider error: {0}")]
-    ProviderError(String),
-
-    #[error("Model {0} is unavailable")]
-    ModelUnavailable(String),
-}
-
 /// Errors during tool call
 #[derive(Debug, Clone, thiserror::Error)]
 pub enum ToolCallError {
@@ -38,17 +28,4 @@ pub enum ToolCallError {
         params: serde_json::Value,
         reason: String,
     },
-}
-
-/// Errors during service call
-#[derive(Debug, thiserror::Error)]
-pub enum ServiceError {
-    #[error("Completion model error")]
-    CompletionModelError(#[from] CompletionModelError),
-
-    #[error("Unexpected response: {0}")]
-    UnexpectedResponse(String),
-
-    #[error("Tool error")]
-    ToolError(#[from] ToolCallError),
 }

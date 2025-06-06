@@ -1,50 +1,41 @@
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
-use crate::ai::errors::CompletionModelError;
-use crate::ai::{message::Message, services::ServiceContext, tool::ToolDefinition};
+use crate::ai::{
+    completion::{Error, SessionContext},
+    message::Message,
+    tool::ToolDefinition,
+};
 
 /// Trait for completion models.
-pub trait CompletionModel {
+pub trait Model {
     /// Completes a prompt with the provider.
     fn completion(
         &self,
-        request: &CompletionRequest,
-    ) -> impl Future<Output = Result<ModelChoice, CompletionModelError>> + Send;
+        request: &Request,
+    ) -> impl Future<Output = Result<ModelChoice, Error>> + Send;
 }
 
 #[async_trait]
-pub trait CompletionModelDyn {
-    async fn completion_dyn(
-        &self,
-        request: &CompletionRequest,
-    ) -> Result<ModelChoice, CompletionModelError>;
+pub trait ModelDyn {
+    async fn completion_dyn(&self, request: &Request) -> Result<ModelChoice, Error>;
 }
 
 #[async_trait(?Send)]
-pub trait CompletionModelLocal {
-    async fn completion_local(
-        &self,
-        request: &CompletionRequest,
-    ) -> Result<ModelChoice, CompletionModelError>;
+pub trait ModelLocal {
+    async fn completion_local(&self, request: &Request) -> Result<ModelChoice, Error>;
 }
 
 #[async_trait]
-impl<T: CompletionModel + Sync> CompletionModelDyn for T {
-    async fn completion_dyn(
-        &self,
-        request: &CompletionRequest,
-    ) -> Result<ModelChoice, CompletionModelError> {
+impl<T: Model + Sync> ModelDyn for T {
+    async fn completion_dyn(&self, request: &Request) -> Result<ModelChoice, Error> {
         self.completion(request).await
     }
 }
 
 #[async_trait(?Send)]
-impl<T: CompletionModel> CompletionModelLocal for T {
-    async fn completion_local(
-        &self,
-        request: &CompletionRequest,
-    ) -> Result<ModelChoice, CompletionModelError> {
+impl<T: Model> ModelLocal for T {
+    async fn completion_local(&self, request: &Request) -> Result<ModelChoice, Error> {
         self.completion(request).await
     }
 }
@@ -59,7 +50,7 @@ pub enum ModelChoice {
 /// Chat completion request schema
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub struct CompletionRequest {
+pub struct Request {
     /// The prompt to complete
     pub prompt: String,
     /// The model's name to use
@@ -76,7 +67,7 @@ pub struct CompletionRequest {
     pub tools: Vec<ToolDefinition>,
 }
 
-impl Default for CompletionRequest {
+impl Default for Request {
     /// Creates a default `CompletionRequest` with empty fields
     fn default() -> Self {
         Self {
@@ -94,22 +85,22 @@ impl Default for CompletionRequest {
 /// Builder for `CompletionRequest`
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "snake_case")]
-pub struct CompletionRequestBuilder {
+pub struct RequestBuilder {
     /// The inner builder
-    inner: CompletionRequest,
+    inner: Request,
 }
 
-impl CompletionRequestBuilder {
+impl RequestBuilder {
     /// Creates a new `CompletionRequestBuilder` with default values
     pub fn new() -> Self {
         Self {
-            inner: CompletionRequest::default(),
+            inner: Request::default(),
         }
     }
 
     /// Creates a `CompletionRequestBuilder` from a `ServiceContext`.
     /// Convinient for building requests inside a service.
-    pub fn from_ctx<P: CompletionModel>(ctx: &ServiceContext<P>) -> Self {
+    pub fn from_ctx<P: Model>(ctx: &SessionContext<P>) -> Self {
         Self::new()
             .model(ctx.model_name.clone())
             .system_prompt(ctx.system_prompt.clone())
@@ -161,7 +152,7 @@ impl CompletionRequestBuilder {
     }
 
     /// Builds the `CompletionRequest`
-    pub fn build(self) -> CompletionRequest {
+    pub fn build(self) -> Request {
         self.inner.clone()
     }
 }
@@ -173,7 +164,7 @@ mod tests {
     #[test]
     fn test_completion_request_builder() {
         // Test building the request
-        let request = CompletionRequestBuilder::new()
+        let request = RequestBuilder::new()
             .prompt("Hello, world!".to_string())
             .model("test".to_string())
             .system_prompt("You are a helpful assistant.".to_string())
