@@ -1,7 +1,6 @@
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fmt::Debug, future::Future, pin::Pin, sync::Arc};
-
-use crate::ai::errors::ToolCallError;
 
 /// Definition of a tool in natural language
 ///
@@ -17,9 +16,6 @@ pub struct ToolDefinition {
     pub parameters: serde_json::Value,
 }
 
-/// Result type of tool call
-pub type ToolResult = Result<serde_json::Value, ToolCallError>;
-
 /// A tool that can be called by AI Agent.
 #[derive(Clone)]
 pub struct Tool {
@@ -34,7 +30,7 @@ impl Tool {
     }
 
     /// Calls the tool with the given arguments.
-    pub async fn call(&self, args: serde_json::Value) -> ToolResult {
+    pub async fn call(&self, args: serde_json::Value) -> Result<serde_json::Value> {
         match &self.tool_call {
             ToolCallFn::Sync(f) => (f)(args),
             ToolCallFn::Async(f) => (f)(args.clone()).await,
@@ -43,11 +39,13 @@ impl Tool {
 }
 
 /// Sync tool call function
-pub type SyncToolCall = Arc<dyn Fn(serde_json::Value) -> ToolResult + Send + Sync>;
+pub type SyncToolCall = Arc<dyn Fn(serde_json::Value) -> Result<serde_json::Value> + Send + Sync>;
 
 /// Async tool call function
 pub type AsyncToolCall = Arc<
-    dyn Fn(serde_json::Value) -> Pin<Box<dyn Future<Output = ToolResult> + Send + 'static>>
+    dyn Fn(
+            serde_json::Value,
+        ) -> Pin<Box<dyn Future<Output = Result<serde_json::Value>> + Send + 'static>>
         + Send
         + Sync,
 >;
@@ -98,7 +96,7 @@ impl ToolBuilder {
     /// Builds the `Tool` with tool call function from the builder
     pub fn build<F>(self, tool_call: F) -> Tool
     where
-        F: Fn(serde_json::Value) -> ToolResult + Send + Sync + 'static,
+        F: Fn(serde_json::Value) -> Result<serde_json::Value> + Send + Sync + 'static,
     {
         Tool {
             definition: ToolDefinition {
@@ -114,7 +112,7 @@ impl ToolBuilder {
     pub fn build_async<F, Fut>(self, tool_call: F) -> Tool
     where
         F: Fn(serde_json::Value) -> Fut + Send + Sync + 'static,
-        Fut: Future<Output = ToolResult> + Send + 'static,
+        Fut: Future<Output = Result<serde_json::Value>> + Send + 'static,
     {
         Tool {
             definition: ToolDefinition {

@@ -1,10 +1,7 @@
 use std::{collections::HashMap, future::Future, str::FromStr, time::Duration};
 
 use amico::{
-    ai::{
-        errors::ToolCallError,
-        tool::{Tool, ToolBuilder},
-    },
+    ai::tool::{Tool, ToolBuilder},
     resource::ResourceMut,
     runtime::storage::{Namespace, Storage},
 };
@@ -14,6 +11,7 @@ use amico_mods::{
     runtime::storage::fs::FsStorage,
     web3::wallet::WalletResource,
 };
+use anyhow::anyhow;
 use nostr::key::Keys;
 use serde_json::{json, to_value};
 use solana_sdk::pubkey::Pubkey;
@@ -69,35 +67,18 @@ impl A2aModule {
                 tracing::debug!("Calling send_a2a_message({})", args.clone());
                 let network = network.clone();
                 async move {
-                    let address = args.get("address").ok_or(ToolCallError::InvalidParam {
-                        name: "address".to_string(),
-                        value: json!({}),
-                        reason: "Missing".to_string(),
-                    })?;
-                    let content = args.get("content").ok_or(ToolCallError::InvalidParam {
-                        name: "content".to_string(),
-                        value: json!({}),
-                        reason: "Missing".to_string(),
-                    })?;
+                    let address = args
+                        .get("address")
+                        .ok_or(anyhow!("Missing address parameter"))?;
+                    let content = args
+                        .get("content")
+                        .ok_or(anyhow!("Missing content parameter"))?;
 
-                    let pubkey = Pubkey::from_str(&content.to_string()).map_err(|err| {
-                        ToolCallError::InvalidParam {
-                            name: "address".to_string(),
-                            value: address.clone(),
-                            reason: err.to_string(),
-                        }
-                    })?;
+                    let pubkey = Pubkey::from_str(&address.to_string())?;
 
                     tracing::info!("Sending {} to {}...", content, address);
 
-                    network
-                        .publish_dyn(pubkey, content.to_string())
-                        .await
-                        .map_err(|err| ToolCallError::ExecutionError {
-                            tool_name: "send_a2a_message".to_string(),
-                            params: args,
-                            reason: err.to_string(),
-                        })?;
+                    network.publish_dyn(pubkey, content.to_string()).await?;
 
                     tracing::info!("Message sent.");
 
