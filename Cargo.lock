@@ -1125,7 +1125,6 @@ dependencies = [
 name = "amico-sdk"
 version = "0.0.2"
 dependencies = [
- "amico-core",
  "anyhow",
  "async-trait",
  "mcp-core",
