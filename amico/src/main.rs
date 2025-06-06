@@ -3,7 +3,6 @@ use std::process;
 use amico::ai::completion::SessionBuilder;
 use amico::resource::{IntoResource, IntoResourceMut};
 use amico_core::{Agent, OnFinish};
-use amico_mods::interface::Plugin;
 use amico_mods::runtime::storage::fs::FsStorage;
 use amico_mods::std::ai::providers::rig::{RigProvider, providers};
 use amico_mods::std::ai::services::InMemoryService;
@@ -132,7 +131,6 @@ async fn main() {
     println!("{}", wallet.get().pubkey_list());
 
     println!();
-    println!("Using service plugin: {}", service.info().name);
     println!("Tools enabled:\n{}", service.ctx.tools.describe());
 
     let service_resource = service.into_resource_mut();

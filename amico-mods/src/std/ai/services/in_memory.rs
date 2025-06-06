@@ -1,4 +1,3 @@
-use crate::interface::{Plugin, PluginCategory, PluginInfo};
 use amico::{
     ai::{
         completion::{Error, Model, ModelChoice, RequestBuilder, Session, SessionContext},
@@ -35,15 +34,6 @@ pub struct InMemoryService<M: Model + Send> {
 
     /// In-memory Chat history storage
     pub history: Vec<Message>,
-}
-
-impl<M: Model + Send> Plugin for InMemoryService<M> {
-    fn info(&self) -> &'static PluginInfo {
-        &PluginInfo {
-            name: "StdInMemoryService",
-            category: PluginCategory::Service,
-        }
-    }
 }
 
 impl<M: Model + Send> Session for InMemoryService<M> {
@@ -135,6 +125,6 @@ impl<M: Model + Send> Session for InMemoryService<M> {
 
 impl<M: Model + Send> IntoResourceMut<InMemoryService<M>> for InMemoryService<M> {
     fn into_resource_mut(self) -> ResourceMut<InMemoryService<M>> {
-        ResourceMut::new(self.info().name, self)
+        ResourceMut::new("InMemoryService", self)
     }
 }
