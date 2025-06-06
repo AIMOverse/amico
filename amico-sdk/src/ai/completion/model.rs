@@ -82,7 +82,7 @@ impl Default for Request {
     }
 }
 
-/// Builder for `CompletionRequest`
+/// Builder for `Request`
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "snake_case")]
 pub struct RequestBuilder {

@@ -49,7 +49,7 @@ impl<M: Model + Send> Plugin for InMemoryService<M> {
 impl<M: Model + Send> Session for InMemoryService<M> {
     type Model = M;
 
-    fn from(context: SessionContext<M>) -> Self {
+    fn from_ctx(context: SessionContext<M>) -> Self {
         Self {
             ctx: context,
             history: Vec::new(),
