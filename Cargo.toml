@@ -18,3 +18,10 @@ nostr-sdk = "0.38.0"
 nostr = "0.38.0"
 chrono = { version = "0.4.41", features = ["serde"] }
 tokio_with_wasm = { version = "0.8.5", features = ["rt"] }
+
+# Released Amico crates
+amico-core = "1.0.2"
+amico-sdk = "1.0.0"
+
+# Dev releases
+amico-hal = { version = "0.0.2", default-features = false }

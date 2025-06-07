@@ -1,6 +1,6 @@
 [package]
 name = "amico-mods"
-version = "0.0.1"
+version = "0.0.3"
 edition = "2024"
 description = "The plugins of the Amico AI Agent Framework"
 repository = "https://github.com/AIMOverse/amico"
@@ -23,11 +23,11 @@ std-cli-chatbot = []
 std-audio-chatbot = ["dep:amico-hal", "amico-hal/os-common"]
 
 # Core plugins
-std-core = ["amico-core", "chrono"]
+std-core = ["chrono"]
 
 # Runtime
-storage-fs = ["amico-core"]
-storage-in-mem = ["amico-core"]
+storage-fs = []
+storage-in-mem = []
 
 # A2A features
 a2a = ["amico-sdk/a2a", "sodiumoxide", "base64"]
@@ -70,9 +70,9 @@ full = [
 ]
 
 [dependencies]
-amico-sdk = { path = "../amico-sdk", default-features = false }
-amico-hal = { path = "../amico-hal", default-features = false, optional = true }
-amico-core = { path = "../amico-core", default-features = false, optional = true }
+amico-sdk = { workspace = true }
+amico-hal = { workspace = true, optional = true }
+amico-core = { workspace = true }
 
 # Plugin-specific dependencies
 

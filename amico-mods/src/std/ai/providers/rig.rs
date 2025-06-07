@@ -6,7 +6,6 @@ use rig::{
 use std::fmt::Debug;
 
 use super::rig_helpers::*;
-use crate::interface::{Plugin, PluginCategory, PluginInfo};
 
 /// Re-export providers from rig-core
 /// so that SDK users do not need to add `rig-core` as a dependency
@@ -92,14 +91,5 @@ impl Model for RigProvider {
     #[doc = " Completes a prompt with the provider."]
     async fn completion(&self, req: &Request) -> Result<ModelChoice, CompletionError> {
         provider_completion(self, &req.model, into_rig_request(req)).await
-    }
-}
-
-impl Plugin for RigProvider {
-    fn info(&self) -> &'static PluginInfo {
-        &PluginInfo {
-            name: "StdOpenAIProvider",
-            category: PluginCategory::Service,
-        }
     }
 }

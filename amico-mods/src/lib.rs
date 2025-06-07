@@ -1,5 +1,3 @@
-pub mod interface;
-pub mod plugin_manager;
 pub mod runtime;
 pub mod std;
 
@@ -11,3 +9,6 @@ pub mod a2a;
 
 #[cfg(feature = "aoe")]
 pub mod aoe;
+
+mod interface;
+pub use interface::*;
