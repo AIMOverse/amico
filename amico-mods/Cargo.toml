@@ -1,6 +1,6 @@
 [package]
 name = "amico-mods"
-version = "0.0.3"
+version = "0.0.4"
 edition = "2024"
 description = "The plugins of the Amico AI Agent Framework"
 repository = "https://github.com/AIMOverse/amico"
@@ -13,11 +13,10 @@ license = "MIT OR Apache-2.0"
 default = ["full"]
 
 # The standard set of plugins
-std-full = ["std-providers", "std-services", "std-tasks"]
+std-full = ["std-providers", "std-chat-session", "std-tasks"]
 std-providers = ["std-providers-rig"]
 std-providers-rig = ["rig-core"]
-std-services = ["std-services-in-memory"]
-std-services-in-memory = []
+std-chat-session = []
 std-tasks = ["std-cli-chatbot", "std-audio-chatbot"]
 std-cli-chatbot = []
 std-audio-chatbot = ["dep:amico-hal", "amico-hal/os-common"]

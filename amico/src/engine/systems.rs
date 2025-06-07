@@ -3,12 +3,10 @@ use std::sync::mpsc::channel;
 use amico::resource::Resource;
 use amico::{ai::completion::SessionDyn, resource::ResourceMut};
 use amico_core::{traits::System, world::HandlerRegistry};
+use amico_mods::std::ai::session::ChatSession;
 use amico_mods::std::ai::{
     providers::rig::RigProvider,
-    services::{
-        InMemoryService,
-        speech::{speech_to_text, text_to_speech},
-    },
+    services::speech::{speech_to_text, text_to_speech},
 };
 use evenio::prelude::*;
 
@@ -173,7 +171,7 @@ impl System for SpeechSystem {
 }
 
 pub struct CompletionSystem {
-    pub service_resource: ResourceMut<InMemoryService<RigProvider>>,
+    pub service_resource: ResourceMut<ChatSession<RigProvider>>,
 }
 
 impl System for CompletionSystem {

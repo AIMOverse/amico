@@ -5,7 +5,7 @@ use amico::resource::{IntoResource, IntoResourceMut};
 use amico_core::{Agent, OnFinish};
 use amico_mods::runtime::storage::fs::FsStorage;
 use amico_mods::std::ai::providers::rig::{RigProvider, providers};
-use amico_mods::std::ai::services::InMemoryService;
+use amico_mods::std::ai::session::ChatSession;
 use amico_mods::web3::solana::balance::BalanceSensor;
 use amico_mods::web3::solana::client::SolanaClient;
 use amico_mods::web3::solana::trade::TradeEffector;
@@ -113,8 +113,8 @@ async fn main() {
         &base_url,
     ));
 
-    // Create the Service
-    let service = SessionBuilder::new(provider)
+    // Create the global chat session
+    let global_session = SessionBuilder::new(provider)
         .model("gpt-4o".to_string())
         .system_prompt(AMICO_SYSTEM_PROMPT.to_string())
         .temperature(0.2)
@@ -124,16 +124,16 @@ async fn main() {
         .tool(trade_effector.get().tool())
         .tool(a2a.send_message_tool())
         .tool(a2a.contact_list_tool())
-        .build::<InMemoryService<RigProvider>>();
+        .build::<ChatSession<RigProvider>>();
 
     println!();
     println!("Agent wallet addresses:");
     println!("{}", wallet.get().pubkey_list());
 
     println!();
-    println!("Tools enabled:\n{}", service.ctx.tools.describe());
+    println!("Tools enabled:\n{}", global_session.ctx.tools.describe());
 
-    let service_resource = service.into_resource_mut();
+    let service_resource = global_session.into_resource_mut();
 
     // Initialize ECS
     let mut agent = Agent::new(DispatchStrategy);
