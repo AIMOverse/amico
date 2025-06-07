@@ -13,13 +13,13 @@ fn debug_history(history: &[Message]) -> String {
     // Convert message to a prettier shorter string
     for m in history.iter() {
         match m {
-            Message::Assistant(text) => messages.push_str(&format!("a: {}\n", text)),
-            Message::User(text) => messages.push_str(&format!("u: {}\n", text)),
+            Message::Assistant(text) => messages.push_str(&format!("- a: {}\n", text)),
+            Message::User(text) => messages.push_str(&format!("- u: {}\n", text)),
             Message::ToolCall(name, id, params) => {
-                messages.push_str(&format!("tc: {}[{}] ({})\n", name, id, params))
+                messages.push_str(&format!("- tc: {}[{}] ({})\n", name, id, params))
             }
             Message::ToolResult(name, id, params) => {
-                messages.push_str(&format!("tr: {}[{}] => {}\n", name, id, params))
+                messages.push_str(&format!("- tr: {}[{}] => {}\n", name, id, params))
             }
         }
     }
@@ -27,8 +27,12 @@ fn debug_history(history: &[Message]) -> String {
     messages
 }
 
+/// The standard implementation of a chat session.
+///
+/// This session manages chat history in a `Vec<Message>`, and executes tool call
+/// functions.
 #[derive(Debug)]
-pub struct InMemoryService<M: Model + Send> {
+pub struct ChatSession<M: Model + Send> {
     /// The context config for the service
     pub ctx: SessionContext<M>,
 
@@ -36,12 +40,19 @@ pub struct InMemoryService<M: Model + Send> {
     pub history: Vec<Message>,
 }
 
-impl<M: Model + Send> Session for InMemoryService<M> {
+impl<M: Model + Send> ChatSession<M> {
+    /// Create a new in-memory session from an existing history of messages.
+    pub fn from_history(ctx: SessionContext<M>, history: Vec<Message>) -> Self {
+        Self { ctx, history }
+    }
+}
+
+impl<M: Model + Send> Session for ChatSession<M> {
     type Model = M;
 
-    fn from_ctx(context: SessionContext<M>) -> Self {
+    fn from_ctx(ctx: SessionContext<M>) -> Self {
         Self {
-            ctx: context,
+            ctx,
             history: Vec::new(),
         }
     }
@@ -123,8 +134,8 @@ impl<M: Model + Send> Session for InMemoryService<M> {
     }
 }
 
-impl<M: Model + Send> IntoResourceMut<InMemoryService<M>> for InMemoryService<M> {
-    fn into_resource_mut(self) -> ResourceMut<InMemoryService<M>> {
-        ResourceMut::new("InMemoryService", self)
+impl<M: Model + Send> IntoResourceMut<ChatSession<M>> for ChatSession<M> {
+    fn into_resource_mut(self) -> ResourceMut<ChatSession<M>> {
+        ResourceMut::new("chat-session", self)
     }
 }
