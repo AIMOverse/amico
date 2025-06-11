@@ -32,12 +32,12 @@ use super::{Control, Interaction};
 /// ## Create an event with instruction
 ///
 /// ```
-/// use amico_core::types::{AgentEvent, Instruction, EventContent};
+/// use amico_core::types::{AgentEvent, Control, EventContent};
 ///
 /// let event = AgentEvent::new("test", "TestSource")
-///     .instruction(Instruction::Terminate);
+///     .control(Control::Quit);
 ///
-/// assert_eq!(event.content, Some(EventContent::Instruction(Instruction::Terminate)));
+/// assert_eq!(event.content, Some(EventContent::Control(Control::Quit)));
 /// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AgentEvent {
