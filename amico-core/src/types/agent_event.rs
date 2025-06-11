@@ -6,7 +6,7 @@ use serde_json::Value;
 
 use crate::errors::AgentEventError;
 
-use super::Instruction;
+use super::{Control, Interaction};
 
 /// Struct representing an event the agent receives.
 ///
@@ -62,8 +62,14 @@ pub struct AgentEvent {
 /// Either some content value, or an instruction for the agent.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum EventContent {
+    /// The serialized content data of the event.
     Content(Value),
-    Instruction(Instruction),
+
+    /// A control instruction to the agent.
+    Control(Control),
+
+    /// An interaction with the agent.
+    Interaction(Interaction),
 }
 
 impl AgentEvent {
@@ -155,9 +161,9 @@ impl AgentEvent {
     ///
     /// assert_eq!(event.content, Some(EventContent::Instruction(Instruction::Terminate)));
     /// ```
-    pub fn instruction(self, instruction: Instruction) -> Self {
+    pub fn instruction(self, instruction: Control) -> Self {
         Self {
-            content: Some(EventContent::Instruction(instruction)),
+            content: Some(EventContent::Control(instruction)),
             ..self
         }
     }
