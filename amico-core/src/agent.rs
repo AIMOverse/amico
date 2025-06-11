@@ -117,8 +117,8 @@ impl<S: Strategy> Agent<S> {
                     }
 
                     // Send a termination instruction to signal the main loop to exit
-                    let terminate_event = AgentEvent::new("Terminate", "spawn_event_source")
-                        .instruction(Control::Quit);
+                    let terminate_event =
+                        AgentEvent::new("Terminate", "spawn_event_source").control(Control::Quit);
 
                     // Try to send the termination event, but don't panic if it fails
                     // (channel might already be closed)
