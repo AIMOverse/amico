@@ -1,5 +1,7 @@
 mod agent_event;
-mod instruction;
+mod control;
+mod interaction;
 
 pub use agent_event::*;
-pub use instruction::*;
+pub use control::*;
+pub use interaction::*;

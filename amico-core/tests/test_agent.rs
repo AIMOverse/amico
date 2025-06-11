@@ -21,7 +21,7 @@ impl EventSource for TestEventSource {
     fn spawn<F, Fut>(&self, on_event: F) -> JoinHandle<anyhow::Result<()>>
     where
         F: Fn(AgentEvent) -> Fut + Send + Sync + 'static,
-        Fut: Future<Output = ()> + Send + 'static,
+        Fut: Future<Output = Option<String>> + Send + 'static,
     {
         tokio::spawn(async move {
             for i in 1..10 {
@@ -50,13 +50,13 @@ impl Strategy for TestStrategy {
         &mut self,
         agent_event: &AgentEvent,
         mut sender: amico_core::world::ActionSender<'_>,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<Option<String>> {
         let EventInner { value, .. } = agent_event.parse_content::<EventInner>()?;
         sleep(Duration::from_millis(80)).await;
 
         sender.send(Tick(value));
 
-        Ok(())
+        Ok(None)
     }
 }
 
@@ -75,7 +75,7 @@ impl System for TestSystem {
 
 #[tokio::test]
 async fn test_agent() {
-    tracing_subscriber::fmt::init();
+    // tracing_subscriber::fmt::init();
 
     let mut agent = Agent::new(TestStrategy);
     agent.spawn_event_source(TestEventSource, OnFinish::Stop);

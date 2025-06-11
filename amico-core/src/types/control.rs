@@ -1,10 +1,10 @@
 use serde::{Deserialize, Serialize};
 
-/// An instruction to the Agent, e.g. quit.
+/// A control instruction to the Agent, e.g. quit.
 ///
 /// TODO: Define more instructions.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub enum Instruction {
-    /// Signal to terminate the agent event loop
-    Terminate,
+pub enum Control {
+    /// Signal to quit the agent event loop
+    Quit,
 }

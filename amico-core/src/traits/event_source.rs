@@ -12,5 +12,5 @@ pub trait EventSource {
     fn spawn<F, Fut>(&self, on_event: F) -> JoinHandle<anyhow::Result<()>>
     where
         F: Fn(AgentEvent) -> Fut + Send + Sync + 'static,
-        Fut: Future<Output = ()> + Send + 'static;
+        Fut: Future<Output = Option<String>> + Send + 'static;
 }

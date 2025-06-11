@@ -6,7 +6,7 @@ use serde_json::Value;
 
 use crate::errors::AgentEventError;
 
-use super::Instruction;
+use super::{Control, Interaction};
 
 /// Struct representing an event the agent receives.
 ///
@@ -32,12 +32,12 @@ use super::Instruction;
 /// ## Create an event with instruction
 ///
 /// ```
-/// use amico_core::types::{AgentEvent, Instruction, EventContent};
+/// use amico_core::types::{AgentEvent, Control, EventContent};
 ///
 /// let event = AgentEvent::new("test", "TestSource")
-///     .instruction(Instruction::Terminate);
+///     .control(Control::Quit);
 ///
-/// assert_eq!(event.content, Some(EventContent::Instruction(Instruction::Terminate)));
+/// assert_eq!(event.content, Some(EventContent::Control(Control::Quit)));
 /// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AgentEvent {
@@ -62,8 +62,14 @@ pub struct AgentEvent {
 /// Either some content value, or an instruction for the agent.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum EventContent {
+    /// The serialized content data of the event.
     Content(Value),
-    Instruction(Instruction),
+
+    /// A control instruction to the agent.
+    Control(Control),
+
+    /// An interaction with the agent.
+    Interaction(Interaction),
 }
 
 impl AgentEvent {
@@ -141,23 +147,23 @@ impl AgentEvent {
         }
     }
 
-    /// Adds an instruction to the event.
+    /// Adds a control instruction to the event.
     ///
-    /// Setting `instruction` will override any existing instruction or content.
+    /// Setting `control` will override any existing control or content.
     ///
     /// # Examples
     ///
     /// ```
-    /// use amico_core::types::{AgentEvent, Instruction, EventContent};
+    /// use amico_core::types::{AgentEvent, Control, EventContent};
     ///
     /// let event = AgentEvent::new("test", "TestSource")
-    ///     .instruction(Instruction::Terminate);
+    ///     .control(Control::Quit);
     ///
-    /// assert_eq!(event.content, Some(EventContent::Instruction(Instruction::Terminate)));
+    /// assert_eq!(event.content, Some(EventContent::Control(Control::Quit)));
     /// ```
-    pub fn instruction(self, instruction: Instruction) -> Self {
+    pub fn control(self, instruction: Control) -> Self {
         Self {
-            content: Some(EventContent::Instruction(instruction)),
+            content: Some(EventContent::Control(instruction)),
             ..self
         }
     }
@@ -240,6 +246,55 @@ impl AgentEvent {
                 "Content is an AgentInstruction",
             )),
             None => Err(AgentEventError::ContentError("Content is None")),
+        }
+    }
+
+    /// Adds an interaction to the event.
+    ///
+    /// Setting `interaction` will override any existing interaction, control, or content.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use amico_core::types::{AgentEvent, Interaction, Chat, EventContent};
+    ///
+    /// let event = AgentEvent::new("test", "TestSource")
+    ///     .interaction(Chat::new().into_interaction());
+    ///
+    /// assert_eq!(event.content, Some(EventContent::Interaction(Chat::new().into_interaction())));
+    /// ```
+    pub fn interaction(self, interaction: Interaction) -> Self {
+        Self {
+            content: Some(EventContent::Interaction(interaction)),
+            ..self
+        }
+    }
+
+    /// Gets the interaction from the event. Returns `None` if the event does not contain an interaction.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use amico_core::types::{AgentEvent, Interaction, Chat, EventContent, Control};
+    ///
+    /// let event = AgentEvent::new("test", "TestSource")
+    ///     .interaction(Chat::new().into_interaction());
+    ///
+    /// let interaction = event.get_interaction();
+    ///
+    /// assert_eq!(interaction, Some(&Chat::new().into_interaction()));
+    ///
+    /// let event = AgentEvent::new("test", "TestSource")
+    ///     .control(Control::Quit);
+    ///
+    /// let interaction = event.get_interaction();
+    ///
+    /// assert_eq!(interaction, None);
+    /// ```
+    pub fn get_interaction(&self) -> Option<&Interaction> {
+        match &self.content {
+            Some(EventContent::Interaction(interaction)) => Some(interaction),
+            _ => None,
         }
     }
 }

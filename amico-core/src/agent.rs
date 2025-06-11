@@ -3,7 +3,7 @@ use tokio_with_wasm::alias as tokio;
 
 use crate::{
     traits::{EventSource, Strategy, System},
-    types::{AgentEvent, EventContent, Instruction},
+    types::{AgentEvent, Control, EventContent},
     world::WorldManager,
 };
 
@@ -21,10 +21,10 @@ use crate::{
 /// - WASM: compatible.
 pub struct Agent<S: Strategy> {
     /// The mpsc channel sender to send agent events to event sources.
-    event_tx: Sender<AgentEvent>,
+    event_tx: Sender<EventWithTx>,
 
     /// The mpsc channel receiver to receive agent events from event sources.
-    event_rx: Receiver<AgentEvent>,
+    event_rx: Receiver<EventWithTx>,
 
     /// The ECS world manager.
     wm: WorldManager,
@@ -67,16 +67,40 @@ impl<S: Strategy> Agent<S> {
         // Spawn the thread.
         let jh = event_source.spawn(move |event| {
             tracing::debug!("On AgentEvent {:?}", event);
-            let tx = event_tx.clone();
+            let event_tx = event_tx.clone();
 
             async move {
                 let name = event.name;
 
-                if let Err(err) = tx.send(event).await {
+                // Create a new channel for the reply message.
+                let (tx, mut rx) = channel(1);
+
+                if let Err(err) = event_tx
+                    .send(EventWithTx {
+                        tx: Some(tx),
+                        event,
+                    })
+                    .await
+                {
                     tracing::warn!("Failed to send AgentEvent {}", err);
                 } else {
                     tracing::info!("Sent AgentEvent {}", name);
                 }
+
+                // Wait and return the reply message.
+                rx.recv()
+                    .await
+                    .inspect(|reply| {
+                        if let Some(reply) = reply {
+                            tracing::debug!("Received reply message: {:?}", reply);
+                        } else {
+                            tracing::debug!("Received no reply message");
+                        }
+                    })
+                    .unwrap_or_else(|| {
+                        tracing::error!("Failed to receive reply message: channel closed");
+                        None
+                    })
             }
         });
 
@@ -93,12 +117,18 @@ impl<S: Strategy> Agent<S> {
                     }
 
                     // Send a termination instruction to signal the main loop to exit
-                    let terminate_event = AgentEvent::new("Terminate", "spawn_event_source")
-                        .instruction(Instruction::Terminate);
+                    let terminate_event =
+                        AgentEvent::new("Terminate", "spawn_event_source").control(Control::Quit);
 
                     // Try to send the termination event, but don't panic if it fails
                     // (channel might already be closed)
-                    if let Err(err) = event_tx.send(terminate_event).await {
+                    if let Err(err) = event_tx
+                        .send(EventWithTx {
+                            tx: None,
+                            event: terminate_event,
+                        })
+                        .await
+                    {
                         tracing::warn!("Failed to send termination event: {}", err);
                     }
                 });
@@ -117,28 +147,38 @@ impl<S: Strategy> Agent<S> {
     /// `run` dispatches `AgentEvent`s into the ECS `World` based on the Agent's strategy.
     pub async fn run(&mut self) {
         // Listen for events sent by event sources.
-        while let Some(event) = self.event_rx.recv().await {
+        while let Some(event_with_tx) = self.event_rx.recv().await {
+            let EventWithTx { tx, event } = event_with_tx;
             tracing::debug!("Received AgentEvent {:?}", event);
 
-            if let Some(EventContent::Instruction(instruction)) = event.content {
-                // Received an instruction
-                tracing::debug!("Received instruction {:?}", instruction);
-                match instruction {
+            if let Some(EventContent::Control(control)) = event.content {
+                // Received a control instruction
+                tracing::debug!("Received control instruction {:?}", control);
+                match control {
                     // TODO: process other instructions
-                    Instruction::Terminate => {
-                        tracing::info!("Terminating event loop due to Terminate instruction");
+                    Control::Quit => {
+                        tracing::info!("Terminating event loop due to Quit control instruction");
                         break; // Exit the event loop immediately
                     }
                 }
             } else {
                 // The event is not an instruction, dispatch the event to the `World`.
-                tracing::debug!("Dispatching event {:?}", event);
-                if let Err(err) = self
+                tracing::debug!("Processing event {:?}", event);
+                let reply = self
                     .strategy
                     .deliberate(&event, self.wm.action_sender())
                     .await
-                {
-                    tracing::error!("Error dispatching event {:?}: {}", event, err);
+                    .unwrap_or_else(|err| {
+                        // Report the error and return `None` to indicate no reply.
+                        tracing::error!("Error processing event {:?}: {}", event, err);
+                        None
+                    });
+
+                // Send the reply message back to the event source if needed.
+                if let Some(tx) = tx {
+                    if let Err(err) = tx.send(reply).await {
+                        tracing::error!("Failed to send reply message: {}", err);
+                    }
                 }
             }
         }
@@ -154,4 +194,10 @@ pub enum OnFinish {
 
     // Stop the Agent workflow when the thread finishes.
     Stop,
+}
+
+/// A struct for the reply message to send back to the event source.
+struct EventWithTx {
+    tx: Option<Sender<Option<String>>>,
+    event: AgentEvent,
 }
