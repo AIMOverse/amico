@@ -119,7 +119,7 @@ Amico is released under the [MIT License](https://github.com/AIMOverse/amico/blo
 ### Images
 
 All images under `images/` are licensed under a
-[Creative Commons Attribution-ShareAlike 4.0 International License][cc-by].
+[Creative Commons Attribution 4.0 International License][cc-by].
 
 See [LICENSE-CC-BY](https://github.com/AIMOverse/amico/blob/main/LICENSE-CC-BY)
 
