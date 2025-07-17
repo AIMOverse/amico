@@ -1,7 +1,8 @@
 use std::{future::Future, time::Duration};
 
 use amico_core::{
-    Agent, OnFinish, ecs,
+    Agent, OnFinish,
+    events::GlobalEvent,
     traits::{EventSource, Strategy, System},
     types::{AgentEvent, Chat, Interaction},
 };
@@ -46,7 +47,7 @@ impl Strategy for InteractionStrategy {
 
         match interaction {
             Interaction::Chat(chat) => {
-                sender.send(Log(format!("Received chat interaction: {:?}", chat)));
+                let _ = sender.send(Log(format!("Received chat interaction: {:?}", chat)));
 
                 // Simulate an asynchronous reply generation process.
                 sleep(Duration::from_millis(80)).await;
@@ -58,13 +59,16 @@ impl Strategy for InteractionStrategy {
 
 struct LogSystem;
 
-#[derive(amico_core::ecs::GlobalEvent)]
+#[derive(Debug, Clone)]
 struct Log(String);
+
+impl GlobalEvent for Log {}
 
 impl System for LogSystem {
     fn register_to(self, mut registry: amico_core::world::HandlerRegistry) {
-        registry.register(|r: ecs::Receiver<Log>| {
-            println!("log: {}", r.event.0);
+        registry.register::<Log, _>(|event: &Log| {
+            println!("log: {}", event.0);
+            Ok(())
         });
     }
 }

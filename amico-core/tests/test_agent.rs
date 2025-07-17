@@ -1,7 +1,8 @@
 use std::{future::Future, time::Duration};
 
 use amico_core::{
-    Agent, OnFinish, ecs,
+    Agent, OnFinish,
+    events::GlobalEvent,
     traits::{EventSource, Strategy, System},
     types::AgentEvent,
 };
@@ -54,7 +55,7 @@ impl Strategy for TestStrategy {
         let EventInner { value, .. } = agent_event.parse_content::<EventInner>()?;
         sleep(Duration::from_millis(80)).await;
 
-        sender.send(Tick(value));
+        let _ = sender.send(Tick(value));
 
         Ok(None)
     }
@@ -62,13 +63,16 @@ impl Strategy for TestStrategy {
 
 struct TestSystem;
 
-#[derive(amico_core::ecs::GlobalEvent)]
+#[derive(Debug, Clone)]
 struct Tick(pub i32);
+
+impl GlobalEvent for Tick {}
 
 impl System for TestSystem {
     fn register_to(self, mut registry: amico_core::world::HandlerRegistry) {
-        registry.register(|r: ecs::Receiver<Tick>| {
-            println!("Received Tick event seq. {}", r.event.0);
+        registry.register::<Tick, _>(|event: &Tick| {
+            println!("Received Tick event seq. {}", event.0);
+            Ok(())
         });
     }
 }

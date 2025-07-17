@@ -1074,7 +1074,7 @@ dependencies = [
  "serde_json",
  "thiserror 2.0.12",
  "tokio",
- "tokio_with_wasm",
+ "tokio_with_wasm 0.8.5",
  "tracing",
 ]
 
@@ -1084,12 +1084,11 @@ version = "1.1.0"
 dependencies = [
  "anyhow",
  "chrono",
- "evenio",
  "serde",
  "serde_json",
  "thiserror 2.0.12",
  "tokio",
- "tokio_with_wasm",
+ "tokio_with_wasm 0.7.5",
  "tracing",
  "tracing-subscriber",
 ]
@@ -1167,7 +1166,7 @@ dependencies = [
  "solana-sdk",
  "thiserror 2.0.12",
  "tokio",
- "tokio_with_wasm",
+ "tokio_with_wasm 0.7.5",
 ]
 
 [[package]]
@@ -1185,7 +1184,7 @@ dependencies = [
  "serde_json",
  "thiserror 2.0.12",
  "tokio",
- "tokio_with_wasm",
+ "tokio_with_wasm 0.8.5",
 ]
 
 [[package]]
@@ -1200,7 +1199,7 @@ dependencies = [
  "getrandom 0.2.15",
  "serde",
  "tokio",
- "tokio_with_wasm",
+ "tokio_with_wasm 0.7.5",
  "tracing",
  "tracing-subscriber",
  "tracing-subscriber-wasm",
@@ -8981,16 +8980,40 @@ dependencies = [
 
 [[package]]
 name = "tokio_with_wasm"
+version = "0.7.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "517cb552d50351e6f53d2d93d237d37e50e8506fb05df89278b0b87259a947c2"
+dependencies = [
+ "js-sys",
+ "tokio",
+ "tokio_with_wasm_proc 0.7.5",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
+]
+
+[[package]]
+name = "tokio_with_wasm"
 version = "0.8.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ed200846e8d48af28bd5724098dde6986c4a9f5136eb8e07477a078f054053cf"
 dependencies = [
  "js-sys",
  "tokio",
- "tokio_with_wasm_proc",
+ "tokio_with_wasm_proc 0.8.5",
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",
+]
+
+[[package]]
+name = "tokio_with_wasm_proc"
+version = "0.7.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "67e0f9c30f96a774e47c489d69f0f0504a347e0ef224a7261951796636708af7"
+dependencies = [
+ "quote",
+ "syn 2.0.101",
 ]
 
 [[package]]

@@ -1,37 +1,37 @@
-use crate::{ecs, traits::System};
+use crate::{events::EventBus, traits::System};
 
 use super::{ActionSender, HandlerRegistry};
 
-/// The ECS World manager.
+/// The Event World manager.
 ///
-/// This type defines how to build the ECS `World` for our
+/// This type defines how to build the Event `World` for our
 /// framework to use.
 #[derive(Debug)]
 pub struct WorldManager {
-    world: ecs::World,
+    event_bus: EventBus,
 }
 
 impl WorldManager {
-    /// Creates a `World` and spawn all the entities.
+    /// Creates an `EventBus` and spawn all the entities.
     pub fn new() -> Self {
-        let world = ecs::World::new();
+        let event_bus = EventBus::new();
 
         // TODO: Spawn all the entities. (in the future)
 
-        Self { world }
+        Self { event_bus }
     }
 
     /// Register a `System` to the world.
     pub fn add_system<S: System>(&mut self, system: S) {
         system.register_to(HandlerRegistry {
-            world: &mut self.world,
+            event_bus: &mut self.event_bus,
         });
     }
 
     /// Gets the action sender.
     pub(crate) fn action_sender(&mut self) -> ActionSender {
         ActionSender {
-            world: &mut self.world,
+            event_bus: &mut self.event_bus,
         }
     }
 }

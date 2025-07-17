@@ -1,3 +1,4 @@
+use core::future::Future;
 use crate::{types::AgentEvent, world::ActionSender};
 
 /// The Agent's action selection strategy.

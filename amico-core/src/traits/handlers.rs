@@ -1,7 +1,6 @@
 use anyhow::Result;
-use evenio::event::EventMut;
 
-use crate::ecs;
+use crate::events::{GlobalEvent, EventSet, EventSender};
 
 use super::System;
 
@@ -11,12 +10,12 @@ use super::System;
 /// modifying the event and affecting the state of the world.
 pub trait Observer {
     /// The event type that the Observer observes.
-    type Event: ecs::GlobalEvent + 'static;
+    type Event: GlobalEvent + 'static;
 
     /// The observe method is called when the Observer is notified of an event.
     ///
     /// The method receives a reference to the event and returns a Result.
-    fn observe(&self, event: &<Self::Event as ecs::Event>::This<'_>) -> Result<()>;
+    fn observe(&self, event: &Self::Event) -> Result<()>;
 
     /// Converts the Observer into a SystemHandler.
     fn to_system(self) -> SystemHandler<Self, PhantomMediator>
@@ -35,19 +34,19 @@ pub trait Observer {
 /// After processing, Mediators may send new events to the world.
 pub trait Mediator {
     /// The event type that the Mediator mediates.
-    type Event: ecs::GlobalEvent + ecs::Event<Mutability = ecs::Mutable>;
+    type Event: GlobalEvent + 'static;
 
     /// The event type that the Mediator sends.
-    type EventsToSend: ecs::EventSet;
+    type EventsToSend: EventSet;
 
     /// The mediate method is called when the Mediator is notified of an event.
     ///
-    /// The method receives a mutable reference to the event and a sender to send
+    /// The method receives the event and a sender to send
     /// new events to the world.
     fn mediate(
         &self,
-        event: &mut EventMut<'_, Self::Event>,
-        sender: ecs::Sender<Self::EventsToSend>,
+        event: Self::Event,
+        sender: &mut dyn EventSender,
     ) -> Result<()>;
 
     /// Converts the Mediator into a SystemHandler.
@@ -60,8 +59,10 @@ pub trait Mediator {
 }
 
 /// The placeholder event for the observer and mediator to use in SystemHandler.
-#[derive(ecs::GlobalEvent)]
+#[derive(Debug, Clone)]
 pub struct PhantomEvent;
+
+impl GlobalEvent for PhantomEvent {}
 
 /// The placeholder observer for SystemHandler.
 pub struct PhantomObserver;
@@ -72,7 +73,7 @@ pub struct PhantomMediator;
 impl Observer for PhantomObserver {
     type Event = PhantomEvent;
 
-    fn observe(&self, _event: &<Self::Event as ecs::Event>::This<'_>) -> Result<()> {
+    fn observe(&self, _event: &Self::Event) -> Result<()> {
         Ok(())
     }
 }
@@ -83,8 +84,8 @@ impl Mediator for PhantomMediator {
 
     fn mediate(
         &self,
-        _event: &mut EventMut<'_, Self::Event>,
-        _sender: ecs::Sender<Self::EventsToSend>,
+        _event: Self::Event,
+        _sender: &mut dyn EventSender,
     ) -> Result<()> {
         Ok(())
     }
@@ -104,28 +105,26 @@ pub enum SystemHandler<
 
 impl<O, M> System for SystemHandler<O, M>
 where
-    O: Observer + 'static,
-    M: Mediator + 'static,
+    O: Observer + Send + Sync + 'static,
+    M: Mediator + Send + Sync + 'static,
 {
     fn register_to(self, mut registry: crate::world::HandlerRegistry) {
         match self {
             SystemHandler::Observer(observer) => {
-                registry.register(move |r: ecs::Receiver<O::Event>| {
-                    if let Err(err) = observer.observe(r.event) {
+                registry.register::<O::Event, _>(move |event: &O::Event| {
+                    if let Err(err) = observer.observe(event) {
                         tracing::error!("Error in observer: {}", err);
                     }
+                    Ok(())
                 })
             }
             SystemHandler::Mediator(mediator) => {
-                registry.register(
-                    move |mut r: ecs::ReceiverMut<M::Event>,
-                          sender: ecs::Sender<M::EventsToSend>| {
-                        if let Err(err) = mediator.mediate(&mut r.event, sender) {
+                registry.register_mediator::<M::Event, M::EventsToSend, _>(
+                    move |event: M::Event, sender: &mut dyn EventSender| {
+                        if let Err(err) = mediator.mediate(event, sender) {
                             tracing::error!("Error in mediator: {}", err);
                         }
-
-                        // Take ownership of the event after handling it.
-                        EventMut::take(r.event);
+                        Ok(())
                     },
                 )
             }
@@ -135,24 +134,27 @@ where
 
 #[cfg(test)]
 mod tests {
-    use evenio::prelude::*;
-
     use crate::world::HandlerRegistry;
+    use crate::events::EventBus;
 
     use super::*;
 
-    #[derive(ecs::GlobalEvent)]
+    #[derive(Debug, Clone)]
     struct TestEvent(i32);
 
-    #[derive(ecs::GlobalEvent)]
+    impl GlobalEvent for TestEvent {}
+
+    #[derive(Debug, Clone)]
     struct TestEvent2(i32);
+
+    impl GlobalEvent for TestEvent2 {}
 
     struct TestObserver;
 
     impl Observer for TestObserver {
         type Event = TestEvent;
 
-        fn observe(&self, event: &<Self::Event as ecs::Event>::This<'_>) -> Result<()> {
+        fn observe(&self, event: &Self::Event) -> Result<()> {
             let TestEvent(_) = event;
             Ok(())
         }
@@ -166,12 +168,12 @@ mod tests {
 
         fn mediate(
             &self,
-            event: &mut EventMut<'_, Self::Event>,
-            mut sender: ecs::Sender<Self::EventsToSend>,
+            event: Self::Event,
+            sender: &mut dyn EventSender,
         ) -> Result<()> {
             let num = event.0;
 
-            sender.send(TestEvent2(num * 2));
+            sender.send_global(Box::new(TestEvent2(num * 2)));
 
             Ok(())
         }
@@ -179,28 +181,30 @@ mod tests {
 
     #[test]
     fn test_mediator() {
-        // Initialize world.
-        let mut world = World::new();
+        // Initialize event bus.
+        let mut event_bus = EventBus::new();
         let mediator = TestMediator;
         let observer = TestObserver;
 
-        // Register handlers to World.
-        world.add_handler(|r: ecs::Receiver<TestEvent>| {
-            assert_eq!(r.event.0, 1);
+        // Register handlers to EventBus.
+        event_bus.add_handler(|event: &TestEvent| {
+            assert_eq!(event.0, 1);
+            Ok(())
         });
-        world.add_handler(|r: ecs::Receiver<TestEvent2>| {
-            assert_eq!(r.event.0, 2);
+        event_bus.add_handler(|event: &TestEvent2| {
+            assert_eq!(event.0, 2);
+            Ok(())
         });
 
         mediator
             .to_system()
-            .register_to(HandlerRegistry { world: &mut world });
+            .register_to(HandlerRegistry { event_bus: &mut event_bus });
 
         observer
             .to_system()
-            .register_to(HandlerRegistry { world: &mut world });
+            .register_to(HandlerRegistry { event_bus: &mut event_bus });
 
-        // Send event to World.
-        world.send(TestEvent(1));
+        // Send event to EventBus.
+        let _ = event_bus.send(TestEvent(1));
     }
 }

@@ -1,7 +1,7 @@
 [package]
 name = "amico-sdk"
 version = "1.0.0"
-edition = "2024"
+edition = "2021"
 description = "Amico AI Agent Framework core features SDK"
 repository = "https://github.com/AIMOverse/amico"
 license = "MIT OR Apache-2.0"

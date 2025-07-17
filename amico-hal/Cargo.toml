@@ -1,7 +1,7 @@
 [package]
 name = "amico-hal"
 version = "0.0.2"
-edition = "2024"
+edition = "2021"
 description = "The HAL of the Amico AI Agent Framework"
 repository = "https://github.com/AIMOverse/amico"
 license = "MIT OR Apache-2.0"
