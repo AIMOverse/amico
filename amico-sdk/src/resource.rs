@@ -1,8 +1,6 @@
 use std::sync::Arc;
 
 use tokio::sync::{Mutex, MutexGuard};
-
-#[cfg(feature = "wasm")]
 use tokio_with_wasm::alias as tokio;
 
 /// `Resource<T>` represents a globally available resource instance that can be shared among agents.
