@@ -1,4 +1,6 @@
 use tokio::task::JoinHandle;
+
+#[cfg(feature = "wasm")]
 use tokio_with_wasm::alias as tokio;
 
 use crate::types::AgentEvent;

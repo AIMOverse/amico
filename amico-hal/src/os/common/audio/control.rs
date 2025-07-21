@@ -77,7 +77,7 @@ pub enum AudioRecordingError {
 // We'll record to a temporary WAV file and then convert it to MP3 after recording
 pub async fn record_blocking(filepath: &str) -> Result<(), AudioRecordingError> {
     // Create a temporary WAV file path
-    let temp_wav_path = format!("{}.temp.wav", filepath);
+    let temp_wav_path = format!("{filepath}.temp.wav");
 
     // Record to the temporary WAV file
     record_to_wav(&temp_wav_path)?;
@@ -113,7 +113,7 @@ fn record_to_wav(filepath: &str) -> Result<(), AudioRecordingError> {
     let samples = Arc::new(Mutex::new(Vec::<f32>::new()));
     let samples_clone = Arc::clone(&samples);
 
-    let err_fn = |err| eprintln!("Stream error: {}", err);
+    let err_fn = |err| eprintln!("Stream error: {err}");
 
     let stream = device
         .build_input_stream(
