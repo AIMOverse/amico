@@ -6,6 +6,9 @@ description = "The core Agent components of the Amico AI Agent Framework"
 repository = "https://github.com/AIMOverse/amico"
 license = "MIT OR Apache-2.0"
 
+[features]
+wasm = ["tokio_with_wasm"]
+
 [dependencies]
 serde = { workspace = true, features = ["derive"] }
 thiserror = { workspace = true }
@@ -17,7 +20,7 @@ evenio = { workspace = true }
 
 # Check: For WASM support, only `sync`, `macros`, `io-util`, `rt` and `time` features are supported
 tokio = { workspace = true, features = ["rt", "sync"] }
-tokio_with_wasm = { workspace = true, features = ["rt", "sync"] }
+tokio_with_wasm = { workspace = true, features = ["rt", "sync"], optional = true }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["rt", "sync", "macros", "time"] }

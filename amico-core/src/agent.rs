@@ -1,4 +1,6 @@
 use tokio::sync::mpsc::{Receiver, Sender, channel};
+
+#[cfg(feature = "wasm")]
 use tokio_with_wasm::alias as tokio;
 
 use crate::{

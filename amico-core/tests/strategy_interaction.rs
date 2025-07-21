@@ -6,6 +6,8 @@ use amico_core::{
     types::{AgentEvent, Chat, Interaction},
 };
 use tokio::{task::JoinHandle, time::sleep};
+
+#[cfg(feature = "wasm")]
 use tokio_with_wasm::alias as tokio;
 
 struct InteractionSource;
