@@ -1,6 +1,6 @@
 [package]
 name = "amico-core"
-version = "1.1.0"
+version = "1.2.0"
 edition = "2024"
 description = "The core Agent components of the Amico AI Agent Framework"
 repository = "https://github.com/AIMOverse/amico"
