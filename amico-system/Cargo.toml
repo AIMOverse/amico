@@ -1,0 +1,14 @@
+[package]
+name = "amico-system"
+version = "2.0.0"
+edition = "2021"
+description = "System layer for tools and side-effects in Amico V2"
+repository = "https://github.com/AIMOverse/amico"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+# Core async runtime
+futures = "0.3"
+
+[dev-dependencies]
+tokio = { version = "1.44", features = ["rt", "macros"] }

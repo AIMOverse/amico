@@ -1,6 +1,12 @@
-# Amico AI Agent Framework
+# Amico V2 AI Agent Framework
 
-Amico is a next-generation Autonomous AI Agent Framework designed for embedded AI devices and multi-agent systems.
+**⚠️ MAJOR VERSION UPDATE: This is a complete rewrite of Amico (V2)**
+
+Amico V2 is a platform-agnostic **runtime** for AI agents built in Rust. As a framework, it provides a platform for developers to develop their business logic - just like web frameworks like Axum or Rocket.
+
+## 📚 Documentation
+
+For detailed architecture design, see [ARCHITECTURE.md](./ARCHITECTURE.md).
 
 ## Links
 
@@ -9,107 +15,115 @@ Amico is a next-generation Autonomous AI Agent Framework designed for embedded A
 [![Paper](https://img.shields.io/badge/Paper-arXiv-red?style=for-the-badge&logo=arxiv)](http://arxiv.org/abs/2507.14513)
 [![Discord](https://img.shields.io/badge/Discord-Join%20Community-7289da?style=for-the-badge&logo=discord)](https://discord.gg/MkeG9Zwuaw)
 
-## 🚧 Stability Notice: Early Development Phase
+## 🚀 What's New in V2
 
-This project is currently in its early development stage. While we are excited to share our progress, please be aware of the following:
+Amico V2 is a **complete redesign** from the ground up, incorporating modern AI agent framework patterns and best practices:
 
-1. **Sparse Documentation**: Our documentation is currently limited and may not cover all aspects of the framework. We are actively working to improve it.
-2. **Frequent Breaking Changes**: The API and internal structures are subject to change as we iterate rapidly. Breaking changes may occur without notice.
-3. **Limited Test Coverage**: Our test suite is not yet comprehensive, which may lead to undetected bugs or regressions.
-
-We welcome contributions and feedback to help improve the project.
-
-## Modules
-
-1. **`amico`**: The main executable crate.
-2. **`amico-core`**: Interfaces and workflows for the Engine Layer.
-3. **`amico-sdk`**: Interfaces and workflows for the AI Agent and Interaction Layers.
-4. **`amico-mods`**: Pluggable implementation modules.
-5. **`amico-hal`**: Hardware Abstraction Layer.
-6. **`amico-wasm`**: WASM library for the Amico AI Agent Framework.
-
-## Development Plans
-
-- **Agent Networking**: Supports peer-to-peer networking using decentralized messaging networks.
-- **Agent NFT Integration**: Enables agents to be represented as NFTs on blockchains.
-- **Verifiable Memory Layer**: Enables agents to store memory locally with vector embeddings and verify their memory on blockchains.
+- **Platform-Agnostic Runtime**: Run on any platform - OS, browsers, mobile, embedded devices
+- **Model Abstraction Layer**: Provider-agnostic model interface inspired by Vercel's AI SDK
+- **Workflow Runtime**: Support for both long-lived and short-lived runtimes
+- **Zero-Cost Abstractions**: Uses traits and generics instead of dynamic dispatch
+- **Type-Safe**: Extensive compile-time verification
+- **Event-Driven Architecture**: Framework-like event handler interface
 
 ## Architecture Overview
 
+Amico V2 consists of four layers:
+
+```
+┌─────────────────────────────────────────┐
+│     Application / Event Handlers        │  ← Your business logic
+├─────────────────────────────────────────┤
+│     Workflows Layer (Presets)           │  ← Tool loop agents, ReAct, etc.
+├─────────────────────────────────────────┤
+│     Runtime Layer                        │  ← Workflow execution
+├─────────────────────────────────────────┤
+│     Models Layer                         │  ← Model abstractions
+├─────────────────────────────────────────┤
+│     System Layer                         │  ← Tools, side-effects, I/O
+└─────────────────────────────────────────┘
+```
+
 ### Core Concepts
 
-![Framework](https://raw.githubusercontent.com/AIMOverse/amico/refs/heads/main/images/framework-v2.png)
+1. **Models Layer** (`amico-models`): Abstracts AI models by capability (language, image, video, speech, embedding)
+2. **System Layer** (`amico-system`): Defines how agents interact with the world through tools and side-effects
+3. **Runtime Layer** (`amico-runtime`): Executes workflows on different runtime types (long-lived or short-lived)
+4. **Workflows Layer** (`amico-workflows`): Preset workflow patterns (tool loops, ReAct, chain-of-thought, etc.)
 
-#### Framework Layers
+## Design Principles
 
-- **Interaction Layer**: Manages communication between agents and the environment. This includes:
+- **Traits + Generics over Boxing**: Always use traits and generics for abstractions, avoid dynamic dispatch
+- **Compile-time Safety**: Extensive use of types to catch errors early
+- **Zero-cost Abstractions**: No runtime overhead from abstraction layers
+- **Lifetime-aware**: Explicit lifetime management instead of `Box` or `Arc`
+- **Async-native**: All async operations use `impl Future`, not `Pin<Box<dyn Future>>`
 
-  - **Sensors**: Acquire the current state of the environment.
-  - **Effectors**: Execute actions.
-  - The environment can be physical (real-world) or virtual (the Internet, blockchain, etc.).
-  - Hardware sensor and effector drivers are implemented in the `amico-firmware` crate.
-  - **Future Plans**: Decoupling into:
-    - **Environment Layer**: Passively receives/responds to environmental inputs.
-    - **Interaction Layer**: Actively handles actions and state changes from users and agents.
+## Modules
 
-- **Agent Layer**: Encapsulates core agent logic, including state management, decision-making, and action execution. Key components:
+1. **`amico`**: The main entry crate that ties everything together
+2. **`amico-models`**: Model abstractions categorized by capability
+3. **`amico-system`**: System layer for tools and side-effects
+4. **`amico-runtime`**: Runtime layer for executing workflows
+5. **`amico-workflows`**: Preset workflow patterns
 
-  - **LLM Providers** and **RAG Systems** implemented as plugins.
-  - **Task execution models** (see _Model-Based Agents_ below) implemented in `amico-std`, with plugin support for custom models.
+## Example Usage
 
-- **Engine Layer**: Handles task scheduling, event generation, and action selection. The default **Action Selector** is in `amico-std`, but custom implementations can be added via plugins.
+```rust
+use amico::{
+    EventHandler, EventRouter,
+    runtime::Runtime,
+    workflows::ToolLoopAgent,
+};
 
-#### Pluggable Modules
+// Define your event handler
+struct MyAgentHandler {
+    agent: ToolLoopAgent<MyModel, MyTools, MyContext>,
+}
 
-- **LLM Services**: Provides content generation, integrating LLM calls, RAG knowledge base, tool calling, etc.
-- **LLM Providers**: API integrations for services like OpenAI, DeepSeek, etc.
-- **Effectors**: Execute actions such as hardware control, transactions, content posting, and messaging.
-- **Sensors**: Capture environmental data, such as sensor readings and social media content.
-- **Hardware Abstraction**: Low-level interface for embedded device interaction.
+impl EventHandler<MessageEvent> for MyAgentHandler {
+    type Context = AgentContext;
+    type Response = MessageResponse;
+    type Error = HandlerError;
+    
+    async fn handle(&self, event: MessageEvent, context: &Self::Context)
+        -> Result<Self::Response, Self::Error>
+    {
+        let response = self.agent
+            .execute(context, event.content)
+            .await?;
+        Ok(MessageResponse::from(response))
+    }
+}
 
-#### Low-Level Plugins
+// Create runtime and register handlers
+async fn main() {
+    let runtime = create_runtime();
+    let mut router = EventRouter::new();
+    
+    // Register event handlers
+    router.register("message", MyAgentHandler::new());
+    router.register("timer", TimerHandler::new());
+    
+    // Start runtime
+    runtime.start().await.unwrap();
+}
+```
 
-- **RAG Systems**: Implements retrieval-augmented generation.
-- **Task Executors**: Provides task execution workflows (e.g., Model-Based Agents).
-- **Action Selectors**: Implements action selection algorithms.
-- **Event Generators**: Generates events based on the current environment state.
+## Migration from V1
 
-### Model-Based Agents: Basic Design
+**V1 is completely deprecated and not compatible with V2.**
 
-![Basic Design](https://raw.githubusercontent.com/AIMOverse/amico/refs/heads/main/images/model_based.png)
+V2 is a total rewrite that keeps some good concepts from V1 (event-based architecture, platform-agnostic design) while:
 
-- **State Representation**: The agent perceives and represents the current environment state.
-- **World Evolution**: Predicts the impact of actions.
-- **Condition-Action Rules**: Guides decision-making.
+- Removing all dynamic dispatch in favor of static generics
+- Clarifying separation between models, runtime, system, and workflows
+- Providing clearer abstractions inspired by modern frameworks like Vercel's AI SDK
+- Focusing on compile-time safety and zero-cost abstractions
 
-### Task Execution Workflow
+## 🚧 Development Status
 
-![Task Execution Workflow](https://raw.githubusercontent.com/AIMOverse/amico/refs/heads/main/images/task_exec.png)
-
-- **Event-Triggered Tasks**
-
-  - Tasks initiate based on events (e.g., timers, on-chain/off-chain signals, messages from other agents).
-  - Each event carries context, providing additional knowledge for decision-making.
-
-- **Knowledge Acquisition**
-
-  - The agent gathers information from its internal knowledge base and real-time data sources.
-  - Information is synthesized into a comprehensive report to support decision-making.
-
-- **Decision Making**
-
-  - The agent evaluates potential actions and selects the most informed response.
-  - Possible responses include executing a task, responding to a user, or both.
-  - In SWARM systems, agents may seek consensus before executing critical actions.
-
-- **Execution of Decision**
-
-  - Actions can range from executing transactions to posting content.
-  - If required, the agent communicates with other agents before execution.
-
-- **Agent Response**
-  - Provides human-readable feedback after execution.
-  - Responses may include tool calls for embedded devices (e.g., triggering a motor).
+**V2 is currently in design phase.** The architecture and traits are defined, but implementations are placeholders. We're building the conceptual framework first before implementing functionality.
 
 ## License
 
