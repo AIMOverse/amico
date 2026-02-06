@@ -16,13 +16,15 @@ This document describes the system architecture using functional design principl
 
 ## System Layers
 
-The Amico V2 architecture consists of four distinct layers:
+The Amico V2 architecture consists of five distinct layers:
 
 ```
 ┌─────────────────────────────────────────┐
 │     Application / Event Handlers        │  ← Developer code
 ├─────────────────────────────────────────┤
 │     Workflows Layer (Presets)           │  ← Tool loop agents, etc.
+├─────────────────────────────────────────┤
+│     Plugin Layer                         │  ← Extensible capabilities
 ├─────────────────────────────────────────┤
 │     Runtime Layer                        │  ← Workflow execution
 ├─────────────────────────────────────────┤
@@ -422,7 +424,150 @@ pub trait MultiAgentWorkflow {
 - **Multi-agent support**: Coordination patterns for multiple agents
 - **Reusable**: Built on generic traits, works with any model/tool implementations
 
-## 5. Application Layer (Event Handlers)
+## 5. Plugin Layer (`amico-plugin`)
+
+The plugin layer provides an extensibility mechanism that covers all aspects of the agent lifecycle. Plugins can provide tools, introduce event sources, intercept event handling, and hook into runtime startup/shutdown.
+
+### Functional Design
+
+```haskell
+-- Plugin lifecycle
+type Plugin config error = Build config -> Start -> Shutdown
+
+-- Plugin capabilities
+type ToolPlugin plugin tool = plugin -> [tool]
+type EventSourcePlugin plugin event = plugin -> Stream<event>
+type EventInterceptor plugin event = plugin -> BeforeHandle event -> AfterHandle event
+
+-- Plugin composition
+type PluginSet plugins = StartAll -> ShutdownAll
+
+-- Plugin-aware runtime
+type PluginRuntime runtime plugins = runtime + plugins
+```
+
+### Rust Trait Design
+
+```rust
+/// Core plugin trait - all plugins implement this
+pub trait Plugin {
+    type Config;
+    type Error;
+
+    fn name(&self) -> &str;
+    fn version(&self) -> &str;
+
+    /// Build the plugin from configuration
+    fn build(config: Self::Config) -> Result<Self, Self::Error>
+    where
+        Self: Sized;
+
+    /// Called when the runtime starts
+    fn on_start(&mut self) -> impl Future<Output = Result<(), Self::Error>> + Send;
+
+    /// Called when the runtime shuts down
+    fn on_shutdown(&mut self) -> impl Future<Output = Result<(), Self::Error>> + Send;
+}
+
+/// Plugin that provides tools to the agent
+pub trait ToolPlugin: Plugin {
+    type ProvidedTool: Tool;
+
+    fn provided_tools(&self) -> &[Self::ProvidedTool];
+}
+
+/// Plugin that provides event sources
+pub trait EventSourcePlugin: Plugin {
+    type ProvidedEvent: Event;
+    type EventStream: Stream<Item = Self::ProvidedEvent>;
+
+    fn subscribe(&self) -> Self::EventStream;
+}
+
+/// Plugin that intercepts events (middleware)
+pub trait EventInterceptor: Plugin {
+    type Event: Event;
+
+    fn before_handle(&self, event: &Self::Event)
+        -> impl Future<Output = Result<(), Self::Error>> + Send;
+    fn after_handle(&self, event: &Self::Event)
+        -> impl Future<Output = Result<(), Self::Error>> + Send;
+}
+
+/// Composable set of plugins
+pub trait PluginSet {
+    type Error;
+
+    fn start_all(&mut self) -> impl Future<Output = Result<(), Self::Error>> + Send;
+    fn shutdown_all(&mut self) -> impl Future<Output = Result<(), Self::Error>> + Send;
+}
+
+/// Runtime with plugin support
+pub trait PluginRuntime: Runtime {
+    type Plugins: PluginSet;
+
+    fn plugins(&self) -> &Self::Plugins;
+    fn plugins_mut(&mut self) -> &mut Self::Plugins;
+}
+```
+
+### Example: A2A Connector Plugin
+
+A plugin that connects to an agent-to-agent collaboration platform:
+
+```rust
+struct A2APlugin {
+    endpoint: String,
+    // ... connection state
+}
+
+impl Plugin for A2APlugin {
+    type Config = A2AConfig;
+    type Error = A2AError;
+
+    fn name(&self) -> &str { "a2a-connector" }
+    fn version(&self) -> &str { "1.0.0" }
+
+    fn build(config: A2AConfig) -> Result<Self, A2AError> {
+        Ok(Self { endpoint: config.endpoint })
+    }
+
+    async fn on_start(&mut self) -> Result<(), A2AError> {
+        // Connect to A2A platform
+        Ok(())
+    }
+
+    async fn on_shutdown(&mut self) -> Result<(), A2AError> {
+        // Disconnect from A2A platform
+        Ok(())
+    }
+}
+
+// The agent developer only handles A2A events:
+impl EventHandler<A2ARequestEvent> for MyHandler {
+    type Context = AgentContext;
+    type Response = A2AResponse;
+    type Error = HandlerError;
+
+    async fn handle(&self, event: A2ARequestEvent, ctx: &AgentContext)
+        -> Result<A2AResponse, HandlerError>
+    {
+        // Focus on business logic, not protocol details
+        let response = self.agent.execute(ctx, event.payload).await?;
+        Ok(A2AResponse::from(response))
+    }
+}
+```
+
+### Key Features
+
+- **Lifecycle-aware**: Plugins hook into startup, shutdown, and event processing phases
+- **Capability-based**: Plugins declare what they provide (tools, events, interceptors)
+- **Composable**: Multiple plugins compose via `PluginSet` with unified lifecycle
+- **Zero-cost**: Traits + generics, no dynamic dispatch overhead
+- **Separation of concerns**: Plugin authors handle infrastructure; agent developers handle business logic
+
+## 6. Application Layer (Event Handlers)
 
 The application layer is where developers write their business logic using event handlers - similar to REST endpoint handlers in web frameworks.
 
@@ -592,6 +737,12 @@ amico/
 │   │   ├── context.rs
 │   │   ├── scheduler.rs
 │   │   └── runtime.rs
+│   └── Cargo.toml
+│
+├── amico-plugin/          # Plugin architecture (extensibility)
+│   ├── src/
+│   │   ├── lib.rs
+│   │   └── ...
 │   └── Cargo.toml
 │
 ├── amico-workflows/       # Preset workflows (tool loop, ReAct, etc.)

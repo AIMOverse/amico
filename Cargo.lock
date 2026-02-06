@@ -22,6 +22,7 @@ name = "amico"
 version = "2.0.0"
 dependencies = [
  "amico-models",
+ "amico-plugin",
  "amico-runtime",
  "amico-system",
  "amico-workflows",
@@ -33,6 +34,16 @@ dependencies = [
 name = "amico-models"
 version = "2.0.0"
 dependencies = [
+ "futures",
+ "tokio",
+]
+
+[[package]]
+name = "amico-plugin"
+version = "2.0.0"
+dependencies = [
+ "amico-runtime",
+ "amico-system",
  "futures",
  "tokio",
 ]
