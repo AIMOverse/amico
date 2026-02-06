@@ -88,6 +88,22 @@ pub trait ToolPlugin: Plugin {
     fn provided_tools(&self) -> &[Self::ProvidedTool];
 }
 
+/// Plugin that provides a model service.
+///
+/// A `ModelPlugin` provides concrete model implementations (e.g. OpenAI,
+/// Anthropic, local models) as a plugin. The framework defines the unified
+/// model interface; plugins supply the actual implementations.
+///
+/// This follows the Vercel AI SDK pattern where model services live in
+/// separate packages, not in the framework itself.
+pub trait ModelPlugin: Plugin {
+    /// The model type provided by this plugin
+    type ProvidedModel: amico_models::Model;
+
+    /// Returns a reference to the model provided by this plugin
+    fn provided_model(&self) -> &Self::ProvidedModel;
+}
+
 /// A composable set of plugins with unified lifecycle management.
 ///
 /// `PluginSet` allows multiple plugins to be composed and their lifecycles

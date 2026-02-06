@@ -6,18 +6,9 @@ description = "Model abstractions for the Amico V2 AI Agent Framework"
 repository = "https://github.com/AIMOverse/amico"
 license = "MIT OR Apache-2.0"
 
-[features]
-default = []
-openai = ["reqwest", "serde", "serde_json"]
-
 [dependencies]
 # Core async runtime
 futures = "0.3"
-
-# Optional: OpenAI-compatible model support
-reqwest = { version = "0.12", features = ["json", "stream"], optional = true }
-serde = { version = "1", features = ["derive"], optional = true }
-serde_json = { version = "1", optional = true }
 
 [dev-dependencies]
 tokio = { version = "1.44", features = ["rt", "macros"] }

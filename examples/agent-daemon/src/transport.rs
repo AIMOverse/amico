@@ -16,10 +16,9 @@
 //! | GET    | `/api/sessions/:id/stream`   | SSE stream of the active workflow    |
 
 use crate::handler::AgentChatError;
+use crate::session::SerializableMessage;
 use crate::AppState;
-use amico::ChatHandler;
 use amico_models::StreamChunk;
-use amico_runtime::fs_store::SerializableMessage;
 use amico_runtime::SessionStore;
 use axum::{
     extract::{Path, State},
@@ -237,7 +236,7 @@ async fn stream_session(
     Path(id): Path<String>,
 ) -> Result<Sse<impl futures::Stream<Item = Result<Event, Infallible>>>, (StatusCode, Json<ErrorDto>)>
 {
-    let response_stream = state.chat_handler.chat(&id, "").await.map_err(|e| {
+    let response_stream = state.chat_handler.subscribe(&id).await.map_err(|e| {
         (
             StatusCode::NOT_FOUND,
             Json(ErrorDto {

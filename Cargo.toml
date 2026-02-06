@@ -6,6 +6,7 @@ members = [
     "amico-runtime",
     "amico-plugin",
     "amico-workflows",
+    "amico-openai",
     "examples/agent-daemon",
     "examples/agent-tui",
 ]
@@ -18,6 +19,7 @@ amico-system = { path = "./amico-system", version = "2.0.0" }
 amico-runtime = { path = "./amico-runtime", version = "2.0.0" }
 amico-plugin = { path = "./amico-plugin", version = "2.0.0" }
 amico-workflows = { path = "./amico-workflows", version = "2.0.0" }
+amico-openai = { path = "./amico-openai", version = "2.0.0" }
 
 # Core dependencies
 futures = "0.3"

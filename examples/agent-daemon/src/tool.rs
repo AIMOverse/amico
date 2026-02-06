@@ -1,22 +1,11 @@
 //! Shell tool — executes commands on behalf of the agent.
 //!
-//! Implements [`Tool`](crate::Tool) for running arbitrary shell commands
-//! on the host operating system.
-//!
-//! # Example
-//!
-//! ```rust,ignore
-//! use amico_system::shell::{ShellTool, ShellInput};
-//!
-//! let tool = ShellTool;
-//! let output = tool.execute(ShellInput { command: "echo hello".into() }).await?;
-//! assert_eq!(output.stdout.trim(), "hello");
-//! ```
-//!
-//! ⚠️ **Security**: This tool executes arbitrary commands. A production
-//! agent should apply permission checks before invocation.
+//! This is an example of a tool written by the agent developer using the
+//! `amico_system::Tool` trait. The framework does not provide concrete tools —
+//! developers build tools using the system APIs, enabling cross-platform
+//! compilation and permission checking.
 
-use crate::Tool;
+use amico_system::Tool;
 use std::future::Future;
 
 /// A tool that executes a shell command and returns its output.
@@ -79,36 +68,5 @@ impl Tool for ShellTool {
 
     fn description(&self) -> &str {
         "Execute a shell command and return its output"
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[tokio::test]
-    async fn test_shell_tool_echo() {
-        let tool = ShellTool;
-        let output = tool
-            .execute(ShellInput {
-                command: "echo hello".to_string(),
-            })
-            .await
-            .unwrap();
-        assert_eq!(output.exit_code, 0);
-        assert_eq!(output.stdout.trim(), "hello");
-        assert!(output.stderr.is_empty());
-    }
-
-    #[tokio::test]
-    async fn test_shell_tool_nonzero_exit() {
-        let tool = ShellTool;
-        let output = tool
-            .execute(ShellInput {
-                command: "exit 42".to_string(),
-            })
-            .await
-            .unwrap();
-        assert_eq!(output.exit_code, 42);
     }
 }

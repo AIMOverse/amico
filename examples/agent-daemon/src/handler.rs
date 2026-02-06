@@ -1,16 +1,14 @@
 //! Agent chat handler — ties model, tool, and session together.
 //!
-//! Implements `amico::ChatHandler` by:
-//! 1. Loading the session's message history
-//! 2. Appending the user message
-//! 3. Calling the streaming chat model
-//! 4. Buffering the response so it can be resumed if the UI reconnects
+//! This handler demonstrates how to wire together:
+//! - A model from a plugin (`amico-openai`)
+//! - A tool defined locally (`tool.rs`)
+//! - A session store defined locally (`session.rs`)
 
-use amico::ChatHandler;
-use amico_models::openai::{OpenAiChatModel, OpenAiModelError};
 use amico_models::{ChatInput, ChatMessage, StreamChunk};
-use amico_runtime::fs_store::{FileSession, FileSessionStore, SerializableMessage};
-use amico_system::shell::ShellTool;
+use amico_openai::{OpenAiChatModel, OpenAiModelError};
+use crate::session::{FileSession, FileSessionStore, SerializableMessage};
+use crate::tool::ShellTool;
 use futures::stream::BoxStream;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -191,58 +189,55 @@ impl std::fmt::Display for AgentChatError {
 
 impl std::error::Error for AgentChatError {}
 
-impl ChatHandler for AgentChatHandler {
-    type Error = AgentChatError;
-    type ResponseStream = BoxStream<'static, Result<StreamChunk, AgentChatError>>;
-
-    fn chat<'a>(
-        &'a self,
-        session_id: &'a str,
-        _message: &'a str,
-    ) -> impl std::future::Future<Output = Result<Self::ResponseStream, Self::Error>> + Send + 'a
-    {
+impl AgentChatHandler {
+    /// Subscribe to the active workflow run for a session.
+    ///
+    /// Returns a stream that replays buffered tokens and then yields new
+    /// ones in real-time. This enables SSE resume when a client reconnects.
+    pub async fn subscribe(
+        &self,
+        session_id: &str,
+    ) -> Result<BoxStream<'static, Result<StreamChunk, AgentChatError>>, AgentChatError> {
         use futures::StreamExt;
 
-        async move {
-            // Look up the active run for this session
-            let run = {
-                let runs = self.active_runs.read().await;
-                runs.get(session_id).cloned()
-            };
+        // Look up the active run for this session
+        let run = {
+            let runs = self.active_runs.read().await;
+            runs.get(session_id).cloned()
+        };
 
-            let run = run.ok_or_else(|| {
-                AgentChatError(format!("No active run for session {session_id}"))
-            })?;
+        let run = run.ok_or_else(|| {
+            AgentChatError(format!("No active run for session {session_id}"))
+        })?;
 
-            // Create a stream that replays buffered tokens and then yields new ones
-            let (tx, rx) = tokio::sync::mpsc::channel::<Result<StreamChunk, AgentChatError>>(64);
+        // Create a stream that replays buffered tokens and then yields new ones
+        let (tx, rx) = tokio::sync::mpsc::channel::<Result<StreamChunk, AgentChatError>>(64);
 
-            tokio::spawn(async move {
-                let mut cursor = 0usize;
-                loop {
-                    let (chunks_to_send, is_done) = {
-                        let r = run.lock().await;
-                        let new_chunks: Vec<_> = r.tokens[cursor..].to_vec();
-                        (new_chunks, r.done)
-                    };
+        tokio::spawn(async move {
+            let mut cursor = 0usize;
+            loop {
+                let (chunks_to_send, is_done) = {
+                    let r = run.lock().await;
+                    let new_chunks: Vec<_> = r.tokens[cursor..].to_vec();
+                    (new_chunks, r.done)
+                };
 
-                    for chunk in &chunks_to_send {
-                        if tx.send(Ok(chunk.clone())).await.is_err() {
-                            return; // receiver dropped (client disconnected)
-                        }
-                        cursor += 1;
+                for chunk in &chunks_to_send {
+                    if tx.send(Ok(chunk.clone())).await.is_err() {
+                        return; // receiver dropped (client disconnected)
                     }
-
-                    if is_done && chunks_to_send.is_empty() {
-                        break;
-                    }
-
-                    tokio::time::sleep(std::time::Duration::from_millis(SSE_POLL_INTERVAL_MS)).await;
+                    cursor += 1;
                 }
-            });
 
-            let stream = tokio_stream::wrappers::ReceiverStream::new(rx).boxed();
-            Ok(stream)
-        }
+                if is_done && chunks_to_send.is_empty() {
+                    break;
+                }
+
+                tokio::time::sleep(std::time::Duration::from_millis(SSE_POLL_INTERVAL_MS)).await;
+            }
+        });
+
+        let stream = tokio_stream::wrappers::ReceiverStream::new(rx).boxed();
+        Ok(stream)
     }
 }

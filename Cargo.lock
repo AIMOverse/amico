@@ -23,6 +23,7 @@ version = "0.1.0"
 dependencies = [
  "amico",
  "amico-models",
+ "amico-openai",
  "amico-runtime",
  "amico-system",
  "axum",
@@ -35,6 +36,7 @@ dependencies = [
  "tower-http",
  "tracing",
  "tracing-subscriber",
+ "uuid",
 ]
 
 [[package]]
@@ -84,6 +86,16 @@ name = "amico-models"
 version = "2.0.0"
 dependencies = [
  "futures",
+ "tokio",
+]
+
+[[package]]
+name = "amico-openai"
+version = "2.0.0"
+dependencies = [
+ "amico-models",
+ "amico-plugin",
+ "futures",
  "reqwest",
  "serde",
  "serde_json",
@@ -94,6 +106,7 @@ dependencies = [
 name = "amico-plugin"
 version = "2.0.0"
 dependencies = [
+ "amico-models",
  "amico-runtime",
  "amico-system",
  "futures",
@@ -105,10 +118,7 @@ name = "amico-runtime"
 version = "2.0.0"
 dependencies = [
  "futures",
- "serde",
- "serde_json",
  "tokio",
- "uuid",
 ]
 
 [[package]]

@@ -22,6 +22,18 @@
 //! - **Type Safe**: Extensive compile-time verification
 //! - **Extensible**: Plugin system covers all aspects of the agent lifecycle
 //!
+//! ## Separation of Concerns
+//!
+//! Following the Vercel AI SDK architecture:
+//!
+//! - The **framework** provides unified model interfaces, tool traits, agent
+//!   presets (e.g. `ToolLoopAgent`), and runtime lifecycle hooks.
+//! - **Plugins** (separate crates like `amico-openai`) provide concrete model
+//!   services.
+//! - **Tools** are written by the agent developer using the `amico_system` API.
+//! - **Session storage** is an application concern — the framework exposes
+//!   lifecycle hooks on agent presets to plug in custom storage.
+//!
 //! ## Example
 //!
 //! ```rust,ignore
@@ -63,7 +75,7 @@ pub use amico_models::{
     ChatInput, ChatMessage, ChatModel, ChatRole, ContentPart, ImageSource, LanguageInput,
     LanguageModel, LanguageOutput, Model, StreamChunk, StreamingChatModel,
 };
-pub use amico_plugin::{Plugin, PluginError, PluginRuntime, PluginSet, ToolPlugin};
+pub use amico_plugin::{ModelPlugin, Plugin, PluginError, PluginRuntime, PluginSet, ToolPlugin};
 pub use amico_runtime::{ExecutionContext, Runtime, Scheduler, Session, SessionStore, Workflow};
 pub use amico_system::{Observable, Permission, SystemEffect, Tool};
 pub use amico_workflows::{AgentResponse, ToolLoopAgent, WorkflowError};
@@ -318,34 +330,4 @@ pub trait Transport {
 
     /// Gracefully shut down the transport server.
     fn shutdown(&mut self) -> impl Future<Output = Result<(), Self::Error>> + Send;
-}
-
-// ============================================================
-// Chat handler — common pattern for chat-based agents
-// ============================================================
-
-/// A chat handler processes incoming user messages and produces a
-/// streaming response, making it the central abstraction for any
-/// chat-oriented agent.
-///
-/// Implementations wire together a session store, a chat model, and
-/// optional tool execution.  The returned `ResponseStream` allows
-/// callers (transports) to forward tokens in real-time via SSE or
-/// similar mechanisms.
-pub trait ChatHandler {
-    /// Error type
-    type Error;
-
-    /// The async stream of response tokens.
-    type ResponseStream: Send;
-
-    /// Handle a user message within a given session.
-    ///
-    /// Returns a stream of response chunks that the transport can
-    /// forward to the connected client.
-    fn chat<'a>(
-        &'a self,
-        session_id: &'a str,
-        message: &'a str,
-    ) -> impl Future<Output = Result<Self::ResponseStream, Self::Error>> + Send + 'a;
 }

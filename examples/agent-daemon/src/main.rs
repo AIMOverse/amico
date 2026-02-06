@@ -1,26 +1,34 @@
 //! Agent Daemon — local agent example
 //!
 //! This binary starts an agent daemon that:
-//! - Uses an OpenAI-compatible chat model for reasoning (from `amico_models::openai`)
+//! - Uses an OpenAI-compatible chat model (from the `amico-openai` plugin)
 //! - Exposes an HTTP/SSE transport so any UI can connect
-//! - Stores sessions on the local filesystem (from `amico_runtime::fs_store`)
+//! - Stores sessions on the local filesystem (application-level concern)
+//! - Defines its own tools using `amico_system::Tool` (tools are user-defined)
 //! - Can run workflows in the background even when the UI disconnects
-//! - Supports parallel sessions and stream resume
 //!
-//! The agent is assembled from framework-provided modules in just a few
-//! lines of code — no custom model, tool, or session implementations needed.
+//! ## Architecture alignment
+//!
+//! Following the Vercel AI SDK pattern:
+//! - **Model services** come from plugin crates (`amico-openai`)
+//! - **Tools** are written by the agent developer (`tool.rs`)
+//! - **Session storage** is an application concern (`session.rs`)
+//! - **Agent presets** come from the framework (`amico-workflows`)
 
 mod handler;
+mod session;
+mod tool;
 mod transport;
 
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tracing_subscriber::EnvFilter;
 
-// Import concrete implementations directly from the framework
-use amico_models::openai::OpenAiChatModel;
-use amico_runtime::fs_store::FileSessionStore;
-use amico_system::shell::ShellTool;
+// Model from plugin crate (not the framework)
+use amico_openai::OpenAiChatModel;
+// Tool and session defined locally in this agent
+use session::FileSessionStore;
+use tool::ShellTool;
 
 use handler::AgentChatHandler;
 
@@ -49,7 +57,8 @@ async fn main() -> anyhow::Result<()> {
         "You are a helpful assistant. You can execute shell commands when needed.".into()
     });
 
-    // --- Assemble the agent from framework modules ---
+    // --- Assemble the agent ---
+    // Model from plugin; tools and session store defined locally
     let model = OpenAiChatModel::new(&api_base, &api_key, &model_name);
     let shell_tool = ShellTool;
     let session_store = FileSessionStore::new(&data_dir).await?;
@@ -69,10 +78,7 @@ async fn main() -> anyhow::Result<()> {
 }
 
 // We use `anyhow` only inside the binary; framework crates stay error-type generic.
-// Adding it here keeps the example concise.
 mod anyhow_dep {
-    // Re-use `Box<dyn Error>` as a lightweight anyhow-like type so we
-    // don't need to add the `anyhow` crate as a dependency.
     pub type Error = Box<dyn std::error::Error + Send + Sync>;
     pub type Result<T> = std::result::Result<T, Error>;
 }

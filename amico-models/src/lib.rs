@@ -30,16 +30,6 @@
 use std::future::Future;
 
 // ============================================================
-// Optional concrete implementations
-// ============================================================
-
-/// OpenAI-compatible chat model implementation.
-///
-/// Enable with the `openai` feature flag.
-#[cfg(feature = "openai")]
-pub mod openai;
-
-// ============================================================
 // Chat message types (multi-turn conversation support)
 // ============================================================
 

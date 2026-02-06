@@ -1,12 +1,15 @@
-//! OpenAI-compatible chat model implementation.
+//! # Amico OpenAI Plugin
 //!
-//! Implements [`ChatModel`](crate::ChatModel) and [`StreamingChatModel`](crate::StreamingChatModel)
-//! by calling any OpenAI-compatible `/v1/chat/completions` endpoint.
+//! This crate provides an OpenAI-compatible chat model implementation as a
+//! plugin for the Amico V2 framework.
 //!
-//! # Example
+//! Concrete model services are provided in separate packages (like this one),
+//! while the framework itself only provides the unified model interface traits.
+//!
+//! ## Example
 //!
 //! ```rust,ignore
-//! use amico_models::openai::OpenAiChatModel;
+//! use amico_openai::OpenAiChatModel;
 //! use amico_models::{ChatInput, ChatMessage, StreamingChatModel};
 //!
 //! let model = OpenAiChatModel::new(
@@ -24,7 +27,7 @@
 //! let stream = model.stream(&(), input).await?;
 //! ```
 
-use crate::{
+use amico_models::{
     ChatInput, ChatModel, FinishReason, LanguageOutput, Model, StreamChunk,
     StreamingChatModel, TokenUsage,
 };

@@ -1,21 +1,25 @@
 [package]
-name = "amico"
+name = "amico-openai"
 version = "2.0.0"
 edition = "2021"
-description = "Amico V2 - A platform-agnostic runtime for AI agents"
+description = "OpenAI-compatible model plugin for the Amico V2 AI Agent Framework"
 repository = "https://github.com/AIMOverse/amico"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-# Re-export all layers
+# Internal dependencies
 amico-models = { path = "../amico-models", version = "2.0.0" }
-amico-system = { path = "../amico-system", version = "2.0.0" }
-amico-runtime = { path = "../amico-runtime", version = "2.0.0" }
 amico-plugin = { path = "../amico-plugin", version = "2.0.0" }
-amico-workflows = { path = "../amico-workflows", version = "2.0.0" }
 
 # Core async runtime
 futures = "0.3"
+
+# HTTP client
+reqwest = { version = "0.12", features = ["json", "stream"] }
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
 
 [dev-dependencies]
 tokio = { version = "1.44", features = ["rt", "macros"] }
