@@ -1,9 +1,30 @@
 //! OpenAI-compatible chat model implementation.
 //!
-//! Implements `amico_models::ChatModel` and `amico_models::StreamingChatModel`
+//! Implements [`ChatModel`](crate::ChatModel) and [`StreamingChatModel`](crate::StreamingChatModel)
 //! by calling any OpenAI-compatible `/v1/chat/completions` endpoint.
+//!
+//! # Example
+//!
+//! ```rust,ignore
+//! use amico_models::openai::OpenAiChatModel;
+//! use amico_models::{ChatInput, ChatMessage, StreamingChatModel};
+//!
+//! let model = OpenAiChatModel::new(
+//!     "https://api.openai.com/v1",
+//!     "sk-...",
+//!     "gpt-4o-mini",
+//! );
+//!
+//! let input = ChatInput::new(vec![
+//!     ChatMessage::system("You are a helpful assistant."),
+//!     ChatMessage::user("Hello!"),
+//! ]);
+//!
+//! // Streaming
+//! let stream = model.stream(&(), input).await?;
+//! ```
 
-use amico_models::{
+use crate::{
     ChatInput, ChatModel, ChatRole, FinishReason, LanguageOutput, Model, StreamChunk,
     StreamingChatModel, TokenUsage,
 };
@@ -13,6 +34,9 @@ use serde::{Deserialize, Serialize};
 use std::future::Future;
 
 /// An OpenAI-compatible chat model backed by an HTTP API.
+///
+/// Works with any provider that implements the OpenAI chat completions
+/// API, including OpenAI, Azure OpenAI, Ollama, vLLM, and others.
 pub struct OpenAiChatModel {
     client: Client,
     api_base: String,
@@ -21,6 +45,12 @@ pub struct OpenAiChatModel {
 }
 
 impl OpenAiChatModel {
+    /// Create a new OpenAI-compatible chat model.
+    ///
+    /// # Arguments
+    /// * `api_base` — Base URL of the API (e.g. `"https://api.openai.com/v1"`)
+    /// * `api_key`  — Bearer token for authentication
+    /// * `model`    — Model identifier (e.g. `"gpt-4o-mini"`)
     pub fn new(api_base: &str, api_key: &str, model: &str) -> Self {
         Self {
             client: Client::new(),
@@ -123,7 +153,7 @@ fn build_api_messages(input: &ChatInput) -> Vec<ApiMessage> {
         .collect()
 }
 
-// -- Trait implementations --
+// -- Error type --
 
 /// Error type for the OpenAI model.
 #[derive(Debug)]
@@ -137,8 +167,8 @@ impl std::fmt::Display for OpenAiModelError {
 
 impl std::error::Error for OpenAiModelError {}
 
-/// The model does not require an external context — configuration lives
-/// in the struct itself.
+// -- Trait implementations --
+
 impl Model for OpenAiChatModel {
     type Context = ();
     type Input = ChatInput;

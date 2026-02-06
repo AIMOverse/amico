@@ -1,10 +1,20 @@
 //! Filesystem-backed session store.
 //!
-//! Implements `amico_runtime::SessionStore` by persisting each session
+//! Implements [`SessionStore`](crate::SessionStore) by persisting each session
 //! as a JSON file under a configurable directory.
+//!
+//! # Example
+//!
+//! ```rust,ignore
+//! use amico_runtime::fs_store::FileSessionStore;
+//! use amico_runtime::SessionStore;
+//!
+//! let store = FileSessionStore::new(".amico/sessions").await?;
+//! let session = store.create_session().await?;
+//! println!("Created session: {}", session.id);
+//! ```
 
-use amico_models::{ChatMessage, ChatRole};
-use amico_runtime::{Session, SessionStore};
+use crate::{Session, SessionStore};
 use serde::{Deserialize, Serialize};
 use std::future::Future;
 use std::path::PathBuf;
@@ -18,35 +28,14 @@ pub struct FileSession {
 }
 
 /// Chat message in a serializable form.
+///
+/// This is a transport-neutral representation used for persistence.
+/// Conversion to/from framework message types is handled by the
+/// application layer.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SerializableMessage {
     pub role: String,
     pub content: String,
-}
-
-impl SerializableMessage {
-    pub fn from_chat_message(msg: &ChatMessage) -> Self {
-        Self {
-            role: match msg.role {
-                ChatRole::System => "system".to_string(),
-                ChatRole::User => "user".to_string(),
-                ChatRole::Assistant => "assistant".to_string(),
-                ChatRole::Tool => "tool".to_string(),
-            },
-            content: msg.text(),
-        }
-    }
-
-    pub fn to_chat_message(&self) -> ChatMessage {
-        let role = match self.role.as_str() {
-            "system" => ChatRole::System,
-            "user" => ChatRole::User,
-            "assistant" => ChatRole::Assistant,
-            "tool" => ChatRole::Tool,
-            _ => ChatRole::User,
-        };
-        ChatMessage::new(role, vec![amico_models::ContentPart::text(&self.content)])
-    }
 }
 
 impl Session for FileSession {
@@ -77,6 +66,9 @@ pub struct FileSessionStore {
 }
 
 impl FileSessionStore {
+    /// Create a new filesystem session store.
+    ///
+    /// Creates the directory if it doesn't exist.
     pub async fn new(data_dir: &str) -> Result<Self, FileSessionError> {
         let path = PathBuf::from(data_dir);
         tokio::fs::create_dir_all(&path)
@@ -85,6 +77,7 @@ impl FileSessionStore {
         Ok(Self { data_dir: path })
     }
 
+    /// Get the file path for a session by ID.
     pub fn session_path(&self, id: &str) -> PathBuf {
         self.data_dir.join(format!("{id}.json"))
     }

@@ -16,10 +16,10 @@
 //! | GET    | `/api/sessions/:id/stream`   | SSE stream of the active workflow    |
 
 use crate::handler::AgentChatError;
-use crate::session::SerializableMessage;
 use crate::AppState;
 use amico::ChatHandler;
 use amico_models::StreamChunk;
+use amico_runtime::fs_store::SerializableMessage;
 use amico_runtime::SessionStore;
 use axum::{
     extract::{Path, State},

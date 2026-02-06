@@ -26,9 +26,7 @@ dependencies = [
  "amico-runtime",
  "amico-system",
  "axum",
- "chrono",
  "futures",
- "reqwest",
  "serde",
  "serde_json",
  "tokio",
@@ -37,7 +35,6 @@ dependencies = [
  "tower-http",
  "tracing",
  "tracing-subscriber",
- "uuid",
 ]
 
 [[package]]
@@ -87,6 +84,9 @@ name = "amico-models"
 version = "2.0.0"
 dependencies = [
  "futures",
+ "reqwest",
+ "serde",
+ "serde_json",
  "tokio",
 ]
 
@@ -105,7 +105,10 @@ name = "amico-runtime"
 version = "2.0.0"
 dependencies = [
  "futures",
+ "serde",
+ "serde_json",
  "tokio",
+ "uuid",
 ]
 
 [[package]]

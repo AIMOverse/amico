@@ -33,6 +33,16 @@
 
 use std::future::Future;
 
+// ============================================================
+// Optional concrete implementations
+// ============================================================
+
+/// Shell tool for executing commands on the host OS.
+///
+/// Enable with the `shell` feature flag.
+#[cfg(feature = "shell")]
+pub mod shell;
+
 /// Core tool trait - all tools implement this
 pub trait Tool {
     /// Input type for the tool

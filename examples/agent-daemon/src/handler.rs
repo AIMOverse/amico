@@ -6,11 +6,11 @@
 //! 3. Calling the streaming chat model
 //! 4. Buffering the response so it can be resumed if the UI reconnects
 
-use crate::model::{OpenAiChatModel, OpenAiModelError};
-use crate::session::{FileSession, FileSessionStore, SerializableMessage};
-use crate::tool::ShellTool;
 use amico::ChatHandler;
+use amico_models::openai::{OpenAiChatModel, OpenAiModelError};
 use amico_models::{ChatInput, ChatMessage, StreamChunk};
+use amico_runtime::fs_store::{FileSession, FileSessionStore, SerializableMessage};
+use amico_system::shell::ShellTool;
 use futures::stream::BoxStream;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -75,7 +75,16 @@ impl AgentChatHandler {
         // Build the prompt from session history
         let mut messages: Vec<ChatMessage> = vec![ChatMessage::system(&self.system_prompt)];
         for m in &session.messages {
-            messages.push(m.to_chat_message());
+            let role = match m.role.as_str() {
+                "system" => amico_models::ChatRole::System,
+                "assistant" => amico_models::ChatRole::Assistant,
+                "tool" => amico_models::ChatRole::Tool,
+                _ => amico_models::ChatRole::User,
+            };
+            messages.push(ChatMessage::new(
+                role,
+                vec![amico_models::ContentPart::text(&m.content)],
+            ));
         }
         let input = ChatInput::new(messages);
 

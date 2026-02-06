@@ -31,6 +31,16 @@
 
 use std::future::Future;
 
+// ============================================================
+// Optional concrete implementations
+// ============================================================
+
+/// Filesystem-backed session store.
+///
+/// Enable with the `fs` feature flag.
+#[cfg(feature = "fs")]
+pub mod fs_store;
+
 /// Workflow trait - defines a unit of work that can be executed
 pub trait Workflow {
     /// Context type for workflow execution

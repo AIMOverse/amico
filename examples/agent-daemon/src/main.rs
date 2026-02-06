@@ -1,26 +1,28 @@
 //! Agent Daemon — local agent example
 //!
 //! This binary starts an agent daemon that:
-//! - Uses an OpenAI-compatible chat model for reasoning
+//! - Uses an OpenAI-compatible chat model for reasoning (from `amico_models::openai`)
 //! - Exposes an HTTP/SSE transport so any UI can connect
-//! - Stores sessions on the local filesystem
+//! - Stores sessions on the local filesystem (from `amico_runtime::fs_store`)
 //! - Can run workflows in the background even when the UI disconnects
 //! - Supports parallel sessions and stream resume
+//!
+//! The agent is assembled from framework-provided modules in just a few
+//! lines of code — no custom model, tool, or session implementations needed.
 
 mod handler;
-mod model;
-mod session;
-mod tool;
 mod transport;
 
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tracing_subscriber::EnvFilter;
 
+// Import concrete implementations directly from the framework
+use amico_models::openai::OpenAiChatModel;
+use amico_runtime::fs_store::FileSessionStore;
+use amico_system::shell::ShellTool;
+
 use handler::AgentChatHandler;
-use model::OpenAiChatModel;
-use session::FileSessionStore;
-use tool::ShellTool;
 
 /// Shared application state accessible by the HTTP handlers.
 pub struct AppState {
@@ -47,7 +49,7 @@ async fn main() -> anyhow::Result<()> {
         "You are a helpful assistant. You can execute shell commands when needed.".into()
     });
 
-    // --- Build components ---
+    // --- Assemble the agent from framework modules ---
     let model = OpenAiChatModel::new(&api_base, &api_key, &model_name);
     let shell_tool = ShellTool;
     let session_store = FileSessionStore::new(&data_dir).await?;

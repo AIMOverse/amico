@@ -6,9 +6,16 @@ description = "System layer for tools and side-effects in Amico V2"
 repository = "https://github.com/AIMOverse/amico"
 license = "MIT OR Apache-2.0"
 
+[features]
+default = []
+shell = ["tokio"]
+
 [dependencies]
 # Core async runtime
 futures = "0.3"
 
+# Optional: Shell tool support (requires tokio process)
+tokio = { version = "1.44", features = ["process"], optional = true }
+
 [dev-dependencies]
-tokio = { version = "1.44", features = ["rt", "macros"] }
+tokio = { version = "1.44", features = ["rt", "macros", "process"] }

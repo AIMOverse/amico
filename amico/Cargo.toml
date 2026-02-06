@@ -6,6 +6,12 @@ description = "Amico V2 - A platform-agnostic runtime for AI agents"
 repository = "https://github.com/AIMOverse/amico"
 license = "MIT OR Apache-2.0"
 
+[features]
+default = []
+openai = ["amico-models/openai"]
+shell = ["amico-system/shell"]
+fs = ["amico-runtime/fs"]
+
 [dependencies]
 # Re-export all layers
 amico-models = { path = "../amico-models", version = "2.0.0" }
