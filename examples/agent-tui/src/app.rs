@@ -188,7 +188,8 @@ impl App {
         let sid = session_id.to_string();
 
         tokio::spawn(async move {
-            // Small delay to let the daemon start the workflow
+            // Brief delay so the daemon has time to register the workflow
+            // before we attempt to connect to its SSE stream.
             tokio::time::sleep(std::time::Duration::from_millis(200)).await;
 
             let resp = match client.stream_session(&sid).await {

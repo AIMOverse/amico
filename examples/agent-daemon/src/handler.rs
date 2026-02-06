@@ -16,6 +16,14 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::{Mutex, RwLock};
 
+/// How long to keep a completed workflow run in memory so that
+/// reconnecting clients can still read buffered tokens.
+const RUN_CLEANUP_DELAY_SECS: u64 = 30;
+
+/// Polling interval for the SSE replay loop. Balances responsiveness
+/// (lower = faster delivery of new tokens) against CPU usage.
+const SSE_POLL_INTERVAL_MS: u64 = 50;
+
 /// A single streaming workflow run, collecting tokens as they arrive.
 pub struct WorkflowRun {
     /// Buffered tokens so far (for resume)
@@ -157,7 +165,7 @@ impl AgentChatHandler {
             }
 
             // Clean up the run after a brief delay (allow clients to finish reading)
-            tokio::time::sleep(std::time::Duration::from_secs(30)).await;
+            tokio::time::sleep(std::time::Duration::from_secs(RUN_CLEANUP_DELAY_SECS)).await;
             {
                 let mut runs = active_runs.write().await;
                 runs.remove(&session_id);
@@ -226,8 +234,7 @@ impl ChatHandler for AgentChatHandler {
                         break;
                     }
 
-                    // Poll interval — balance between responsiveness and CPU usage
-                    tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+                    tokio::time::sleep(std::time::Duration::from_millis(SSE_POLL_INTERVAL_MS)).await;
                 }
             });
 
