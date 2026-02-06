@@ -56,6 +56,30 @@ pub enum ChatRole {
     Tool,
 }
 
+impl ChatRole {
+    /// Convert a role string (e.g. `"system"`, `"user"`) to a `ChatRole`.
+    ///
+    /// Unrecognised strings default to [`ChatRole::User`].
+    pub fn from_str_lossy(s: &str) -> Self {
+        match s {
+            "system" => Self::System,
+            "assistant" => Self::Assistant,
+            "tool" => Self::Tool,
+            _ => Self::User,
+        }
+    }
+
+    /// Return the canonical string representation of this role.
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::System => "system",
+            Self::User => "user",
+            Self::Assistant => "assistant",
+            Self::Tool => "tool",
+        }
+    }
+}
+
 /// A single part of a multimodal message.
 ///
 /// Modern chat models accept messages composed of multiple content parts,

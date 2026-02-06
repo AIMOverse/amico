@@ -25,7 +25,7 @@
 //! ```
 
 use crate::{
-    ChatInput, ChatModel, ChatRole, FinishReason, LanguageOutput, Model, StreamChunk,
+    ChatInput, ChatModel, FinishReason, LanguageOutput, Model, StreamChunk,
     StreamingChatModel, TokenUsage,
 };
 use futures::stream::{self, BoxStream, StreamExt};
@@ -123,13 +123,15 @@ struct StreamDelta {
 
 // -- helpers --
 
-fn role_to_string(role: &ChatRole) -> &'static str {
-    match role {
-        ChatRole::System => "system",
-        ChatRole::User => "user",
-        ChatRole::Assistant => "assistant",
-        ChatRole::Tool => "tool",
-    }
+fn build_api_messages(input: &ChatInput) -> Vec<ApiMessage> {
+    input
+        .messages
+        .iter()
+        .map(|m| ApiMessage {
+            role: m.role.as_str().to_string(),
+            content: m.text(),
+        })
+        .collect()
 }
 
 fn parse_finish_reason(s: Option<&str>) -> FinishReason {
@@ -140,17 +142,6 @@ fn parse_finish_reason(s: Option<&str>) -> FinishReason {
         Some("tool_calls") => FinishReason::ToolCalls,
         _ => FinishReason::Stop,
     }
-}
-
-fn build_api_messages(input: &ChatInput) -> Vec<ApiMessage> {
-    input
-        .messages
-        .iter()
-        .map(|m| ApiMessage {
-            role: role_to_string(&m.role).to_string(),
-            content: m.text(),
-        })
-        .collect()
 }
 
 // -- Error type --

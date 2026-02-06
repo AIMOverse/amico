@@ -75,14 +75,8 @@ impl AgentChatHandler {
         // Build the prompt from session history
         let mut messages: Vec<ChatMessage> = vec![ChatMessage::system(&self.system_prompt)];
         for m in &session.messages {
-            let role = match m.role.as_str() {
-                "system" => amico_models::ChatRole::System,
-                "assistant" => amico_models::ChatRole::Assistant,
-                "tool" => amico_models::ChatRole::Tool,
-                _ => amico_models::ChatRole::User,
-            };
             messages.push(ChatMessage::new(
-                role,
+                amico_models::ChatRole::from_str_lossy(&m.role),
                 vec![amico_models::ContentPart::text(&m.content)],
             ));
         }
