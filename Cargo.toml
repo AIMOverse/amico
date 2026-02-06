@@ -4,6 +4,7 @@ members = [
     "amico-models",
     "amico-system",
     "amico-runtime",
+    "amico-plugin",
     "amico-workflows",
 ]
 resolver = "2"
@@ -13,6 +14,7 @@ resolver = "2"
 amico-models = { path = "./amico-models", version = "2.0.0" }
 amico-system = { path = "./amico-system", version = "2.0.0" }
 amico-runtime = { path = "./amico-runtime", version = "2.0.0" }
+amico-plugin = { path = "./amico-plugin", version = "2.0.0" }
 amico-workflows = { path = "./amico-workflows", version = "2.0.0" }
 
 # Core dependencies

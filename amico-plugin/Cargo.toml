@@ -1,18 +1,15 @@
 [package]
-name = "amico"
+name = "amico-plugin"
 version = "2.0.0"
 edition = "2021"
-description = "Amico V2 - A platform-agnostic runtime for AI agents"
+description = "Plugin architecture for extending Amico V2 agent capabilities"
 repository = "https://github.com/AIMOverse/amico"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-# Re-export all layers
-amico-models = { path = "../amico-models", version = "2.0.0" }
+# Lower-level Amico layers
 amico-system = { path = "../amico-system", version = "2.0.0" }
 amico-runtime = { path = "../amico-runtime", version = "2.0.0" }
-amico-plugin = { path = "../amico-plugin", version = "2.0.0" }
-amico-workflows = { path = "../amico-workflows", version = "2.0.0" }
 
 # Core async runtime
 futures = "0.3"

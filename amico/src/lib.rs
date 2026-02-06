@@ -6,12 +6,13 @@
 //!
 //! ## Architecture
 //!
-//! Amico V2 consists of four layers:
+//! Amico V2 consists of five layers:
 //!
 //! 1. **Models Layer** (`amico-models`): Abstracts AI models by capability
 //! 2. **System Layer** (`amico-system`): Tools and side-effects for interacting with the world
 //! 3. **Runtime Layer** (`amico-runtime`): Workflow execution on different runtime types
-//! 4. **Workflows Layer** (`amico-workflows`): Preset workflow patterns
+//! 4. **Plugin Layer** (`amico-plugin`): Plugin architecture for extending agent capabilities
+//! 5. **Workflows Layer** (`amico-workflows`): Preset workflow patterns
 //!
 //! ## Design Principles
 //!
@@ -19,6 +20,7 @@
 //! - **Zero-cost Abstractions**: No runtime overhead
 //! - **Platform Agnostic**: Works on OS, browsers, mobile, embedded devices
 //! - **Type Safe**: Extensive compile-time verification
+//! - **Extensible**: Plugin system covers all aspects of the agent lifecycle
 //!
 //! ## Example
 //!
@@ -51,15 +53,17 @@ use std::future::Future;
 
 // Re-export all layers
 pub use amico_models as models;
-pub use amico_system as system;
+pub use amico_plugin as plugin;
 pub use amico_runtime as runtime;
+pub use amico_system as system;
 pub use amico_workflows as workflows;
 
 // Re-export commonly used types
-pub use amico_models::{Model, LanguageModel, LanguageInput, LanguageOutput};
-pub use amico_system::{Tool, SystemEffect, Permission, Observable};
-pub use amico_runtime::{Workflow, ExecutionContext, Runtime, Scheduler};
-pub use amico_workflows::{ToolLoopAgent, AgentResponse, WorkflowError};
+pub use amico_models::{LanguageInput, LanguageModel, LanguageOutput, Model};
+pub use amico_plugin::{Plugin, PluginError, PluginRuntime, PluginSet, ToolPlugin};
+pub use amico_runtime::{ExecutionContext, Runtime, Scheduler, Workflow};
+pub use amico_system::{Observable, Permission, SystemEffect, Tool};
+pub use amico_workflows::{AgentResponse, ToolLoopAgent, WorkflowError};
 
 /// Timestamp in milliseconds since epoch
 pub type Timestamp = u64;
@@ -247,4 +251,43 @@ impl Event for SensorEvent {
     fn metadata(&self) -> &EventMetadata {
         &self.metadata
     }
+}
+
+/// Plugin that provides event sources.
+///
+/// An `EventSourcePlugin` introduces new event streams into the runtime.
+/// For example, an A2A connector plugin subscribes to an external agent
+/// collaboration platform and surfaces inbound requests as events that the
+/// agent developer can handle with an `EventHandler`.
+pub trait EventSourcePlugin: Plugin {
+    /// The event type produced by this plugin
+    type ProvidedEvent: Event;
+
+    /// The stream type that yields events
+    type EventStream: amico_system::Stream<Item = Self::ProvidedEvent>;
+
+    /// Subscribe to the plugin's event stream
+    fn subscribe(&self) -> Self::EventStream;
+}
+
+/// Plugin that intercepts events before and after handling (middleware).
+///
+/// An `EventInterceptor` can observe or transform events at the boundary of
+/// the event dispatch pipeline. Use cases include logging, authentication,
+/// rate limiting, or metric collection.
+pub trait EventInterceptor: Plugin {
+    /// The event type this interceptor applies to
+    type Event: Event;
+
+    /// Called before the event handler processes the event
+    fn before_handle<'a>(
+        &'a self,
+        event: &'a Self::Event,
+    ) -> impl Future<Output = Result<(), Self::Error>> + Send + 'a;
+
+    /// Called after the event handler processes the event
+    fn after_handle<'a>(
+        &'a self,
+        event: &'a Self::Event,
+    ) -> impl Future<Output = Result<(), Self::Error>> + Send + 'a;
 }
