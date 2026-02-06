@@ -59,9 +59,12 @@ pub use amico_system as system;
 pub use amico_workflows as workflows;
 
 // Re-export commonly used types
-pub use amico_models::{LanguageInput, LanguageModel, LanguageOutput, Model};
+pub use amico_models::{
+    ChatInput, ChatMessage, ChatModel, ChatRole, LanguageInput, LanguageModel, LanguageOutput,
+    Model, StreamChunk, StreamingChatModel,
+};
 pub use amico_plugin::{Plugin, PluginError, PluginRuntime, PluginSet, ToolPlugin};
-pub use amico_runtime::{ExecutionContext, Runtime, Scheduler, Workflow};
+pub use amico_runtime::{ExecutionContext, Runtime, Scheduler, Session, SessionStore, Workflow};
 pub use amico_system::{Observable, Permission, SystemEffect, Tool};
 pub use amico_workflows::{AgentResponse, ToolLoopAgent, WorkflowError};
 
@@ -290,4 +293,59 @@ pub trait EventInterceptor: Plugin {
         &'a self,
         event: &'a Self::Event,
     ) -> impl Future<Output = Result<(), Self::Error>> + Send + 'a;
+}
+
+// ============================================================
+// Transport abstraction
+// ============================================================
+
+/// Transport server for agent–UI communication.
+///
+/// A transport bridges external protocols (HTTP, WebSocket, CLI, etc.)
+/// to the agent's event/handler system.  Implementations handle protocol
+/// details while the agent focuses on business logic.
+///
+/// This is *one* of many possible runtimes; leave space for other
+/// transport implementations (e.g., WebSocket, gRPC, stdin/stdout).
+pub trait Transport {
+    /// Error type for transport operations
+    type Error;
+
+    /// Start the transport server.
+    ///
+    /// This typically blocks until [`Transport::shutdown`] is called.
+    fn serve(&mut self) -> impl Future<Output = Result<(), Self::Error>> + Send;
+
+    /// Gracefully shut down the transport server.
+    fn shutdown(&mut self) -> impl Future<Output = Result<(), Self::Error>> + Send;
+}
+
+// ============================================================
+// Chat handler — common pattern for chat-based agents
+// ============================================================
+
+/// A chat handler processes incoming user messages and produces a
+/// streaming response, making it the central abstraction for any
+/// chat-oriented agent.
+///
+/// Implementations wire together a session store, a chat model, and
+/// optional tool execution.  The returned `ResponseStream` allows
+/// callers (transports) to forward tokens in real-time via SSE or
+/// similar mechanisms.
+pub trait ChatHandler {
+    /// Error type
+    type Error;
+
+    /// The async stream of response tokens.
+    type ResponseStream: Send;
+
+    /// Handle a user message within a given session.
+    ///
+    /// Returns a stream of response chunks that the transport can
+    /// forward to the connected client.
+    fn chat<'a>(
+        &'a self,
+        session_id: &'a str,
+        message: &'a str,
+    ) -> impl Future<Output = Result<Self::ResponseStream, Self::Error>> + Send + 'a;
 }

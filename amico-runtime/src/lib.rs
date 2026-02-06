@@ -184,6 +184,65 @@ pub trait ShortLivedRuntime: Runtime {
     fn restore(snapshot: RuntimeSnapshot) -> Self;
 }
 
+// ============================================================
+// Session management
+// ============================================================
+
+/// A conversation session managed by the runtime.
+///
+/// Sessions track multi-turn interactions. Concrete implementations
+/// decide what data is stored (messages, metadata, etc.).
+pub trait Session {
+    /// Get the unique session identifier
+    fn id(&self) -> &str;
+
+    /// Get the session creation timestamp (millis since epoch)
+    fn created_at(&self) -> u64;
+}
+
+/// Persistent session storage.
+///
+/// Implementations can store sessions in the filesystem, a database,
+/// or any other backend.
+pub trait SessionStore {
+    /// The concrete session type
+    type Session: Session;
+    /// Error type for store operations
+    type Error;
+
+    /// Create a new session and return it
+    fn create_session(
+        &self,
+    ) -> impl Future<Output = Result<Self::Session, Self::Error>> + Send;
+
+    /// Retrieve a session by ID, returning `None` if not found
+    fn get_session(
+        &self,
+        id: &str,
+    ) -> impl Future<Output = Result<Option<Self::Session>, Self::Error>> + Send;
+
+    /// Persist changes to an existing session
+    fn save_session(
+        &self,
+        session: &Self::Session,
+    ) -> impl Future<Output = Result<(), Self::Error>> + Send;
+
+    /// List all sessions
+    fn list_sessions(
+        &self,
+    ) -> impl Future<Output = Result<Vec<Self::Session>, Self::Error>> + Send;
+
+    /// Delete a session by ID
+    fn delete_session(
+        &self,
+        id: &str,
+    ) -> impl Future<Output = Result<(), Self::Error>> + Send;
+}
+
+// ============================================================
+// Simple execution context
+// ============================================================
+
 /// Simple execution context implementation
 #[derive(Debug)]
 pub struct SimpleContext<S, P> {

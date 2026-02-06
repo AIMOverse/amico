@@ -29,6 +29,110 @@
 
 use std::future::Future;
 
+// ============================================================
+// Chat message types (multi-turn conversation support)
+// ============================================================
+
+/// Role of a participant in a chat conversation
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ChatRole {
+    /// System instructions
+    System,
+    /// User messages
+    User,
+    /// Assistant (model) responses
+    Assistant,
+    /// Tool call results
+    Tool,
+}
+
+/// A single message in a chat conversation
+#[derive(Debug, Clone)]
+pub struct ChatMessage {
+    pub role: ChatRole,
+    pub content: String,
+}
+
+impl ChatMessage {
+    pub fn system(content: impl Into<String>) -> Self {
+        Self {
+            role: ChatRole::System,
+            content: content.into(),
+        }
+    }
+
+    pub fn user(content: impl Into<String>) -> Self {
+        Self {
+            role: ChatRole::User,
+            content: content.into(),
+        }
+    }
+
+    pub fn assistant(content: impl Into<String>) -> Self {
+        Self {
+            role: ChatRole::Assistant,
+            content: content.into(),
+        }
+    }
+
+    pub fn tool(content: impl Into<String>) -> Self {
+        Self {
+            role: ChatRole::Tool,
+            content: content.into(),
+        }
+    }
+}
+
+/// Input for chat-style multi-turn conversation models
+#[derive(Debug, Clone)]
+pub struct ChatInput {
+    pub messages: Vec<ChatMessage>,
+    pub max_tokens: Option<usize>,
+    pub temperature: Option<f32>,
+}
+
+impl ChatInput {
+    pub fn new(messages: Vec<ChatMessage>) -> Self {
+        Self {
+            messages,
+            max_tokens: None,
+            temperature: None,
+        }
+    }
+}
+
+/// A single chunk of a streaming model response
+#[derive(Debug, Clone)]
+pub struct StreamChunk {
+    /// The text delta in this chunk
+    pub delta: String,
+    /// Whether this is the final chunk
+    pub done: bool,
+}
+
+/// Chat model specialization (multi-turn conversations)
+pub trait ChatModel: Model<Input = ChatInput, Output = LanguageOutput> {}
+
+/// Streaming chat model — produces a token stream for real-time output.
+///
+/// The `TokenStream` associated type must yield `Result<StreamChunk, Self::Error>`.
+/// Implementations can use channels, async generators, or any async stream.
+pub trait StreamingChatModel: ChatModel {
+    /// The async token stream type
+    type TokenStream: Send;
+
+    /// Start a streaming chat completion, returning a token stream
+    fn stream<'a>(
+        &'a self,
+        context: &'a Self::Context,
+        input: ChatInput,
+    ) -> impl Future<Output = Result<Self::TokenStream, Self::Error>> + Send + 'a;
+}
+
+// ============================================================
+// Core model trait
+// ============================================================
+
 /// Core model trait - all AI models implement this
 pub trait Model {
     /// Context provided to the model (e.g., configuration, state)
