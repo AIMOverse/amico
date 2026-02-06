@@ -33,7 +33,7 @@ impl SerializableMessage {
                 ChatRole::Assistant => "assistant".to_string(),
                 ChatRole::Tool => "tool".to_string(),
             },
-            content: msg.content.clone(),
+            content: msg.text(),
         }
     }
 
@@ -45,10 +45,7 @@ impl SerializableMessage {
             "tool" => ChatRole::Tool,
             _ => ChatRole::User,
         };
-        ChatMessage {
-            role,
-            content: self.content.clone(),
-        }
+        ChatMessage::new(role, vec![amico_models::ContentPart::text(&self.content)])
     }
 }
 

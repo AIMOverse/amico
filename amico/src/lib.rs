@@ -60,8 +60,8 @@ pub use amico_workflows as workflows;
 
 // Re-export commonly used types
 pub use amico_models::{
-    ChatInput, ChatMessage, ChatModel, ChatRole, LanguageInput, LanguageModel, LanguageOutput,
-    Model, StreamChunk, StreamingChatModel,
+    ChatInput, ChatMessage, ChatModel, ChatRole, ContentPart, ImageSource, LanguageInput,
+    LanguageModel, LanguageOutput, Model, StreamChunk, StreamingChatModel,
 };
 pub use amico_plugin::{Plugin, PluginError, PluginRuntime, PluginSet, ToolPlugin};
 pub use amico_runtime::{ExecutionContext, Runtime, Scheduler, Session, SessionStore, Workflow};

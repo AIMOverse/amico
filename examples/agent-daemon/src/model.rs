@@ -118,7 +118,7 @@ fn build_api_messages(input: &ChatInput) -> Vec<ApiMessage> {
         .iter()
         .map(|m| ApiMessage {
             role: role_to_string(&m.role).to_string(),
-            content: m.content.clone(),
+            content: m.text(),
         })
         .collect()
 }

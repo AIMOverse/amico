@@ -46,40 +46,124 @@ pub enum ChatRole {
     Tool,
 }
 
-/// A single message in a chat conversation
+/// A single part of a multimodal message.
+///
+/// Modern chat models accept messages composed of multiple content parts,
+/// e.g. a text prompt accompanied by an image. Each variant carries the
+/// data for one modality.
+#[derive(Debug, Clone, PartialEq)]
+pub enum ContentPart {
+    /// Plain text content
+    Text { text: String },
+    /// An image, either inline (base64) or referenced by URL
+    Image { source: ImageSource },
+    /// Inline audio data
+    Audio { data: Vec<u8>, format: AudioFormat },
+}
+
+impl ContentPart {
+    /// Convenience: create a text content part.
+    pub fn text(text: impl Into<String>) -> Self {
+        Self::Text { text: text.into() }
+    }
+
+    /// Convenience: create an image content part from a URL.
+    pub fn image_url(url: impl Into<String>) -> Self {
+        Self::Image {
+            source: ImageSource::Url {
+                url: url.into(),
+            },
+        }
+    }
+
+    /// Convenience: create an image content part from raw bytes.
+    pub fn image_base64(data: Vec<u8>, media_type: impl Into<String>) -> Self {
+        Self::Image {
+            source: ImageSource::Base64 {
+                data,
+                media_type: media_type.into(),
+            },
+        }
+    }
+
+    /// Convenience: create an audio content part.
+    pub fn audio(data: Vec<u8>, format: AudioFormat) -> Self {
+        Self::Audio { data, format }
+    }
+}
+
+/// Source of an image in a content part.
+#[derive(Debug, Clone, PartialEq)]
+pub enum ImageSource {
+    /// Image hosted at a URL
+    Url { url: String },
+    /// Base64-encoded inline image
+    Base64 { data: Vec<u8>, media_type: String },
+}
+
+/// A single message in a chat conversation.
+///
+/// Messages can contain one or more [`ContentPart`]s, supporting both
+/// simple text-only messages and rich multimodal content (images, audio).
+///
+/// For the common text-only case, convenience constructors like
+/// [`ChatMessage::user`] accept a plain string.
 #[derive(Debug, Clone)]
 pub struct ChatMessage {
     pub role: ChatRole,
-    pub content: String,
+    pub content: Vec<ContentPart>,
 }
 
 impl ChatMessage {
+    /// Create a system message (text only).
     pub fn system(content: impl Into<String>) -> Self {
         Self {
             role: ChatRole::System,
-            content: content.into(),
+            content: vec![ContentPart::text(content)],
         }
     }
 
+    /// Create a user message (text only).
     pub fn user(content: impl Into<String>) -> Self {
         Self {
             role: ChatRole::User,
-            content: content.into(),
+            content: vec![ContentPart::text(content)],
         }
     }
 
+    /// Create an assistant message (text only).
     pub fn assistant(content: impl Into<String>) -> Self {
         Self {
             role: ChatRole::Assistant,
-            content: content.into(),
+            content: vec![ContentPart::text(content)],
         }
     }
 
+    /// Create a tool result message (text only).
     pub fn tool(content: impl Into<String>) -> Self {
         Self {
             role: ChatRole::Tool,
-            content: content.into(),
+            content: vec![ContentPart::text(content)],
         }
+    }
+
+    /// Create a message with explicit multimodal content parts.
+    pub fn new(role: ChatRole, content: Vec<ContentPart>) -> Self {
+        Self { role, content }
+    }
+
+    /// Extract the concatenated text from all `Text` parts.
+    ///
+    /// Returns an empty string when the message contains no text parts.
+    pub fn text(&self) -> String {
+        self.content
+            .iter()
+            .filter_map(|part| match part {
+                ContentPart::Text { text } => Some(text.as_str()),
+                _ => None,
+            })
+            .collect::<Vec<_>>()
+            .join("")
     }
 }
 
@@ -361,4 +445,100 @@ pub trait ModelProvider {
     fn video_model(&self) -> &Self::VideoModel;
     fn speech_model(&self) -> &Self::SpeechModel;
     fn embedding_model(&self) -> &Self::EmbeddingModel;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn text_only_constructors_produce_single_text_part() {
+        let msg = ChatMessage::user("hello");
+        assert_eq!(msg.role, ChatRole::User);
+        assert_eq!(msg.content.len(), 1);
+        assert_eq!(msg.content[0], ContentPart::Text { text: "hello".into() });
+        assert_eq!(msg.text(), "hello");
+    }
+
+    #[test]
+    fn all_role_constructors() {
+        assert_eq!(ChatMessage::system("s").role, ChatRole::System);
+        assert_eq!(ChatMessage::user("u").role, ChatRole::User);
+        assert_eq!(ChatMessage::assistant("a").role, ChatRole::Assistant);
+        assert_eq!(ChatMessage::tool("t").role, ChatRole::Tool);
+    }
+
+    #[test]
+    fn multimodal_message_with_text_and_image() {
+        let msg = ChatMessage::new(
+            ChatRole::User,
+            vec![
+                ContentPart::text("Describe this image:"),
+                ContentPart::image_url("https://example.com/img.png"),
+            ],
+        );
+        assert_eq!(msg.content.len(), 2);
+        assert_eq!(msg.text(), "Describe this image:");
+    }
+
+    #[test]
+    fn text_concatenates_multiple_text_parts() {
+        let msg = ChatMessage::new(
+            ChatRole::User,
+            vec![
+                ContentPart::text("Hello "),
+                ContentPart::image_url("https://x.com/i.png"),
+                ContentPart::text("world"),
+            ],
+        );
+        assert_eq!(msg.text(), "Hello world");
+    }
+
+    #[test]
+    fn text_returns_empty_for_non_text_content() {
+        let msg = ChatMessage::new(
+            ChatRole::User,
+            vec![ContentPart::image_url("https://example.com/img.png")],
+        );
+        assert_eq!(msg.text(), "");
+    }
+
+    #[test]
+    fn content_part_image_base64() {
+        let part = ContentPart::image_base64(vec![1, 2, 3], "image/png");
+        match &part {
+            ContentPart::Image { source: ImageSource::Base64 { data, media_type } } => {
+                assert_eq!(data, &[1, 2, 3]);
+                assert_eq!(media_type, "image/png");
+            }
+            _ => panic!("Expected Image::Base64"),
+        }
+    }
+
+    #[test]
+    fn content_part_audio() {
+        let part = ContentPart::audio(vec![4, 5], AudioFormat::Mp3);
+        match &part {
+            ContentPart::Audio { data, format } => {
+                assert_eq!(data, &[4, 5]);
+                assert_eq!(*format, AudioFormat::Mp3);
+            }
+            _ => panic!("Expected Audio"),
+        }
+    }
+
+    #[test]
+    fn chat_input_new_works_with_multimodal_messages() {
+        let input = ChatInput::new(vec![
+            ChatMessage::system("You are helpful."),
+            ChatMessage::new(
+                ChatRole::User,
+                vec![
+                    ContentPart::text("What's in this image?"),
+                    ContentPart::image_url("https://example.com/img.png"),
+                ],
+            ),
+        ]);
+        assert_eq!(input.messages.len(), 2);
+    }
 }
