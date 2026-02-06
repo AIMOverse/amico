@@ -6,6 +6,8 @@ members = [
     "amico-runtime",
     "amico-plugin",
     "amico-workflows",
+    "examples/agent-daemon",
+    "examples/agent-tui",
 ]
 resolver = "2"
 

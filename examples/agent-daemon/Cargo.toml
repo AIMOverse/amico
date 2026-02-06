@@ -1,0 +1,36 @@
+[package]
+name = "agent-daemon"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Example: local agent daemon with HTTP transport and OpenAI-compatible chat model"
+
+[dependencies]
+# Amico framework
+amico = { path = "../../amico" }
+amico-models = { path = "../../amico-models" }
+amico-runtime = { path = "../../amico-runtime" }
+amico-system = { path = "../../amico-system" }
+
+# Async runtime
+tokio = { version = "1.44", features = ["full"] }
+futures = "0.3"
+tokio-stream = "0.1"
+
+# HTTP server
+axum = { version = "0.8", features = ["macros"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["cors"] }
+
+# HTTP client (for OpenAI API)
+reqwest = { version = "0.12", features = ["json", "stream"] }
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Utilities
+uuid = { version = "1", features = ["v4"] }
+chrono = { version = "0.4", features = ["serde"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
