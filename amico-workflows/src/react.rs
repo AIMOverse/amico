@@ -42,7 +42,7 @@ where
         _context: &'a Self::Context,
         input: Self::Input,
     ) -> Result<Self::Output, Self::Error> {
-        // Placeholder implementation
+        // TODO: implement ReAct loop — alternate reasoning and acting.
         let _ = &self.model;
         let _ = &self.tools;
         let _ = self.max_iterations;

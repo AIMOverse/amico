@@ -49,13 +49,8 @@ where
         _context: &'a Self::Context,
         input: Self::Input,
     ) -> Result<Self::Output, Self::Error> {
-        // Placeholder implementation
-        // In a real implementation, this would:
-        // 1. Loop up to max_iterations
-        // 2. Call model to decide action (via AgentAction::step)
-        // 3. Execute tool if needed
-        // 4. Collect observations
-        // 5. Return when goal is met
+        // TODO: implement real tool loop — iterate up to max_iterations,
+        // call model via AgentAction::step, execute tool, collect observations.
         let _ = &self.model;
         let _ = &self.tools;
         let _ = self.max_iterations;

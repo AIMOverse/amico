@@ -34,7 +34,7 @@ where
         _context: &'a Self::Context,
         input: Self::Input,
     ) -> Result<Self::Output, Self::Error> {
-        // Placeholder implementation
+        // TODO: implement chain-of-thought — walk through steps sequentially.
         let _ = &self.model;
         let _ = &self.steps;
 

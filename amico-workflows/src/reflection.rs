@@ -40,7 +40,7 @@ where
         _context: &'a Self::Context,
         input: Self::Input,
     ) -> Result<Self::Output, Self::Error> {
-        // Placeholder implementation
+        // TODO: implement reflection loop — generate, critique, refine.
         let _ = &self.model;
         let _ = &self.critic;
         let _ = self.max_refinements;
