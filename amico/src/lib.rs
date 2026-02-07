@@ -22,6 +22,27 @@
 //! - **Type Safe**: Extensive compile-time verification
 //! - **Extensible**: Plugin system covers all aspects of the agent lifecycle
 //!
+//! ## Event System
+//!
+//! Event sources are **streams** of events. Events carry context for agents
+//! to inspect. An [`EventRouter`] dispatches received events to [`EventHandler`]s.
+//! Handlers use a global context and event context to run agent workflows,
+//! producing side-effects and a generation result wrapped in [`HandlerOutput`].
+//!
+//! ## Agent Workflows
+//!
+//! An atomic agent action step ([`runtime::AgentAction`]) takes a conversation
+//! history and model parameters and produces an [`runtime::AgentChoice`]. A
+//! workflow chains multiple steps. Observers can subscribe to the sequential
+//! [`runtime::StepStream`] to inspect progress.
+//!
+//! ## System Side Effects
+//!
+//! The [`system::System`] trait bundles all platform capabilities (file I/O,
+//! networking, process execution, clock, logging, entropy). Swapping the
+//! `System` implementation ports an agent to a new platform without changing
+//! business logic.
+//!
 //! ## Example
 //!
 //! ```rust,ignore
@@ -51,6 +72,8 @@
 
 use std::future::Future;
 
+pub mod event;
+
 // Re-export all layers
 pub use amico_models as models;
 pub use amico_plugin as plugin;
@@ -64,6 +87,12 @@ pub use amico_plugin::{Plugin, PluginError, PluginRuntime, PluginSet, ToolPlugin
 pub use amico_runtime::{ExecutionContext, Runtime, Scheduler, Workflow};
 pub use amico_system::{Observable, Permission, SystemEffect, Tool};
 pub use amico_workflows::{AgentResponse, ToolLoopAgent, WorkflowError};
+
+// Re-export event system types
+pub use event::{
+    BlockchainEvent, DispatchError, EventHandler, EventRouter, EventSource, HandlerOutput,
+    MessageEvent, SensorEvent, TimerEvent,
+};
 
 /// Timestamp in milliseconds since epoch
 pub type Timestamp = u64;
@@ -82,175 +111,26 @@ impl EventMetadata {
             tags: Vec::new(),
         }
     }
-    
+
     pub fn with_tags(mut self, tags: Vec<String>) -> Self {
         self.tags = tags;
         self
     }
 }
 
-/// Event trait - all events implement this
+/// Event trait - all events implement this.
+///
+/// Events carry context for agents to inspect. Each event has a type
+/// identifier, a timestamp, and metadata describing its origin.
 pub trait Event {
     /// Event type identifier
     fn event_type(&self) -> &str;
-    
+
     /// Event timestamp
     fn timestamp(&self) -> Timestamp;
-    
+
     /// Event metadata
     fn metadata(&self) -> &EventMetadata;
-}
-
-/// Event handler trait - defines how to handle specific event types
-pub trait EventHandler<E: Event> {
-    /// Context type for the handler
-    type Context;
-    
-    /// Response type produced by the handler
-    type Response;
-    
-    /// Error type for handler execution
-    type Error;
-    
-    /// Handle an event
-    fn handle<'a>(
-        &'a self,
-        event: E,
-        context: &'a Self::Context,
-    ) -> impl Future<Output = Result<Self::Response, Self::Error>> + Send + 'a;
-}
-
-/// Event dispatch error
-#[derive(Debug)]
-pub enum DispatchError {
-    NoHandlerFound(String),
-    HandlerFailed(String),
-}
-
-impl std::fmt::Display for DispatchError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::NoHandlerFound(event_type) => {
-                write!(f, "No handler found for event type: {}", event_type)
-            }
-            Self::HandlerFailed(msg) => write!(f, "Handler failed: {}", msg),
-        }
-    }
-}
-
-impl std::error::Error for DispatchError {}
-
-/// Event router - registers and dispatches events to handlers
-pub trait EventRouter {
-    /// Event type that can be routed
-    type Event: Event;
-    
-    /// Handler type
-    type Handler;
-    
-    /// Register an event handler for a specific event type
-    fn register(&mut self, event_type: impl Into<String>, handler: Self::Handler);
-    
-    /// Dispatch event to appropriate handler
-    fn dispatch<'a>(
-        &'a self,
-        event: Self::Event,
-    ) -> impl Future<Output = Result<(), DispatchError>> + Send + 'a;
-}
-
-/// Common event types
-
-/// Message event (e.g., from chat, social media, etc.)
-#[derive(Debug, Clone)]
-pub struct MessageEvent {
-    pub content: String,
-    pub sender: String,
-    pub timestamp: Timestamp,
-    pub metadata: EventMetadata,
-}
-
-impl Event for MessageEvent {
-    fn event_type(&self) -> &str {
-        "message"
-    }
-    
-    fn timestamp(&self) -> Timestamp {
-        self.timestamp
-    }
-    
-    fn metadata(&self) -> &EventMetadata {
-        &self.metadata
-    }
-}
-
-/// Timer event (scheduled execution)
-#[derive(Debug, Clone)]
-pub struct TimerEvent {
-    pub timer_id: String,
-    pub timestamp: Timestamp,
-    pub metadata: EventMetadata,
-}
-
-impl Event for TimerEvent {
-    fn event_type(&self) -> &str {
-        "timer"
-    }
-    
-    fn timestamp(&self) -> Timestamp {
-        self.timestamp
-    }
-    
-    fn metadata(&self) -> &EventMetadata {
-        &self.metadata
-    }
-}
-
-/// Blockchain event (on-chain transaction or event)
-#[derive(Debug, Clone)]
-pub struct BlockchainEvent {
-    pub chain: String,
-    pub transaction_hash: String,
-    pub event_data: Vec<u8>,
-    pub timestamp: Timestamp,
-    pub metadata: EventMetadata,
-}
-
-impl Event for BlockchainEvent {
-    fn event_type(&self) -> &str {
-        "blockchain"
-    }
-    
-    fn timestamp(&self) -> Timestamp {
-        self.timestamp
-    }
-    
-    fn metadata(&self) -> &EventMetadata {
-        &self.metadata
-    }
-}
-
-/// Sensor event (from physical or virtual sensors)
-#[derive(Debug, Clone)]
-pub struct SensorEvent {
-    pub sensor_id: String,
-    pub sensor_type: String,
-    pub data: Vec<u8>,
-    pub timestamp: Timestamp,
-    pub metadata: EventMetadata,
-}
-
-impl Event for SensorEvent {
-    fn event_type(&self) -> &str {
-        "sensor"
-    }
-    
-    fn timestamp(&self) -> Timestamp {
-        self.timestamp
-    }
-    
-    fn metadata(&self) -> &EventMetadata {
-        &self.metadata
-    }
 }
 
 /// Plugin that provides event sources.
