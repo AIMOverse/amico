@@ -89,3 +89,40 @@ pub trait StepStream {
         &'a mut self,
     ) -> impl Future<Output = Option<Result<StepItem, Self::Error>>> + Send + 'a;
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::message::ToolCall;
+
+    #[test]
+    fn test_agent_choice_variants() {
+        let tool = AgentChoice::ToolCall(ToolCall {
+            id: "c1".to_string(),
+            name: "search".to_string(),
+            arguments: "{}".to_string(),
+        });
+        assert!(matches!(tool, AgentChoice::ToolCall(_)));
+
+        let text = AgentChoice::TextResponse("hello".to_string());
+        assert!(matches!(text, AgentChoice::TextResponse(_)));
+
+        let finish = AgentChoice::Finish("done".to_string());
+        assert!(matches!(finish, AgentChoice::Finish(_)));
+    }
+
+    #[test]
+    fn test_step_item_variants() {
+        let started = StepItem::StepStarted { step_index: 0 };
+        assert!(matches!(started, StepItem::StepStarted { step_index: 0 }));
+
+        let delta = StepItem::TextDelta("chunk".to_string());
+        assert!(matches!(delta, StepItem::TextDelta(_)));
+
+        let completed = StepItem::StepCompleted { step_index: 0 };
+        assert!(matches!(completed, StepItem::StepCompleted { step_index: 0 }));
+
+        let finished = StepItem::Finished("final answer".to_string());
+        assert!(matches!(finished, StepItem::Finished(_)));
+    }
+}

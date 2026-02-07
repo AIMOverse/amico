@@ -75,3 +75,40 @@ pub struct ToolResult {
     /// Serialized output produced by the tool.
     pub output: String,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_message_constructors() {
+        let sys = Message::system("You are a helpful assistant.");
+        assert_eq!(sys.role, Role::System);
+        assert_eq!(sys.content, "You are a helpful assistant.");
+
+        let user = Message::user("Hello!");
+        assert_eq!(user.role, Role::User);
+
+        let asst = Message::assistant("Hi there!");
+        assert_eq!(asst.role, Role::Assistant);
+
+        let tool = Message::tool(r#"{"result": 42}"#);
+        assert_eq!(tool.role, Role::Tool);
+    }
+
+    #[test]
+    fn test_tool_call_and_result() {
+        let call = ToolCall {
+            id: "call_1".to_string(),
+            name: "read_file".to_string(),
+            arguments: r#"{"path": "/tmp/test.txt"}"#.to_string(),
+        };
+        assert_eq!(call.name, "read_file");
+
+        let result = ToolResult {
+            call_id: call.id.clone(),
+            output: "file contents".to_string(),
+        };
+        assert_eq!(result.call_id, "call_1");
+    }
+}

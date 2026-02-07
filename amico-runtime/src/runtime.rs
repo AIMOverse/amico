@@ -24,6 +24,36 @@ impl std::fmt::Display for RuntimeError {
 
 impl std::error::Error for RuntimeError {}
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_runtime_error_display() {
+        let err = RuntimeError::StartupFailed("port in use".to_string());
+        assert_eq!(err.to_string(), "Runtime startup failed: port in use");
+
+        let err = RuntimeError::ShutdownFailed("timeout".to_string());
+        assert_eq!(err.to_string(), "Runtime shutdown failed: timeout");
+
+        let err = RuntimeError::WorkflowExecutionFailed("model error".to_string());
+        assert_eq!(
+            err.to_string(),
+            "Workflow execution failed: model error"
+        );
+    }
+
+    #[test]
+    fn test_runtime_snapshot() {
+        let snap = RuntimeSnapshot {
+            state_data: vec![1, 2, 3],
+            timestamp: 1234567890,
+        };
+        assert_eq!(snap.state_data, vec![1, 2, 3]);
+        assert_eq!(snap.timestamp, 1234567890);
+    }
+}
+
 /// Runtime abstraction.
 ///
 /// A `Runtime` owns an execution context and a scheduler.  It manages

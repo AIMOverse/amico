@@ -50,3 +50,18 @@ impl<S, P> ExecutionContext for SimpleContext<S, P> {
         &self.permissions
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_simple_context() {
+        let mut ctx = SimpleContext::new(42u32, "read-only");
+        assert_eq!(*ctx.state(), 42);
+        assert_eq!(*ctx.permissions(), "read-only");
+
+        *ctx.state_mut() = 100;
+        assert_eq!(*ctx.state(), 100);
+    }
+}

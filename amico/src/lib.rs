@@ -171,3 +171,85 @@ pub trait EventInterceptor: Plugin {
         event: &'a Self::Event,
     ) -> impl Future<Output = Result<(), Self::Error>> + Send + 'a;
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_event_metadata() {
+        let meta = EventMetadata::new("test-source");
+        assert_eq!(meta.source, "test-source");
+        assert!(meta.tags.is_empty());
+
+        let meta = meta.with_tags(vec!["urgent".to_string()]);
+        assert_eq!(meta.tags, vec!["urgent"]);
+    }
+
+    #[test]
+    fn test_message_event() {
+        let event = MessageEvent {
+            content: "hello".to_string(),
+            sender: "user1".to_string(),
+            timestamp: 1000,
+            metadata: EventMetadata::new("chat"),
+        };
+        assert_eq!(event.event_type(), "message");
+        assert_eq!(event.timestamp(), 1000);
+        assert_eq!(event.metadata().source, "chat");
+    }
+
+    #[test]
+    fn test_timer_event() {
+        let event = TimerEvent {
+            timer_id: "t1".to_string(),
+            timestamp: 2000,
+            metadata: EventMetadata::new("scheduler"),
+        };
+        assert_eq!(event.event_type(), "timer");
+        assert_eq!(event.timestamp(), 2000);
+    }
+
+    #[test]
+    fn test_blockchain_event() {
+        let event = BlockchainEvent {
+            chain: "ethereum".to_string(),
+            transaction_hash: "0xabc".to_string(),
+            event_data: vec![1, 2, 3],
+            timestamp: 3000,
+            metadata: EventMetadata::new("chain-listener"),
+        };
+        assert_eq!(event.event_type(), "blockchain");
+    }
+
+    #[test]
+    fn test_sensor_event() {
+        let event = SensorEvent {
+            sensor_id: "s1".to_string(),
+            sensor_type: "temperature".to_string(),
+            data: vec![42],
+            timestamp: 4000,
+            metadata: EventMetadata::new("iot-hub"),
+        };
+        assert_eq!(event.event_type(), "sensor");
+    }
+
+    #[test]
+    fn test_handler_output() {
+        let output = HandlerOutput::new("result-value", 5000);
+        assert_eq!(output.result, "result-value");
+        assert_eq!(output.completed_at, 5000);
+    }
+
+    #[test]
+    fn test_dispatch_error_display() {
+        let err = DispatchError::NoHandlerFound("unknown".to_string());
+        assert_eq!(
+            err.to_string(),
+            "No handler found for event type: unknown"
+        );
+
+        let err = DispatchError::HandlerFailed("timeout".to_string());
+        assert_eq!(err.to_string(), "Handler failed: timeout");
+    }
+}

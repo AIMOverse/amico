@@ -59,3 +59,42 @@ impl Permission<ResourcePermission> for PermissionChecker {
         self.granted.retain(|r| r != resource);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_permission_grant_and_check() {
+        let mut checker = PermissionChecker::new();
+        let perm = ResourcePermission::FileRead("/tmp".to_string());
+
+        assert!(!checker.check(&perm));
+        checker.grant(perm.clone());
+        assert!(checker.check(&perm));
+    }
+
+    #[test]
+    fn test_permission_revoke() {
+        let mut checker = PermissionChecker::new();
+        let perm = ResourcePermission::NetworkAccess("https://example.com".to_string());
+
+        checker.grant(perm.clone());
+        assert!(checker.check(&perm));
+
+        checker.revoke(&perm);
+        assert!(!checker.check(&perm));
+    }
+
+    #[test]
+    fn test_permission_no_duplicates() {
+        let mut checker = PermissionChecker::new();
+        let perm = ResourcePermission::ProcessExecution;
+
+        checker.grant(perm.clone());
+        checker.grant(perm.clone());
+        // Revoke once should remove all instances
+        checker.revoke(&perm);
+        assert!(!checker.check(&perm));
+    }
+}
