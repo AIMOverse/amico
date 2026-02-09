@@ -1,3 +1,0 @@
-pkg-config
-libasound2-dev
-libmp3lame-dev

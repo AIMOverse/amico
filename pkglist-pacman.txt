@@ -1,4 +1,0 @@
-base-devel
-pkgconf
-alsa-lib
-lame
